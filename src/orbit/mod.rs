@@ -107,14 +107,15 @@ pub mod prelude {
 /// use simular::orbit::{run_simulation, scenarios::ScenarioType, scenarios::KeplerConfig};
 ///
 /// let result = run_simulation(
-///     ScenarioType::Kepler(KeplerConfig::earth_sun()),
+///     &ScenarioType::Kepler(KeplerConfig::earth_sun()),
 ///     365.25 * 86400.0,  // 1 year
 ///     3600.0,            // 1 hour steps
 ///     1e6,               // 1000 km softening
 /// );
 /// ```
+#[must_use]
 pub fn run_simulation(
-    scenario: scenarios::ScenarioType,
+    scenario: &scenarios::ScenarioType,
     duration_seconds: f64,
     dt_seconds: f64,
     softening: f64,
@@ -124,7 +125,7 @@ pub fn run_simulation(
     use units::OrbitTime;
 
     // Build initial state
-    let mut state = match &scenario {
+    let mut state = match scenario {
         scenarios::ScenarioType::Kepler(config) => config.build(softening),
         scenarios::ScenarioType::NBody(config) => config.build(softening),
         scenarios::ScenarioType::Hohmann(config) => config.build_initial(softening),
@@ -216,7 +217,7 @@ mod tests {
     #[test]
     fn test_run_simulation_kepler() {
         let result = run_simulation(
-            ScenarioType::Kepler(KeplerConfig::earth_sun()),
+            &ScenarioType::Kepler(KeplerConfig::earth_sun()),
             86400.0 * 10.0,  // 10 days
             3600.0,          // 1 hour steps
             1e6,
@@ -230,7 +231,7 @@ mod tests {
     #[test]
     fn test_run_simulation_nbody() {
         let result = run_simulation(
-            ScenarioType::NBody(scenarios::NBodyConfig::inner_solar_system()),
+            &ScenarioType::NBody(scenarios::NBodyConfig::inner_solar_system()),
             86400.0,  // 1 day
             3600.0,   // 1 hour steps
             1e9,      // Larger softening for N-body
@@ -251,5 +252,46 @@ mod tests {
         let _config = KeplerConfig::earth_sun();
 
         assert!(pos.is_finite());
+    }
+
+    #[test]
+    fn test_run_simulation_hohmann() {
+        let result = run_simulation(
+            &ScenarioType::Hohmann(scenarios::HohmannConfig::earth_to_mars()),
+            86400.0 * 10.0,  // 10 days
+            3600.0,          // 1 hour steps
+            1e6,
+        );
+
+        assert!(result.steps > 0);
+        assert!(!result.paused);
+    }
+
+    #[test]
+    fn test_run_simulation_lagrange() {
+        let result = run_simulation(
+            &ScenarioType::Lagrange(scenarios::LagrangeConfig::sun_earth_l2()),
+            86400.0,  // 1 day
+            3600.0,   // 1 hour steps
+            1e9,
+        );
+
+        assert!(result.steps > 0);
+    }
+
+    #[test]
+    fn test_simulation_result_fields() {
+        let result = run_simulation(
+            &ScenarioType::Kepler(KeplerConfig::earth_sun()),
+            3600.0,  // 1 hour
+            3600.0,  // 1 step
+            1e6,
+        );
+
+        assert_eq!(result.steps, 1);
+        assert_eq!(result.warnings, 0);
+        assert!(!result.paused);
+        assert!(result.sim_time > 0.0);
+        assert!(result.final_state.num_bodies() == 2);
     }
 }

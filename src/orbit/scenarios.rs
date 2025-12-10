@@ -89,21 +89,23 @@ impl KeplerConfig {
 
     /// Build N-body state from this configuration.
     #[must_use]
+    #[allow(clippy::many_single_char_names)] // Standard orbital mechanics notation
     pub fn build(&self, softening: f64) -> NBodyState {
         let mu = G * self.central_mass;
 
         // Calculate position and velocity at initial anomaly
-        let p = self.semi_major_axis * (1.0 - self.eccentricity * self.eccentricity);
-        let r = p / (1.0 + self.eccentricity * self.initial_anomaly.cos());
+        // p = semi-latus rectum, r = radius, h = specific angular momentum
+        let semi_latus = self.semi_major_axis * (1.0 - self.eccentricity * self.eccentricity);
+        let radius = semi_latus / (1.0 + self.eccentricity * self.initial_anomaly.cos());
 
         // Position in orbital plane
-        let x = r * self.initial_anomaly.cos();
-        let y = r * self.initial_anomaly.sin();
+        let pos_x = radius * self.initial_anomaly.cos();
+        let pos_y = radius * self.initial_anomaly.sin();
 
         // Velocity in orbital plane
-        let h = (mu * p).sqrt();
-        let vx = -mu / h * self.initial_anomaly.sin();
-        let vy = mu / h * (self.eccentricity + self.initial_anomaly.cos());
+        let ang_momentum = (mu * semi_latus).sqrt();
+        let vel_x = -mu / ang_momentum * self.initial_anomaly.sin();
+        let vel_y = mu / ang_momentum * (self.eccentricity + self.initial_anomaly.cos());
 
         let bodies = vec![
             OrbitBody::new(
@@ -113,8 +115,8 @@ impl KeplerConfig {
             ),
             OrbitBody::new(
                 OrbitMass::from_kg(self.orbiter_mass),
-                Position3D::from_meters(x, y, 0.0),
-                Velocity3D::from_mps(vx, vy, 0.0),
+                Position3D::from_meters(pos_x, pos_y, 0.0),
+                Velocity3D::from_mps(vel_x, vel_y, 0.0),
             ),
         ];
 
@@ -644,5 +646,151 @@ mod tests {
             }
             _ => panic!("Expected Kepler scenario"),
         }
+    }
+
+    #[test]
+    fn test_kepler_circular() {
+        let config = KeplerConfig::circular(SOLAR_MASS, EARTH_MASS, AU);
+        assert!((config.eccentricity).abs() < EPSILON);
+        assert!((config.central_mass - SOLAR_MASS).abs() < 1e20);
+    }
+
+    #[test]
+    fn test_nbody_default() {
+        let config = NBodyConfig::default();
+        assert_eq!(config.bodies.len(), 5);
+    }
+
+    #[test]
+    fn test_hohmann_default() {
+        let config = HohmannConfig::default();
+        assert!((config.r1 - AU).abs() < 1e6);
+    }
+
+    #[test]
+    fn test_hohmann_leo_to_geo() {
+        let config = HohmannConfig::leo_to_geo();
+        assert!(config.r1 > 6e6); // Above Earth's surface
+        assert!(config.r2 > 4e7); // GEO radius
+        assert!(config.central_mass > 5e24); // Earth mass
+    }
+
+    #[test]
+    fn test_hohmann_build_transfer() {
+        let config = HohmannConfig::earth_to_mars();
+        let state = config.build_transfer(0.0);
+        assert_eq!(state.num_bodies(), 2);
+
+        // Spacecraft should be at r1 with transfer velocity (higher than circular)
+        let (x, _, _) = state.bodies[1].position.as_meters();
+        assert!((x - config.r1).abs() < 1e6);
+    }
+
+    #[test]
+    fn test_lagrange_default() {
+        let config = LagrangeConfig::default();
+        assert_eq!(config.point, LagrangePoint::L2);
+    }
+
+    #[test]
+    fn test_lagrange_l3_position() {
+        let config = LagrangeConfig {
+            point: LagrangePoint::L3,
+            ..LagrangeConfig::default()
+        };
+        let (x, y, z) = config.lagrange_position();
+        assert!(x < 0.0); // Opposite side from Earth
+        assert!(x < -AU * 0.9);
+        assert!(y.abs() < EPSILON);
+        assert!(z.abs() < EPSILON);
+    }
+
+    #[test]
+    fn test_lagrange_l5_position() {
+        let config = LagrangeConfig {
+            point: LagrangePoint::L5,
+            ..LagrangeConfig::default()
+        };
+        let (x, y, z) = config.lagrange_position();
+        // L5 is at 60° behind, so x ≈ 0.5*AU, y ≈ -0.866*AU
+        assert!((x - 0.5 * AU).abs() / AU < 0.01);
+        assert!((y + 0.866 * AU).abs() / AU < 0.01); // Negative y
+        assert!(z.abs() < EPSILON);
+    }
+
+    #[test]
+    fn test_lagrange_with_perturbation() {
+        let config = LagrangeConfig {
+            perturbation: (1000.0, 2000.0, 3000.0),
+            ..LagrangeConfig::sun_earth_l2()
+        };
+        let state = config.build(1e6);
+        assert_eq!(state.num_bodies(), 3);
+
+        // Test particle should be offset from nominal L2
+        let (lx, _, _) = state.bodies[2].position.as_meters();
+        let nominal_l2 = config.lagrange_position().0;
+        assert!((lx - nominal_l2 - 1000.0).abs() < 1.0);
+    }
+
+    #[test]
+    fn test_scenario_type_nbody() {
+        let scenario = ScenarioType::NBody(NBodyConfig::default());
+        match scenario {
+            ScenarioType::NBody(config) => {
+                assert_eq!(config.bodies.len(), 5);
+            }
+            _ => panic!("Expected NBody scenario"),
+        }
+    }
+
+    #[test]
+    fn test_scenario_type_hohmann() {
+        let scenario = ScenarioType::Hohmann(HohmannConfig::default());
+        match scenario {
+            ScenarioType::Hohmann(config) => {
+                assert!((config.r1 - AU).abs() < 1e6);
+            }
+            _ => panic!("Expected Hohmann scenario"),
+        }
+    }
+
+    #[test]
+    fn test_scenario_type_lagrange() {
+        let scenario = ScenarioType::Lagrange(LagrangeConfig::default());
+        match scenario {
+            ScenarioType::Lagrange(config) => {
+                assert_eq!(config.point, LagrangePoint::L2);
+            }
+            _ => panic!("Expected Lagrange scenario"),
+        }
+    }
+
+    #[test]
+    fn test_kepler_build_with_nonzero_anomaly() {
+        let config = KeplerConfig {
+            initial_anomaly: std::f64::consts::PI / 2.0, // 90 degrees
+            ..KeplerConfig::default()
+        };
+        let state = config.build(0.0);
+        assert_eq!(state.num_bodies(), 2);
+
+        // At 90° anomaly, Earth should be above or below the x-axis
+        let (_, y, _) = state.bodies[1].position.as_meters();
+        assert!(y.abs() > AU * 0.5);
+    }
+
+    #[test]
+    fn test_body_config_fields() {
+        let body = BodyConfig {
+            name: "TestBody".to_string(),
+            mass: 1e24,
+            position: (1e11, 2e11, 3e11),
+            velocity: (1000.0, 2000.0, 3000.0),
+        };
+        assert_eq!(body.name, "TestBody");
+        assert!((body.mass - 1e24).abs() < 1e18);
+        assert!((body.position.0 - 1e11).abs() < 1e6);
+        assert!((body.velocity.0 - 1000.0).abs() < 0.1);
     }
 }

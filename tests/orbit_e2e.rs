@@ -435,7 +435,7 @@ fn integration_full_year_simulation() {
     use simular::orbit::scenarios::ScenarioType;
 
     let result = run_simulation(
-        ScenarioType::Kepler(KeplerConfig::earth_sun()),
+        &ScenarioType::Kepler(KeplerConfig::earth_sun()),
         365.25 * 86400.0, // 1 year
         3600.0,           // 1 hour steps
         1e6,              // softening

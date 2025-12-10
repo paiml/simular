@@ -137,6 +137,7 @@ impl std::fmt::Display for OrbitJidokaViolation {
 
 /// Jidoka configuration for orbital simulation.
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[allow(clippy::struct_excessive_bools)] // Config struct with feature flags
 pub struct OrbitJidokaConfig {
     /// Check for non-finite values.
     pub check_finite: bool,
@@ -176,6 +177,7 @@ impl Default for OrbitJidokaConfig {
 
 /// Jidoka status for visualization (Mieruka).
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[allow(clippy::struct_excessive_bools)] // Status struct with multiple checks
 pub struct JidokaStatus {
     /// Energy relative error.
     pub energy_error: f64,
@@ -301,9 +303,7 @@ impl OrbitJidokaGuard {
     }
 
     fn check_energy(&mut self, state: &NBodyState) -> Option<JidokaResponse> {
-        let Some(initial) = self.initial_energy else {
-            return None;
-        };
+        let initial = self.initial_energy?;
 
         let current = state.total_energy();
         let relative_error = if initial.abs() > f64::EPSILON {
@@ -357,9 +357,7 @@ impl OrbitJidokaGuard {
     }
 
     fn check_angular_momentum(&mut self, state: &NBodyState) -> Option<JidokaResponse> {
-        let Some(initial) = self.initial_angular_momentum else {
-            return None;
-        };
+        let initial = self.initial_angular_momentum?;
 
         let current = state.angular_momentum_magnitude();
         let relative_error = if initial.abs() > f64::EPSILON {
@@ -608,6 +606,195 @@ mod tests {
 
         // Fifth check should pause
         let response = guard.check(&state);
+        assert!(response.should_pause());
+    }
+
+    #[test]
+    fn test_jidoka_response_is_warning() {
+        assert!(!JidokaResponse::Continue.is_warning());
+        assert!(JidokaResponse::Warning {
+            message: "test".to_string(),
+            body_index: None,
+            metric: "test".to_string(),
+            current: 0.0,
+            threshold: 1.0,
+        }.is_warning());
+    }
+
+    #[test]
+    fn test_jidoka_response_should_pause() {
+        assert!(!JidokaResponse::Continue.should_pause());
+        assert!(JidokaResponse::Pause {
+            violation: OrbitJidokaViolation::EnergyDrift {
+                initial: 1.0,
+                current: 2.0,
+                relative_error: 1.0,
+                tolerance: 0.1,
+            },
+            recoverable: true,
+            suggestion: String::new(),
+        }.should_pause());
+    }
+
+    #[test]
+    fn test_jidoka_response_should_halt() {
+        assert!(!JidokaResponse::Continue.should_halt());
+        assert!(JidokaResponse::Halt {
+            violation: OrbitJidokaViolation::NonFinite {
+                body_index: 0,
+                field: "position".to_string(),
+                value: f64::NAN,
+            },
+        }.should_halt());
+    }
+
+    #[test]
+    fn test_jidoka_violation_display_non_finite() {
+        let violation = OrbitJidokaViolation::NonFinite {
+            body_index: 1,
+            field: "velocity".to_string(),
+            value: f64::INFINITY,
+        };
+        let display = format!("{violation}");
+        assert!(display.contains("Non-finite"));
+        assert!(display.contains("velocity"));
+        assert!(display.contains("body 1"));
+    }
+
+    #[test]
+    fn test_jidoka_violation_display_angular_momentum() {
+        let violation = OrbitJidokaViolation::AngularMomentumDrift {
+            initial: 1e40,
+            current: 1.1e40,
+            relative_error: 0.1,
+            tolerance: 1e-9,
+        };
+        let display = format!("{violation}");
+        assert!(display.contains("Angular momentum drift"));
+    }
+
+    #[test]
+    fn test_jidoka_violation_display_close_encounter() {
+        let violation = OrbitJidokaViolation::CloseEncounter {
+            body_i: 0,
+            body_j: 1,
+            separation: 1e6,
+            threshold: 1e7,
+        };
+        let display = format!("{violation}");
+        assert!(display.contains("Close encounter"));
+        assert!(display.contains("0-1"));
+    }
+
+    #[test]
+    fn test_jidoka_violation_display_escape() {
+        let violation = OrbitJidokaViolation::EscapeVelocity {
+            body_index: 1,
+            velocity: 50000.0,
+            escape_velocity: 42000.0,
+        };
+        let display = format!("{violation}");
+        assert!(display.contains("escape velocity"));
+        assert!(display.contains("Body 1"));
+    }
+
+    #[test]
+    fn test_jidoka_guard_halt_on_non_finite_position() {
+        let config = OrbitJidokaConfig::default();
+        let mut guard = OrbitJidokaGuard::new(config);
+        let mut state = create_sun_earth_system();
+
+        guard.initialize(&state);
+
+        // Inject NaN into position
+        state.bodies[0].position = Position3D::from_meters(f64::NAN, 0.0, 0.0);
+
+        let response = guard.check(&state);
+        assert!(response.should_halt());
+    }
+
+    #[test]
+    fn test_jidoka_guard_halt_on_non_finite_velocity() {
+        let config = OrbitJidokaConfig::default();
+        let mut guard = OrbitJidokaGuard::new(config);
+        let mut state = create_sun_earth_system();
+
+        guard.initialize(&state);
+
+        // Inject Inf into velocity
+        state.bodies[1].velocity = Velocity3D::from_mps(f64::INFINITY, 0.0, 0.0);
+
+        let response = guard.check(&state);
+        assert!(response.should_halt());
+    }
+
+    #[test]
+    fn test_jidoka_guard_check_without_initialize() {
+        let config = OrbitJidokaConfig::default();
+        let mut guard = OrbitJidokaGuard::new(config);
+        let state = create_sun_earth_system();
+
+        // Check without initializing - should still work for finite checks
+        let response = guard.check(&state);
+        assert!(response.can_continue());
+    }
+
+    #[test]
+    fn test_jidoka_guard_disabled_checks() {
+        let config = OrbitJidokaConfig {
+            check_finite: false,
+            check_energy: false,
+            check_angular_momentum: false,
+            check_close_encounters: false,
+            ..Default::default()
+        };
+        let mut guard = OrbitJidokaGuard::new(config);
+        let mut state = create_sun_earth_system();
+
+        guard.initialize(&state);
+
+        // Even with NaN, should continue because checks are disabled
+        state.bodies[0].position = Position3D::from_meters(f64::NAN, 0.0, 0.0);
+
+        let response = guard.check(&state);
+        assert!(response.can_continue());
+    }
+
+    #[test]
+    fn test_jidoka_energy_warning_threshold() {
+        let mut config = OrbitJidokaConfig::default();
+        config.energy_tolerance = 1e-3;
+        config.energy_warning_fraction = 0.8; // Warn at 80%
+
+        let mut guard = OrbitJidokaGuard::new(config);
+        let mut state = create_sun_earth_system();
+
+        guard.initialize(&state);
+
+        // Small perturbation to trigger warning but not violation
+        state.bodies[1].velocity = Velocity3D::from_mps(0.0, 29784.0, 0.0);
+
+        let response = guard.check(&state);
+        // Should be continue or warning, not pause
+        assert!(response.can_continue());
+    }
+
+    #[test]
+    fn test_jidoka_angular_momentum_violation() {
+        let mut config = OrbitJidokaConfig::default();
+        config.angular_momentum_tolerance = 1e-20; // Impossible tolerance
+        config.max_warnings_before_pause = 1;
+
+        let mut guard = OrbitJidokaGuard::new(config);
+        let mut state = create_sun_earth_system();
+
+        guard.initialize(&state);
+
+        // Change velocity direction to alter angular momentum
+        state.bodies[1].velocity = Velocity3D::from_mps(29784.0, 0.0, 0.0);
+
+        let response = guard.check(&state);
+        // Should pause on angular momentum violation
         assert!(response.should_pause());
     }
 }

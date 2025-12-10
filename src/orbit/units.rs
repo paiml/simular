@@ -657,4 +657,199 @@ mod tests {
     fn test_au_constant() {
         assert!((AU - 1.495_978_707e11).abs() < 1.0);
     }
+
+    #[test]
+    fn test_position_scale() {
+        let pos = Position3D::from_meters(1.0, 2.0, 3.0);
+        let scaled = pos.scale(2.0);
+        let (x, y, z) = scaled.as_meters();
+        assert!((x - 2.0).abs() < EPSILON);
+        assert!((y - 4.0).abs() < EPSILON);
+        assert!((z - 6.0).abs() < EPSILON);
+    }
+
+    #[test]
+    fn test_position_magnitude_squared() {
+        let pos = Position3D::from_meters(3.0, 4.0, 0.0);
+        let mag_sq = pos.magnitude_squared();
+        assert!((mag_sq - 25.0).abs() < EPSILON);
+    }
+
+    #[test]
+    fn test_position_zero() {
+        let pos = Position3D::zero();
+        let (x, y, z) = pos.as_meters();
+        assert!(x.abs() < EPSILON);
+        assert!(y.abs() < EPSILON);
+        assert!(z.abs() < EPSILON);
+    }
+
+    #[test]
+    fn test_position_normalize_zero() {
+        let pos = Position3D::zero();
+        let (nx, ny, nz) = pos.normalize();
+        assert!(nx.abs() < EPSILON);
+        assert!(ny.abs() < EPSILON);
+        assert!(nz.abs() < EPSILON);
+    }
+
+    #[test]
+    fn test_position_sub() {
+        let a = Position3D::from_meters(5.0, 7.0, 9.0);
+        let b = Position3D::from_meters(1.0, 2.0, 3.0);
+        let diff = a - b;
+        let (x, y, z) = diff.as_meters();
+        assert!((x - 4.0).abs() < EPSILON);
+        assert!((y - 5.0).abs() < EPSILON);
+        assert!((z - 6.0).abs() < EPSILON);
+    }
+
+    #[test]
+    fn test_position_neg() {
+        let pos = Position3D::from_meters(1.0, 2.0, 3.0);
+        let neg = -pos;
+        let (x, y, z) = neg.as_meters();
+        assert!((x + 1.0).abs() < EPSILON);
+        assert!((y + 2.0).abs() < EPSILON);
+        assert!((z + 3.0).abs() < EPSILON);
+    }
+
+    #[test]
+    fn test_position_is_finite_with_nan() {
+        let mut pos = Position3D::from_meters(1.0, 2.0, 3.0);
+        assert!(pos.is_finite());
+        pos.x = Length::new::<meter>(f64::NAN);
+        assert!(!pos.is_finite());
+    }
+
+    #[test]
+    fn test_velocity_zero() {
+        let vel = Velocity3D::zero();
+        let (x, y, z) = vel.as_mps();
+        assert!(x.abs() < EPSILON);
+        assert!(y.abs() < EPSILON);
+        assert!(z.abs() < EPSILON);
+    }
+
+    #[test]
+    fn test_velocity_scale() {
+        let vel = Velocity3D::from_mps(1.0, 2.0, 3.0);
+        let scaled = vel.scale(3.0);
+        let (x, y, z) = scaled.as_mps();
+        assert!((x - 3.0).abs() < EPSILON);
+        assert!((y - 6.0).abs() < EPSILON);
+        assert!((z - 9.0).abs() < EPSILON);
+    }
+
+    #[test]
+    fn test_velocity_magnitude_squared() {
+        let vel = Velocity3D::from_mps(3.0, 4.0, 0.0);
+        let mag_sq = vel.magnitude_squared();
+        assert!((mag_sq - 25.0).abs() < EPSILON);
+    }
+
+    #[test]
+    fn test_velocity_add() {
+        let a = Velocity3D::from_mps(1.0, 2.0, 3.0);
+        let b = Velocity3D::from_mps(4.0, 5.0, 6.0);
+        let sum = a + b;
+        let (x, y, z) = sum.as_mps();
+        assert!((x - 5.0).abs() < EPSILON);
+        assert!((y - 7.0).abs() < EPSILON);
+        assert!((z - 9.0).abs() < EPSILON);
+    }
+
+    #[test]
+    fn test_velocity_sub() {
+        let a = Velocity3D::from_mps(5.0, 7.0, 9.0);
+        let b = Velocity3D::from_mps(1.0, 2.0, 3.0);
+        let diff = a - b;
+        let (x, y, z) = diff.as_mps();
+        assert!((x - 4.0).abs() < EPSILON);
+        assert!((y - 5.0).abs() < EPSILON);
+        assert!((z - 6.0).abs() < EPSILON);
+    }
+
+    #[test]
+    fn test_velocity_neg() {
+        let vel = Velocity3D::from_mps(1.0, 2.0, 3.0);
+        let neg = -vel;
+        let (x, y, z) = neg.as_mps();
+        assert!((x + 1.0).abs() < EPSILON);
+        assert!((y + 2.0).abs() < EPSILON);
+        assert!((z + 3.0).abs() < EPSILON);
+    }
+
+    #[test]
+    fn test_velocity_is_finite_with_inf() {
+        let mut vel = Velocity3D::from_mps(1.0, 2.0, 3.0);
+        assert!(vel.is_finite());
+        vel.y = Velocity::new::<meter_per_second>(f64::INFINITY);
+        assert!(!vel.is_finite());
+    }
+
+    #[test]
+    fn test_acceleration_zero() {
+        let acc = Acceleration3D::zero();
+        let (x, y, z) = acc.as_mps2();
+        assert!(x.abs() < EPSILON);
+        assert!(y.abs() < EPSILON);
+        assert!(z.abs() < EPSILON);
+    }
+
+    #[test]
+    fn test_acceleration_scale() {
+        let acc = Acceleration3D::from_mps2(1.0, 2.0, 3.0);
+        let scaled = acc.scale(2.0);
+        let (x, y, z) = scaled.as_mps2();
+        assert!((x - 2.0).abs() < EPSILON);
+        assert!((y - 4.0).abs() < EPSILON);
+        assert!((z - 6.0).abs() < EPSILON);
+    }
+
+    #[test]
+    fn test_acceleration_magnitude() {
+        let acc = Acceleration3D::from_mps2(3.0, 4.0, 0.0);
+        let mag = acc.magnitude().get::<meter_per_second_squared>();
+        assert!((mag - 5.0).abs() < EPSILON);
+    }
+
+    #[test]
+    fn test_acceleration_add() {
+        let a = Acceleration3D::from_mps2(1.0, 2.0, 3.0);
+        let b = Acceleration3D::from_mps2(4.0, 5.0, 6.0);
+        let sum = a + b;
+        let (x, y, z) = sum.as_mps2();
+        assert!((x - 5.0).abs() < EPSILON);
+        assert!((y - 7.0).abs() < EPSILON);
+        assert!((z - 9.0).abs() < EPSILON);
+    }
+
+    #[test]
+    fn test_acceleration_neg() {
+        let acc = Acceleration3D::from_mps2(1.0, 2.0, 3.0);
+        let neg = -acc;
+        let (x, y, z) = neg.as_mps2();
+        assert!((x + 1.0).abs() < EPSILON);
+        assert!((y + 2.0).abs() < EPSILON);
+        assert!((z + 3.0).abs() < EPSILON);
+    }
+
+    #[test]
+    fn test_mass_from_earth_masses() {
+        let m = OrbitMass::from_earth_masses(1.0);
+        assert!((m.as_kg() - EARTH_MASS).abs() < 1e18);
+    }
+
+    #[test]
+    fn test_time_as_days() {
+        let t = OrbitTime::from_seconds(172800.0); // 2 days
+        assert!((t.as_days() - 2.0).abs() < EPSILON);
+    }
+
+    #[test]
+    fn test_constants() {
+        assert!(SOLAR_MASS > 1.9e30);
+        assert!(EARTH_MASS > 5.9e24);
+    }
 }

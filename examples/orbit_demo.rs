@@ -107,7 +107,7 @@ fn main() {
     // 5. Full Year Simulation with run_simulation
     println!("5. Full Year Simulation:");
     let result: SimulationResult = run_simulation(
-        ScenarioType::Kepler(KeplerConfig::earth_sun()),
+        &ScenarioType::Kepler(KeplerConfig::earth_sun()),
         365.25 * 86400.0,  // 1 year
         3600.0,            // 1 hour steps
         1e6,               // softening

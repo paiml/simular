@@ -267,7 +267,8 @@ impl YoshidaIntegrator {
         Ok(())
     }
 
-    /// Drift: update positions (q_{n+1} = q_n + dt * v_n).
+    /// Drift: update positions.
+    #[allow(clippy::unused_self)] // Method for future extensibility
     fn drift(&self, state: &mut NBodyState, dt: f64) {
         for body in &mut state.bodies {
             let (vx, vy, vz) = body.velocity.as_mps();
@@ -280,7 +281,8 @@ impl YoshidaIntegrator {
         }
     }
 
-    /// Kick: update velocities (v_{n+1} = v_n + dt * a_n).
+    /// Kick: update velocities.
+    #[allow(clippy::unused_self)] // Method for future extensibility
     fn kick(&self, state: &mut NBodyState, dt: f64) -> SimResult<()> {
         let accelerations = compute_accelerations(state);
 
