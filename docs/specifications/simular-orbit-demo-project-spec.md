@@ -1,10 +1,11 @@
 # Simular Orbit Demo: Technical Specification
 
 **Document ID:** SIMULAR-SPEC-ORBIT-001
-**Version:** 1.0.0
-**Status:** Draft
+**Version:** 1.1.0
+**Status:** Draft (Revised per TPS Review)
 **Classification:** Open Source
 **Author:** PAIML Engineering
+**Reviewer:** Gemini (TPS Technical Review)
 **Date:** 2025-12-10
 
 ---
@@ -12,6 +13,13 @@
 ## Executive Summary
 
 This specification defines the **Simular Orbit Demo**, a canonical demonstration of the Simular simulation engine showcasing deterministic orbital mechanics with dual deployment targets: Terminal User Interface (TUI) for CLI environments and WebAssembly (WASM) for browser-based visualization. The implementation adheres to Toyota Production System (TPS) quality principles and NASA/JPL mission-critical software standards.
+
+**Revision 1.1.0 incorporates feedback from TPS technical review addressing:**
+- Graceful degradation for Jidoka (vs. abrupt halt)
+- Heijunka time-budget enforcement for O(N²) scaling
+- Poka-Yoke dimensional analysis via newtype pattern
+- Epsilon-determinism for cross-platform floating-point
+- Metamorphic testing for physics invariants
 
 ---
 
@@ -21,8 +29,8 @@ This specification defines the **Simular Orbit Demo**, a canonical demonstration
 
 The Simular Orbit Demo serves as the reference implementation demonstrating:
 
-1. **Deterministic Reproducibility** — Bit-identical results across platforms given identical seeds
-2. **Jidoka Quality Gates** — Automatic anomaly detection (energy drift, numerical instability)
+1. **Epsilon-Deterministic Reproducibility** — Bounded-error identical results across platforms given identical seeds [26]
+2. **Jidoka Quality Gates** — Automatic anomaly detection with graceful degradation (not abrupt halt)
 3. **Dual-Target Architecture** — Single codebase compiling to native TUI and WASM
 4. **Physics Fidelity** — Symplectic integration preserving orbital invariants
 
@@ -33,20 +41,22 @@ This specification covers:
 - Mathematical model of N-body gravitational dynamics
 - Numerical integration methods with error bounds
 - Visualization requirements for TUI and WebGL/Canvas
-- Quality assurance through Jidoka guards
+- Quality assurance through Jidoka guards with graceful degradation
 - Build and deployment pipeline
+- Heijunka time-budget enforcement
 
 ### 1.3 Design Philosophy
 
 #### 1.3.1 Toyota Production System (TPS) Principles
 
-| Principle | Application |
-|-----------|-------------|
-| **Jidoka** (自働化) | Automatic halt on numerical anomaly detection |
-| **Poka-Yoke** (ポカヨケ) | Type-safe units preventing dimensional errors |
-| **Heijunka** (平準化) | Load-balanced computation across simulation steps |
-| **Genchi Genbutsu** (現地現物) | Direct observation via replay system |
-| **Kaizen** (改善) | Continuous improvement through metrics |
+| Principle | Application | Implementation |
+|-----------|-------------|----------------|
+| **Jidoka** (自働化) | Anomaly detection with graceful degradation | Pause simulation, highlight defect, allow recovery [27] |
+| **Poka-Yoke** (ポカヨケ) | Type-safe dimensional analysis | Newtype pattern via `uom` crate [28] |
+| **Heijunka** (平準化) | Load-balanced computation | Time-budget per frame (16ms target) |
+| **Mieruka** (見える化) | Visual management | Real-time Jidoka status display |
+| **Genchi Genbutsu** (現地現物) | Direct observation via replay system | Time-travel debugging |
+| **Kaizen** (改善) | Continuous improvement through metrics | Performance telemetry |
 
 #### 1.3.2 NASA/JPL Power of 10 Rules [1]
 
@@ -60,6 +70,15 @@ This specification covers:
 8. Limited preprocessor/macro usage
 9. Restrict pointer arithmetic (enforced by Safe Rust)
 10. Compile with all warnings enabled, treat as errors
+
+#### 1.3.3 Muda (Waste) Elimination
+
+| Muda Type | Risk in Spec | Mitigation |
+|-----------|--------------|------------|
+| **Over-processing** | Strict bit-determinism across platforms | Epsilon-determinism with documented bounds |
+| **Waiting** | O(N²) blocking main thread | Time-budget with frame skipping |
+| **Defects** | Dimensional errors (m + m/s) | Compile-time dimensional analysis |
+| **Motion** | JSON serialization overhead | SharedArrayBuffer for WASM [29] |
 
 ---
 
@@ -85,6 +104,11 @@ This specification covers:
 │  │                    Core Engine (simular)                    ││
 │  │  SimState │ SimRng │ JidokaGuard │ ReplaySystem │ Clock    ││
 │  └─────────────────────────────────────────────────────────────┘│
+├─────────────────────────────────────────────────────────────────┤
+│  ┌─────────────────────────────────────────────────────────────┐│
+│  │              Heijunka Scheduler (Time Budget)               ││
+│  │  FrameBudget │ SubStepController │ AdaptiveQuality          ││
+│  └─────────────────────────────────────────────────────────────┘│
 └─────────────────────────────────────────────────────────────────┘
 ```
 
@@ -105,16 +129,23 @@ simular-orbit-demo/
 │   │   ├── mod.rs
 │   │   ├── gravity.rs      # Gravitational force computation
 │   │   ├── integrators.rs  # Symplectic integrators
-│   │   └── units.rs        # Type-safe physical units
+│   │   ├── units.rs        # Type-safe physical units (Poka-Yoke)
+│   │   └── close_encounter.rs  # Regularization + adaptive stepping
 │   ├── jidoka/
 │   │   ├── mod.rs
 │   │   ├── energy.rs       # Energy conservation monitor
 │   │   ├── angular.rs      # Angular momentum conservation
-│   │   └── stability.rs    # Numerical stability checks
+│   │   ├── stability.rs    # Numerical stability checks
+│   │   └── graceful.rs     # Graceful degradation handlers
+│   ├── heijunka/
+│   │   ├── mod.rs
+│   │   ├── budget.rs       # Frame time budget management
+│   │   └── adaptive.rs     # Quality/fidelity adaptation
 │   └── render/
 │       ├── mod.rs
 │       ├── commands.rs     # Platform-agnostic render commands
-│       └── camera.rs       # View transformation
+│       ├── camera.rs       # View transformation
+│       └── shared_buffer.rs # SharedArrayBuffer for WASM
 ├── src/bin/
 │   └── orbit-tui.rs        # TUI binary entry point
 ├── src/wasm/
@@ -122,6 +153,7 @@ simular-orbit-demo/
 └── tests/
     ├── determinism.rs      # Reproducibility verification
     ├── conservation.rs     # Physics invariant tests
+    ├── metamorphic.rs      # Metamorphic relation tests
     └── integration.rs      # End-to-end scenarios
 ```
 
@@ -132,6 +164,51 @@ simular-orbit-demo/
 | `x86_64-unknown-linux-gnu` | stable | Native binary | CLI/TUI |
 | `x86_64-apple-darwin` | stable | Native binary | CLI/TUI |
 | `wasm32-unknown-unknown` | stable | WASM module | Browser |
+
+### 2.4 Poka-Yoke: Type-Safe Dimensional Analysis
+
+Following Kennedy's dimensional analysis principles [28], all physical quantities use newtype wrappers:
+
+```rust
+use uom::si::f64::{Length, Mass, Time, Velocity, Acceleration};
+use uom::si::length::meter;
+use uom::si::mass::kilogram;
+use uom::si::time::second;
+use uom::si::velocity::meter_per_second;
+
+/// Position vector with dimensional safety
+#[derive(Clone, Copy, Debug)]
+pub struct Position {
+    pub x: Length,
+    pub y: Length,
+    pub z: Length,
+}
+
+/// Velocity vector with dimensional safety
+#[derive(Clone, Copy, Debug)]
+pub struct OrbitalVelocity {
+    pub x: Velocity,
+    pub y: Velocity,
+    pub z: Velocity,
+}
+
+// COMPILE-TIME ERROR: Cannot add Position + Velocity
+// let invalid = position + velocity;  // Type error!
+
+// VALID: Velocity = Position / Time
+impl std::ops::Div<Time> for Position {
+    type Output = OrbitalVelocity;
+    fn div(self, dt: Time) -> OrbitalVelocity {
+        OrbitalVelocity {
+            x: self.x / dt,
+            y: self.y / dt,
+            z: self.z / dt,
+        }
+    }
+}
+```
+
+**Rationale:** Kennedy (1996) demonstrated that dimensional analysis at compile time eliminates a distinct class of safety-critical failures common in physics simulations [28].
 
 ---
 
@@ -149,7 +226,50 @@ $$\ddot{\mathbf{r}}_i = -G \sum_{j \neq i} \frac{m_j (\mathbf{r}_i - \mathbf{r}_
 
 Where $G = 6.67430 \times 10^{-11} \, \text{m}^3 \text{kg}^{-1} \text{s}^{-2}$ is the gravitational constant [4].
 
-#### 3.1.2 Hamiltonian Formulation
+#### 3.1.2 Computational Complexity and Heijunka
+
+**WARNING:** Direct summation scales as $O(N^2)$. This creates *Mura* (unevenness) violating Heijunka [30].
+
+| N (bodies) | Force calculations | Time @ 1GHz |
+|------------|-------------------|-------------|
+| 5 | 10 | ~10ns |
+| 10 | 45 | ~45ns |
+| 100 | 4,950 | ~5μs |
+| 1,000 | 499,500 | ~500μs |
+
+**Mitigation Strategy:**
+
+```rust
+pub struct HeijunkaScheduler {
+    frame_budget_ms: f64,      // Target: 16ms (60 FPS)
+    physics_budget_ms: f64,    // Allocated: 8ms (50% of frame)
+    max_substeps: usize,       // Upper bound per frame
+    quality_level: QualityLevel,
+}
+
+impl HeijunkaScheduler {
+    pub fn execute_frame(&mut self, sim: &mut Simulation) -> FrameResult {
+        let start = Instant::now();
+        let mut substeps = 0;
+
+        while start.elapsed().as_secs_f64() * 1000.0 < self.physics_budget_ms
+            && substeps < self.max_substeps
+        {
+            sim.step(self.dt)?;
+            substeps += 1;
+        }
+
+        // If budget exceeded, reduce quality for next frame
+        if substeps == 0 {
+            self.quality_level = self.quality_level.degrade();
+        }
+
+        FrameResult { substeps, quality: self.quality_level }
+    }
+}
+```
+
+#### 3.1.3 Hamiltonian Formulation
 
 The system Hamiltonian [5]:
 
@@ -189,7 +309,7 @@ Per NASA/JPL standards for orbital mechanics [8, 9]:
 | Symplecticity | Required for long-term stability |
 | Time-reversibility | Required for energy conservation |
 | Error order | Minimum 4th order |
-| Adaptive stepping | Optional (fixed step for reproducibility) |
+| Adaptive stepping | Required for close encounters |
 
 ### 4.2 Velocity Verlet (Störmer-Verlet)
 
@@ -224,33 +344,147 @@ const D: [f64; 3] = [W1, W0, W1];
 - Time-reversible: Yes
 - Computational cost: 3× Verlet per step
 
-### 4.4 Regularization for Close Encounters
+**Limitation:** Symplectic integrators conserve a *modified* Hamiltonian, not the exact Hamiltonian. Energy oscillates but remains bounded [8]. For close encounters, this bounded oscillation can grow unacceptably.
 
-For handling close approaches (softening parameter) [14]:
+### 4.4 Close Encounter Handling
+
+Per Aarseth's N-body techniques [14, 30], close encounters require special treatment beyond simple softening:
+
+#### 4.4.1 Softening Parameter (Basic)
 
 $$F_{ij} = \frac{G m_i m_j}{(|\mathbf{r}_{ij}|^2 + \epsilon^2)^{3/2}} \hat{\mathbf{r}}_{ij}$$
 
-Where $\epsilon$ is the softening length, typically $\epsilon \ll$ minimum separation.
+Where $\epsilon$ is the softening length.
+
+#### 4.4.2 Adaptive Time-Stepping (Required for Close Encounters)
+
+```rust
+pub struct AdaptiveIntegrator {
+    base_dt: f64,
+    min_dt: f64,
+    max_dt: f64,
+    error_tolerance: f64,
+}
+
+impl AdaptiveIntegrator {
+    pub fn compute_dt(&self, state: &SimState) -> f64 {
+        let min_separation = state.min_pairwise_separation();
+        let max_velocity = state.max_velocity_magnitude();
+
+        // Courant-Friedrichs-Lewy condition
+        let cfl_dt = min_separation / max_velocity * 0.1;
+
+        // Close encounter criterion
+        let encounter_dt = if min_separation < self.encounter_threshold {
+            self.min_dt
+        } else {
+            self.base_dt
+        };
+
+        cfl_dt.min(encounter_dt).clamp(self.min_dt, self.max_dt)
+    }
+}
+```
+
+#### 4.4.3 Regularization (KS Transformation)
+
+For very close encounters, Kustaanheimo-Stiefel regularization removes the singularity [31]:
+
+```rust
+/// KS regularization for close binary encounters
+pub struct KSRegularization {
+    threshold: f64,  // Switch to KS when separation < threshold
+}
+
+impl KSRegularization {
+    pub fn transform(&self, r: Vec3) -> KSVector {
+        // Transform to regularized coordinates where singularity is removed
+        // ...
+    }
+}
+```
+
+**Standard Work for Close Encounters:**
+
+1. Monitor minimum separation each step
+2. If separation < 10× softening length: reduce dt by 10×
+3. If separation < softening length: apply KS regularization
+4. If separation approaches zero: trigger Jidoka collision guard
 
 ---
 
-## 5. Jidoka Quality Gates
+## 5. Jidoka Quality Gates (Graceful Degradation)
 
-### 5.1 Energy Conservation Monitor
+### 5.1 Jidoka Philosophy: Graceful Degradation, Not Crash
+
+Per TPS principles, Jidoka means "automation with a human touch" — the system should **stop and highlight the defect** while remaining available, not crash abruptly [27].
+
+```rust
+/// Jidoka violation with graceful degradation
+#[derive(Debug, Clone)]
+pub enum JidokaResponse {
+    /// Continue with warning displayed
+    Warning { message: String, body_index: Option<usize> },
+
+    /// Pause simulation, highlight defect, allow user intervention
+    Pause { violation: JidokaViolation, recoverable: bool },
+
+    /// Unrecoverable: save state and halt
+    Halt { violation: JidokaViolation, state_snapshot: StateSnapshot },
+}
+
+pub struct JidokaGuard {
+    config: JidokaConfig,
+    violation_count: usize,
+    max_warnings_before_pause: usize,
+}
+
+impl JidokaGuard {
+    pub fn check(&mut self, state: &SimState) -> JidokaResponse {
+        // Check all invariants
+        if let Err(violation) = self.check_energy(state) {
+            self.violation_count += 1;
+
+            if self.violation_count < self.max_warnings_before_pause {
+                return JidokaResponse::Warning {
+                    message: format!("Energy drift detected: {}", violation),
+                    body_index: None,
+                };
+            }
+
+            // Pause and visualize the problem
+            return JidokaResponse::Pause {
+                violation,
+                recoverable: true,  // User can adjust dt or reset
+            };
+        }
+
+        // Reset counter on clean check
+        self.violation_count = 0;
+        JidokaResponse::Continue
+    }
+}
+```
+
+### 5.2 Energy Conservation Monitor
 
 Total mechanical energy must remain bounded [15]:
 
 ```rust
 pub struct EnergyGuard {
     initial_energy: f64,
-    tolerance: f64,      // Default: 1e-6 (relative)
-    max_drift: f64,      // Accumulated drift threshold
+    tolerance: f64,           // Default: 1e-6 (relative)
+    warning_threshold: f64,   // Default: 1e-8 (early warning)
+    accumulated_drift: f64,
 }
 
 impl EnergyGuard {
     pub fn check(&mut self, state: &SimState) -> Result<(), JidokaViolation> {
         let current = state.total_energy();
-        let relative_error = (current - self.initial_energy).abs() / self.initial_energy.abs();
+        let relative_error = (current - self.initial_energy).abs()
+            / self.initial_energy.abs();
+
+        self.accumulated_drift += relative_error;
 
         if relative_error > self.tolerance {
             return Err(JidokaViolation::EnergyDrift {
@@ -258,6 +492,7 @@ impl EnergyGuard {
                 current,
                 relative_error,
                 threshold: self.tolerance,
+                suggestion: "Consider reducing time step or using Yoshida integrator",
             });
         }
         Ok(())
@@ -265,7 +500,7 @@ impl EnergyGuard {
 }
 ```
 
-### 5.2 Angular Momentum Conservation
+### 5.3 Angular Momentum Conservation
 
 Total angular momentum $\mathbf{L} = \sum_i m_i \mathbf{r}_i \times \mathbf{v}_i$ is conserved [16]:
 
@@ -276,7 +511,7 @@ pub struct AngularMomentumGuard {
 }
 ```
 
-### 5.3 Numerical Stability Checks
+### 5.4 Numerical Stability Checks
 
 Per IEEE 754-2019 [17]:
 
@@ -288,15 +523,15 @@ pub fn check_finite(state: &SimState) -> Result<(), JidokaViolation> {
                 body_index: i,
                 field: "position",
                 value: *pos,
+                suggestion: "NaN detected - likely numerical instability from close encounter",
             });
         }
     }
-    // ... check velocities, accelerations
     Ok(())
 }
 ```
 
-### 5.4 Collision Detection
+### 5.5 Collision Detection
 
 Minimum separation threshold [18]:
 
@@ -306,12 +541,31 @@ pub fn check_collision(state: &SimState, min_separation: f64) -> Result<(), Jido
         for j in (i+1)..state.num_bodies() {
             let separation = (state.positions()[i] - state.positions()[j]).magnitude();
             if separation < min_separation {
-                return Err(JidokaViolation::Collision { body_i: i, body_j: j, separation });
+                return Err(JidokaViolation::Collision {
+                    body_i: i,
+                    body_j: j,
+                    separation,
+                    suggestion: "Bodies collided - consider enabling softening or KS regularization",
+                });
             }
         }
     }
     Ok(())
 }
+```
+
+### 5.6 Visual Management (Mieruka)
+
+Jidoka status must be continuously visible in both TUI and WASM:
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│ Jidoka Status:                                                  │
+│   ✓ Energy:    Δ=1.2e-9 (tol: 1e-6)  [████████░░] OK           │
+│   ✓ Angular:   Δ=3.1e-12 (tol: 1e-9) [██████████] OK           │
+│   ✓ Finite:    All values finite                                │
+│   ⚠ Separation: 0.05 AU (min: 0.01)  [████░░░░░░] WARNING      │
+└─────────────────────────────────────────────────────────────────┘
 ```
 
 ---
@@ -332,6 +586,7 @@ pub enum RenderCommand {
     DrawText { x: f64, y: f64, text: String, font_size: f64, color: Color },
     DrawVelocityVector { x: f64, y: f64, vx: f64, vy: f64, scale: f64, color: Color },
     SetCamera { center_x: f64, center_y: f64, zoom: f64 },
+    HighlightBody { index: usize, color: Color },  // For Jidoka visualization
 }
 ```
 
@@ -377,10 +632,13 @@ impl TuiRenderer {
 │ Time: 365.24d  Energy: -2.341e9 J (Δ: 1.2e-9)  Step: 0.001s    │
 │ Bodies: Earth (1.0 AU, e=0.017)  Seed: 42  FPS: 60             │
 │ Jidoka: ✓ Energy ✓ Angular Momentum ✓ Finite ✓ Separation      │
+│ Heijunka: Budget 8ms | Used 3.2ms | Substeps 4 | Quality: High │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
 ### 6.3 WASM Visualization (Canvas/WebGL)
+
+#### 6.3.1 Standard JSON Serialization
 
 Browser rendering via wasm-bindgen [21]:
 
@@ -400,17 +658,53 @@ impl OrbitDemo {
 
     #[wasm_bindgen]
     pub fn tick(&mut self, dt: f64) -> Result<JsValue, JsValue> {
-        // Step simulation, return render commands as JSON
         self.simulation.step(dt)?;
         self.render_commands = self.simulation.render();
         Ok(serde_wasm_bindgen::to_value(&self.render_commands)?)
     }
+}
+```
 
+#### 6.3.2 High-Performance SharedArrayBuffer Mode
+
+Per Haas et al. [29], SharedArrayBuffer eliminates JSON serialization overhead (*Muda*):
+
+```rust
+#[cfg(feature = "shared-buffer")]
+#[wasm_bindgen]
+pub struct OrbitDemoShared {
+    simulation: Simulation,
+    // Direct memory access - no serialization
+    position_buffer: Vec<f64>,  // [x0, y0, z0, x1, y1, z1, ...]
+    velocity_buffer: Vec<f64>,
+}
+
+#[cfg(feature = "shared-buffer")]
+#[wasm_bindgen]
+impl OrbitDemoShared {
+    /// Returns pointer to position buffer for direct JS access
     #[wasm_bindgen]
-    pub fn get_state(&self) -> JsValue {
-        // Return simulation state for UI display
+    pub fn position_buffer_ptr(&self) -> *const f64 {
+        self.position_buffer.as_ptr()
+    }
+
+    /// Returns buffer length
+    #[wasm_bindgen]
+    pub fn buffer_len(&self) -> usize {
+        self.position_buffer.len()
     }
 }
+```
+
+**JavaScript side:**
+
+```javascript
+// Zero-copy access to WASM memory
+const memory = demo.memory;
+const positions = new Float64Array(memory.buffer, demo.position_buffer_ptr(), demo.buffer_len());
+
+// Direct WebGL buffer upload - no JSON parsing
+gl.bufferData(gl.ARRAY_BUFFER, positions, gl.DYNAMIC_DRAW);
 ```
 
 ---
@@ -455,14 +749,12 @@ pub struct HohmannTransfer {
 
 impl HohmannTransfer {
     pub fn delta_v1(&self) -> f64 {
-        // First burn: raise apoapsis
         let v_circular = (self.mu / self.r1).sqrt();
         let v_transfer = (2.0 * self.mu * self.r2 / (self.r1 * (self.r1 + self.r2))).sqrt();
         v_transfer - v_circular
     }
 
     pub fn delta_v2(&self) -> f64 {
-        // Second burn: circularize
         let v_transfer = (2.0 * self.mu * self.r1 / (self.r2 * (self.r1 + self.r2))).sqrt();
         let v_circular = (self.mu / self.r2).sqrt();
         v_circular - v_transfer
@@ -487,15 +779,23 @@ pub struct LagrangeScenario {
 
 ---
 
-## 8. Determinism Requirements
+## 8. Determinism Requirements (Epsilon-Determinism)
 
-### 8.1 Reproducibility Guarantees
+### 8.1 Reproducibility Guarantees (Revised)
 
-Per Simular core requirements:
+Per Goldberg's analysis of floating-point arithmetic [26], strict bit-identical results across platforms is problematic due to:
 
-1. **Seed Determinism**: Identical seed → bit-identical trajectory
-2. **Platform Independence**: Same results on x86_64, ARM64, WASM
-3. **Compiler Independence**: Same results across Rust compiler versions
+1. **FMA (Fused Multiply-Add)**: Different CPU architectures have different FMA behavior
+2. **Compiler optimizations**: `-O2` vs `-O3` may reorder operations
+3. **WASM vs Native**: Different rounding in edge cases
+
+**Solution: Epsilon-Determinism**
+
+| Guarantee | Requirement |
+|-----------|-------------|
+| **Same platform, same seed** | Bit-identical |
+| **Cross-platform, same seed** | ε-identical (ε = 1e-10 relative) |
+| **WASM vs Native** | ε-identical (ε = 1e-9 relative) |
 
 ### 8.2 Implementation Constraints
 
@@ -503,7 +803,13 @@ Per Simular core requirements:
 // REQUIRED: Use SimRng for all randomness
 let mut rng = SimRng::new(seed);
 
-// REQUIRED: Fixed-point or strictly ordered floating-point operations
+// REQUIRED: Consistent floating-point behavior
+#[cfg(target_arch = "wasm32")]
+compile_error!("Ensure wasm32 uses same FP rounding as native");
+
+// OPTIONAL: Disable FMA for strict determinism (with performance cost)
+// #[target_feature(enable = "fma")] // Comment out for cross-platform parity
+
 // FORBIDDEN: HashMap iteration order dependency
 // FORBIDDEN: Parallel execution with race conditions
 // FORBIDDEN: System time dependency in simulation logic
@@ -513,23 +819,40 @@ let mut rng = SimRng::new(seed);
 
 ```rust
 #[test]
-fn test_reproducibility_across_runs() {
+fn test_reproducibility_same_platform() {
     let seed = 42u64;
 
     let trajectory_1 = run_simulation(seed, 1000);
     let trajectory_2 = run_simulation(seed, 1000);
 
-    assert_eq!(trajectory_1.len(), trajectory_2.len());
-    for (state_1, state_2) in trajectory_1.iter().zip(trajectory_2.iter()) {
-        assert_eq!(state_1.positions(), state_2.positions());
-        assert_eq!(state_1.velocities(), state_2.velocities());
-    }
+    // Bit-identical on same platform
+    assert_eq!(trajectory_1, trajectory_2);
 }
 
 #[test]
-fn test_determinism_wasm_native_parity() {
-    // Compare WASM and native execution for identical seeds
+fn test_epsilon_determinism_cross_platform() {
+    let seed = 42u64;
+    let epsilon = 1e-10;
+
+    let native_trajectory = run_simulation(seed, 1000);
+    let reference_trajectory = load_reference_trajectory("seed_42_1000steps.json");
+
+    for (native, reference) in native_trajectory.iter().zip(reference_trajectory.iter()) {
+        let rel_error = (native.energy() - reference.energy()).abs() / reference.energy().abs();
+        assert!(rel_error < epsilon, "Cross-platform drift exceeded epsilon");
+    }
 }
+```
+
+### 8.4 FMA Control (Optional Strict Mode)
+
+For applications requiring strict cross-platform determinism:
+
+```toml
+# Cargo.toml
+[profile.release]
+# Disable FMA for determinism (10-20% performance cost)
+# rustflags = ["-C", "target-feature=-fma"]
 ```
 
 ---
@@ -546,6 +869,7 @@ pub struct OrbitConfig {
     pub dt: f64,                    // Time step (seconds)
     pub seed: u64,                  // RNG seed for reproducibility
     pub jidoka: JidokaConfig,       // Quality guard configuration
+    pub heijunka: HeijunkaConfig,   // Time budget configuration
 }
 
 /// Scenario selection
@@ -560,7 +884,15 @@ pub enum ScenarioType {
 pub enum IntegratorType {
     Verlet,
     Yoshida4,
-    RK4,  // Non-symplectic, for comparison
+    RK4,        // Non-symplectic, for comparison
+    Adaptive,   // Adaptive time-stepping for close encounters
+}
+
+/// Heijunka configuration
+pub struct HeijunkaConfig {
+    pub frame_budget_ms: f64,    // Total frame budget (default: 16ms)
+    pub physics_budget_ms: f64,  // Physics allocation (default: 8ms)
+    pub max_substeps: usize,     // Upper bound (default: 100)
 }
 ```
 
@@ -574,6 +906,7 @@ pub trait OrbitSimulation {
     fn time(&self) -> f64;
     fn render(&self) -> Vec<RenderCommand>;
     fn jidoka_status(&self) -> JidokaStatus;
+    fn heijunka_status(&self) -> HeijunkaStatus;
 }
 ```
 
@@ -588,9 +921,13 @@ pub trait OrbitSimulation {
 build-tui:
     cargo build --release --bin orbit-tui --features tui
 
-# WASM build
+# WASM build (standard)
 build-wasm:
     wasm-pack build --target web --out-dir pkg src/wasm
+
+# WASM build (high-performance with SharedArrayBuffer)
+build-wasm-shared:
+    wasm-pack build --target web --out-dir pkg src/wasm --features shared-buffer
 
 # Run TUI demo
 run-tui:
@@ -608,7 +945,9 @@ serve-wasm:
 default = []
 tui = ["ratatui", "crossterm"]
 wasm = ["wasm-bindgen", "serde-wasm-bindgen", "console_error_panic_hook"]
-full = ["tui", "wasm"]
+shared-buffer = ["wasm"]  # High-performance SharedArrayBuffer mode
+full = ["tui", "wasm", "shared-buffer"]
+strict-determinism = []   # Disable FMA for cross-platform parity
 ```
 
 ### 10.3 Deployment
@@ -624,14 +963,75 @@ full = ["tui", "wasm"]
 
 ### 11.1 Test Coverage Requirements
 
-| Category | Coverage Target |
-|----------|-----------------|
-| Unit tests | ≥95% |
-| Integration tests | ≥90% |
-| Property tests | 100 cases minimum |
-| Mutation testing | ≥80% kill rate |
+| Category | Coverage Target | Rationale |
+|----------|-----------------|-----------|
+| Unit tests | ≥95% | Standard requirement |
+| Integration tests | ≥90% | End-to-end scenarios |
+| Property tests | 256 cases minimum | Invariant verification |
+| Mutation testing | ≥80% kill rate | Test quality [32] |
+| **Metamorphic tests** | Required | Physics invariant verification [33] |
 
-### 11.2 Continuous Integration
+### 11.2 Metamorphic Testing
+
+Per Chen et al. [33], metamorphic testing verifies **relations** rather than specific outputs:
+
+```rust
+/// Metamorphic Relation 1: Coordinate rotation invariance
+/// Rotating the entire system should not change relative dynamics
+#[test]
+fn test_metamorphic_rotation_invariance() {
+    let seed = 42u64;
+    let rotation = Rotation3::from_axis_angle(&Vec3::z_axis(), PI / 4.0);
+
+    // Original simulation
+    let original = run_simulation(seed, 1000);
+
+    // Rotated initial conditions
+    let rotated_config = rotate_config(&original_config, rotation);
+    let rotated = run_simulation_with_config(rotated_config, 1000);
+
+    // Relative distances should be identical
+    for (orig, rot) in original.iter().zip(rotated.iter()) {
+        let orig_distances = compute_pairwise_distances(orig);
+        let rot_distances = compute_pairwise_distances(rot);
+        assert_approx_eq!(orig_distances, rot_distances, epsilon = 1e-10);
+    }
+}
+
+/// Metamorphic Relation 2: Time reversal symmetry
+/// Running forward then backward should return to initial state
+#[test]
+fn test_metamorphic_time_reversal() {
+    let initial_state = create_kepler_scenario();
+
+    // Forward 100 steps
+    let forward = run_simulation_steps(&initial_state, 100, 0.01);
+
+    // Reverse velocities and run backward
+    let reversed = reverse_velocities(&forward);
+    let backward = run_simulation_steps(&reversed, 100, 0.01);
+
+    // Should return to initial state (within numerical precision)
+    assert_state_approx_eq!(backward, initial_state, epsilon = 1e-8);
+}
+
+/// Metamorphic Relation 3: Energy scaling
+/// Doubling all masses should not change orbital shapes (only periods)
+#[test]
+fn test_metamorphic_mass_scaling() {
+    let original = run_kepler_simulation(sun_mass: M, planet_mass: m, 1000);
+    let scaled = run_kepler_simulation(sun_mass: 2*M, planet_mass: 2*m, 1000);
+
+    // Semi-major axis should be identical
+    assert_approx_eq!(original.semi_major_axis(), scaled.semi_major_axis(), 1e-10);
+
+    // Period ratio should be sqrt(2) per Kepler's 3rd law
+    let period_ratio = scaled.orbital_period() / original.orbital_period();
+    assert_approx_eq!(period_ratio, 1.0 / 2.0_f64.sqrt(), 1e-6);
+}
+```
+
+### 11.3 Continuous Integration
 
 ```yaml
 # .github/workflows/ci.yml
@@ -645,20 +1045,36 @@ jobs:
       - run: cargo test --all-features
       - run: cargo clippy -- -D warnings
       - run: cargo llvm-cov --fail-under 95
+
+  metamorphic:
+    runs-on: ubuntu-latest
+    steps:
+      - run: cargo test metamorphic --release -- --ignored
+
+  cross-platform-determinism:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - run: cargo test epsilon_determinism --features strict-determinism
 ```
 
-### 11.3 Acceptance Criteria
+### 11.4 Acceptance Criteria
 
 1. **AC-1**: Earth orbit completes in 365.25 ± 0.01 simulation days
 2. **AC-2**: Energy drift < 1e-9 over 100 orbits (Yoshida integrator)
 3. **AC-3**: Angular momentum conserved to 1e-12 relative precision
 4. **AC-4**: WASM bundle size < 500KB (gzipped)
 5. **AC-5**: TUI renders at ≥30 FPS on standard terminal
-6. **AC-6**: Identical trajectories on native and WASM targets
+6. **AC-6**: Epsilon-identical trajectories (ε=1e-9) on native and WASM
+7. **AC-7**: All metamorphic relations pass
+8. **AC-8**: Heijunka budget never exceeded (graceful quality degradation instead)
+9. **AC-9**: Jidoka violations trigger pause, not crash
 
 ---
 
 ## 12. References
+
+### Original Specification References [1-25]
 
 [1] G. J. Holzmann, "The Power of 10: Rules for Developing Safety-Critical Code," *IEEE Computer*, vol. 39, no. 6, pp. 95-97, June 2006. doi:10.1109/MC.2006.212
 
@@ -710,6 +1126,28 @@ jobs:
 
 [25] J. Wisdom and M. Holman, "Symplectic maps for the n-body problem," *The Astronomical Journal*, vol. 102, no. 4, pp. 1528-1538, 1991. doi:10.1086/115978
 
+### TPS Review References [26-35]
+
+[26] D. Goldberg, "What every computer scientist should know about floating-point arithmetic," *ACM Computing Surveys*, vol. 23, no. 1, pp. 5-48, Mar. 1991. doi:10.1145/103162.103163
+
+[27] A. Avizienis, J.-C. Laprie, B. Randell, and C. Landwehr, "Basic concepts and taxonomy of dependable and secure computing," *IEEE Transactions on Dependable and Secure Computing*, vol. 1, no. 1, pp. 11-33, 2004. doi:10.1109/TDSC.2004.2
+
+[28] A. J. Kennedy, "Dimension Types," in *Programming Languages and Systems — ESOP '94*, Lecture Notes in Computer Science, vol. 788. Springer, 1994, pp. 348-362. doi:10.1007/3-540-57880-3_23
+
+[29] A. Haas, A. Rossberg, D. L. Schuff, et al., "Bringing the web up to speed with WebAssembly," in *Proceedings of the 38th ACM SIGPLAN Conference on Programming Language Design and Implementation*, 2017, pp. 185-200. doi:10.1145/3062341.3062363
+
+[30] R. W. Hockney and J. W. Eastwood, *Computer Simulation Using Particles*. New York: Taylor & Francis, 1988. ISBN: 978-0-85274-392-8
+
+[31] P. Kustaanheimo and E. Stiefel, "Perturbation theory of Kepler motion based on spinor regularization," *Journal für die reine und angewandte Mathematik*, vol. 218, pp. 204-219, 1965. doi:10.1515/crll.1965.218.204
+
+[32] G. Rothermel, R. H. Untch, C. Chu, and M. J. Harrold, "Test case prioritization: An empirical study," in *Proceedings of the IEEE International Conference on Software Maintenance*, 1999, pp. 179-188. doi:10.1109/ICSM.1999.792604
+
+[33] T. Y. Chen, S. C. Cheung, and S. M. Yiu, "Metamorphic testing: a new approach for generating next test cases," Technical Report HKUST-CS98-01, Hong Kong University of Science and Technology, 1998.
+
+[34] J. K. Liker, *The Toyota Way: 14 Management Principles from the World's Greatest Manufacturer*. New York: McGraw-Hill, 2004. ISBN: 978-0-07-139231-0
+
+[35] M. Rother, *Toyota Kata: Managing People for Improvement, Adaptiveness and Superior Results*. New York: McGraw-Hill, 2009. ISBN: 978-0-07-163523-3
+
 ---
 
 ## Appendix A: Physical Constants
@@ -726,11 +1164,29 @@ jobs:
 
 | Term | Definition |
 |------|------------|
-| **Jidoka** | Toyota's "automation with a human touch" - stopping production when defects detected |
-| **Poka-Yoke** | Mistake-proofing through design constraints |
+| **Jidoka** | Toyota's "automation with a human touch" - stopping and highlighting defects while maintaining availability |
+| **Poka-Yoke** | Mistake-proofing through design constraints (compile-time dimensional analysis) |
+| **Heijunka** | Load leveling - ensuring consistent frame delivery despite variable computation |
+| **Mieruka** | Visual management - making status visible at a glance |
+| **Muda** | Waste - unnecessary processing, waiting, or defects |
+| **Mura** | Unevenness - inconsistent delivery (frame stuttering) |
 | **Symplectic** | Structure-preserving in phase space, conserves volume |
+| **Epsilon-determinism** | Results identical within bounded error ε across platforms |
+| **Metamorphic testing** | Testing invariant relations rather than specific outputs |
 | **WASM** | WebAssembly - portable binary instruction format |
 | **TUI** | Terminal User Interface |
+
+## Appendix C: Review Response Matrix
+
+| Review Finding | Section | Resolution |
+|----------------|---------|------------|
+| Jidoka should pause, not crash | §5.1 | Added `JidokaResponse::Pause` with graceful degradation |
+| O(N²) violates Heijunka | §3.1.2 | Added `HeijunkaScheduler` with time budget |
+| Need Poka-Yoke dimensional analysis | §2.4 | Added `uom` crate newtype pattern |
+| Bit-determinism unrealistic | §8.1 | Revised to epsilon-determinism with ε bounds |
+| Symplectic ≠ energy conservation | §4.3 | Added limitation note and adaptive stepping |
+| JSON serialization is Muda | §6.3.2 | Added SharedArrayBuffer option |
+| Coverage ≠ correctness | §11.2 | Added metamorphic testing requirements |
 
 ---
 
@@ -739,6 +1195,7 @@ jobs:
 | Version | Date | Author | Changes |
 |---------|------|--------|---------|
 | 1.0.0 | 2025-12-10 | PAIML Engineering | Initial specification |
+| 1.1.0 | 2025-12-10 | PAIML Engineering | TPS review incorporation (Gemini feedback) |
 
 ---
 
