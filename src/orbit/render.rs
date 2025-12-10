@@ -252,6 +252,10 @@ impl OrbitTrail {
 
     /// Add a point to the trail.
     pub fn push(&mut self, x: f64, y: f64) {
+        // Don't add points if max_length is 0
+        if self.max_length == 0 {
+            return;
+        }
         if self.points.len() >= self.max_length {
             self.points.remove(0);
         }
@@ -557,5 +561,15 @@ mod tests {
         let appearance = BodyAppearance::default();
         assert_eq!(appearance.name, "Body");
         assert!(appearance.show_orbit_trail);
+    }
+
+    #[test]
+    fn test_orbit_trail_zero_max_length() {
+        // This should not panic - edge case fix
+        let mut trail = OrbitTrail::new(0);
+        trail.push(1.0, 1.0);
+        trail.push(2.0, 2.0);
+        // With max_length=0, no points should be added
+        assert_eq!(trail.points().len(), 0);
     }
 }
