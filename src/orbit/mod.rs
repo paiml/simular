@@ -50,6 +50,7 @@ pub mod physics;
 pub mod jidoka;
 pub mod heijunka;
 pub mod scenarios;
+pub mod render;
 
 /// Prelude for convenient imports.
 pub mod prelude {
