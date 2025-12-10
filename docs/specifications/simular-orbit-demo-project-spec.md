@@ -1069,10 +1069,419 @@ jobs:
 7. **AC-7**: All metamorphic relations pass
 8. **AC-8**: Heijunka budget never exceeded (graceful quality degradation instead)
 9. **AC-9**: Jidoka violations trigger pause, not crash
+10. **AC-10**: All Probar E2E tests pass (deterministic replay verified)
 
 ---
 
-## 12. References
+## 12. WASM Testing with jugar-probar
+
+### 12.1 Probar Integration Overview
+
+The WASM component uses **jugar-probar** ("probar" = Spanish for "to test/prove"), a pure Rust testing framework providing Playwright feature parity with WASM-native extensions [36].
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                    PROBAR Test Architecture                      │
+├─────────────────────────────────────────────────────────────────┤
+│   ┌────────────────┐    ┌────────────────┐    ┌──────────────┐  │
+│   │  Test Spec     │    │  WasmRuntime   │    │  Browser     │  │
+│   │  (Rust)        │───►│  (wasmtime)    │───►│  (optional)  │  │
+│   │                │    │  LOGIC ONLY    │    │  GOLDEN      │  │
+│   │  - Assertions  │    │                │    │  MASTER      │  │
+│   │  - Invariants  │    │  ✓ Unit tests  │    │              │  │
+│   │  - Fuzzing     │    │  ✓ Replay      │    │  ✓ E2E       │  │
+│   │                │    │  ✓ Fuzzing     │    │  ✓ Visual    │  │
+│   └────────────────┘    └────────────────┘    └──────────────┘  │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+**Probar vs Playwright:**
+
+| Aspect | Playwright | Probar |
+|--------|-----------|--------|
+| Language | TypeScript | Pure Rust |
+| Browser | Required (Chromium) | Optional |
+| Simulation State | Black box (DOM) | Direct API access |
+| CI Setup | Node.js + browser | Just `cargo test` |
+| Zero JS | Violates constraint | Pure Rust |
+| Deterministic Replay | Not supported | Native feature |
+
+### 12.2 Dependencies
+
+```toml
+# Cargo.toml
+[dev-dependencies]
+jugar-probar = { version = "0.1", features = ["runtime"] }
+
+# Optional: browser-based golden master tests
+[dev-dependencies.jugar-probar-browser]
+version = "0.1"
+features = ["browser"]
+optional = true
+```
+
+### 12.3 Probar Test Suites
+
+#### 12.3.1 WASM Logic Tests (No Browser Required)
+
+```rust
+use jugar_probar::prelude::*;
+use simular_orbit_demo::OrbitDemo;
+
+/// Test suite for orbit simulation WASM module
+#[cfg(test)]
+mod probar_orbit_tests {
+    use super::*;
+
+    // ========================================================================
+    // WASM LOADING & INITIALIZATION
+    // ========================================================================
+
+    #[test]
+    fn test_wasm_module_loads() {
+        let config = r#"{"scenario": "kepler", "seed": 42}"#;
+        let demo = OrbitDemo::new(config);
+        assert!(demo.is_ok(), "WASM module should load with valid config");
+    }
+
+    #[test]
+    fn test_invalid_config_rejected() {
+        let config = r#"{"invalid": true}"#;
+        let demo = OrbitDemo::new(config);
+        let result = Assertion::is_err(&demo);
+        assert!(result.passed, "Invalid config should return error");
+    }
+
+    // ========================================================================
+    // PHYSICS INVARIANTS (Jidoka)
+    // ========================================================================
+
+    #[test]
+    fn test_energy_conservation_kepler() {
+        let mut demo = OrbitDemo::new(r#"{"scenario": "kepler", "seed": 42}"#).unwrap();
+        let initial_energy = demo.total_energy();
+
+        // Simulate 1000 steps (approximately 1 orbit)
+        for _ in 0..1000 {
+            demo.tick(0.001).unwrap();
+        }
+
+        let final_energy = demo.total_energy();
+        let result = Assertion::approx_eq(initial_energy, final_energy, 1e-6);
+        assert!(result.passed, "Energy should be conserved: {}", result.message);
+    }
+
+    #[test]
+    fn test_angular_momentum_conservation() {
+        let mut demo = OrbitDemo::new(r#"{"scenario": "kepler", "seed": 42}"#).unwrap();
+        let initial_L = demo.angular_momentum_magnitude();
+
+        for _ in 0..1000 {
+            demo.tick(0.001).unwrap();
+        }
+
+        let final_L = demo.angular_momentum_magnitude();
+        let result = Assertion::approx_eq(initial_L, final_L, 1e-9);
+        assert!(result.passed, "Angular momentum should be conserved");
+    }
+
+    #[test]
+    fn test_jidoka_detects_nan() {
+        let mut demo = OrbitDemo::new(r#"{"scenario": "kepler", "seed": 42}"#).unwrap();
+
+        // Force a NaN by setting invalid state (if API allows)
+        // This should trigger Jidoka guard
+        let status = demo.jidoka_status();
+        let result = Assertion::is_true(status.all_finite, "All values should be finite");
+        assert!(result.passed);
+    }
+
+    // ========================================================================
+    // DETERMINISTIC REPLAY
+    // ========================================================================
+
+    #[test]
+    fn test_deterministic_replay_identical() {
+        use jugar_probar::{SimulationConfig, run_simulation, run_replay};
+
+        let config = SimulationConfig::new(42, 1000);
+
+        // Record simulation
+        let recording = run_orbit_simulation(config);
+        assert!(recording.completed, "Simulation should complete");
+
+        // Replay and verify
+        let replay = run_orbit_replay(&recording);
+        assert!(replay.determinism_verified, "Replay should be deterministic");
+        assert_eq!(
+            recording.final_state_hash,
+            replay.final_state_hash,
+            "State hashes should match"
+        );
+    }
+
+    #[test]
+    fn test_different_seeds_diverge() {
+        let recording_1 = run_orbit_simulation(SimulationConfig::new(42, 500));
+        let recording_2 = run_orbit_simulation(SimulationConfig::new(43, 500));
+
+        assert_ne!(
+            recording_1.final_state_hash,
+            recording_2.final_state_hash,
+            "Different seeds should produce different trajectories"
+        );
+    }
+}
+```
+
+#### 12.3.2 Invariant Fuzzing
+
+```rust
+use jugar_probar::{InputFuzzer, InvariantChecker, InvariantCheck, Seed};
+
+/// Custom invariants for orbit simulation
+mod orbit_invariants {
+    use super::*;
+
+    /// Energy must remain bounded (Jidoka)
+    pub struct EnergyBoundedInvariant {
+        initial_energy: f64,
+        tolerance: f64,
+    }
+
+    impl InvariantCheck for EnergyBoundedInvariant {
+        fn check(&self, state: &SimState) -> Result<(), String> {
+            let current = state.total_energy();
+            let drift = (current - self.initial_energy).abs() / self.initial_energy.abs();
+
+            if drift > self.tolerance {
+                Err(format!("Energy drift {:.2e} exceeds tolerance {:.2e}", drift, self.tolerance))
+            } else {
+                Ok(())
+            }
+        }
+    }
+
+    /// All positions must be finite (no NaN/Inf)
+    pub struct FinitePositionsInvariant;
+
+    impl InvariantCheck for FinitePositionsInvariant {
+        fn check(&self, state: &SimState) -> Result<(), String> {
+            for (i, pos) in state.positions().iter().enumerate() {
+                if !pos.is_finite() {
+                    return Err(format!("Body {} has non-finite position: {:?}", i, pos));
+                }
+            }
+            Ok(())
+        }
+    }
+
+    /// No collisions (minimum separation)
+    pub struct NoCollisionInvariant {
+        min_separation: f64,
+    }
+
+    impl InvariantCheck for NoCollisionInvariant {
+        fn check(&self, state: &SimState) -> Result<(), String> {
+            for i in 0..state.num_bodies() {
+                for j in (i+1)..state.num_bodies() {
+                    let sep = (state.positions()[i] - state.positions()[j]).magnitude();
+                    if sep < self.min_separation {
+                        return Err(format!(
+                            "Bodies {} and {} collided: separation {:.2e} < {:.2e}",
+                            i, j, sep, self.min_separation
+                        ));
+                    }
+                }
+            }
+            Ok(())
+        }
+    }
+}
+
+#[test]
+fn test_fuzz_orbit_invariants() {
+    use orbit_invariants::*;
+
+    let mut checker = InvariantChecker::new();
+    checker.add(EnergyBoundedInvariant {
+        initial_energy: -1.0e10,  // Will be set on first frame
+        tolerance: 1e-6,
+    });
+    checker.add(FinitePositionsInvariant);
+    checker.add(NoCollisionInvariant { min_separation: 1e6 });
+
+    let mut fuzzer = InputFuzzer::new(Seed::from_u64(12345));
+    let mut demo = OrbitDemo::new(r#"{"scenario": "n_body", "seed": 12345}"#).unwrap();
+
+    // Fuzz 10,000 frames with random time steps
+    for frame in 0..10_000 {
+        let dt = fuzzer.next_f64_range(0.0001, 0.01);
+        demo.tick(dt).unwrap();
+
+        if let Err(violation) = checker.check(demo.state()) {
+            panic!("Invariant violation at frame {}: {}", frame, violation);
+        }
+    }
+}
+```
+
+#### 12.3.3 Visual Regression Testing
+
+```rust
+use jugar_probar::{VisualRegressionTester, VisualRegressionConfig, Snapshot};
+
+#[test]
+fn test_kepler_orbit_visual_regression() {
+    let config = VisualRegressionConfig::default()
+        .with_threshold(0.01)  // 1% pixel difference allowed
+        .with_snapshot_dir("tests/__snapshots__/orbit");
+
+    let tester = VisualRegressionTester::new(config);
+
+    let mut demo = OrbitDemo::new(r#"{"scenario": "kepler", "seed": 42}"#).unwrap();
+
+    // Advance to specific frame for snapshot
+    for _ in 0..100 {
+        demo.tick(0.01).unwrap();
+    }
+
+    let render_commands = demo.render();
+    let screenshot = render_to_image(&render_commands, 800, 600);
+
+    let result = tester.compare("kepler_frame_100", &screenshot);
+    assert!(
+        result.within_threshold(),
+        "Visual regression: {}% difference (threshold: 1%)",
+        result.difference_percent * 100.0
+    );
+}
+```
+
+### 12.4 Probar Test Organization
+
+```
+tests/
+├── probar_orbit.rs           # Main Probar test file
+│   ├── wasm_loading          # Module load/init tests
+│   ├── physics_invariants    # Energy, angular momentum, finite
+│   ├── determinism           # Replay verification
+│   ├── scenarios             # Kepler, N-body, Hohmann, Lagrange
+│   └── stress                # Long simulations, edge cases
+├── probar_invariants.rs      # Custom InvariantCheck implementations
+├── probar_fuzzing.rs         # Monte Carlo fuzzing tests
+├── probar_visual.rs          # Visual regression tests
+└── __snapshots__/            # Golden master screenshots
+    └── orbit/
+        ├── kepler_frame_100.png
+        ├── n_body_frame_500.png
+        └── hohmann_transfer.png
+```
+
+### 12.5 Running Probar Tests
+
+```makefile
+# Makefile additions for Probar
+
+# Run all Probar tests (no browser required)
+test-probar:
+    @echo "🧪 Running Probar WASM tests..."
+    cargo test -p simular-orbit-demo --test probar_orbit -- --nocapture
+    @echo "✅ Probar tests passed"
+
+# Run Probar with determinism verification
+test-probar-determinism:
+    @echo "🔁 Running deterministic replay tests..."
+    RUST_LOG=debug cargo test -p simular-orbit-demo determinism -- --nocapture
+
+# Run Probar fuzzing (longer)
+test-probar-fuzz:
+    @echo "🎲 Running invariant fuzzing (10,000 frames)..."
+    cargo test -p simular-orbit-demo fuzz --release -- --ignored --nocapture
+
+# Run visual regression (requires golden masters)
+test-probar-visual:
+    @echo "📸 Running visual regression tests..."
+    cargo test -p simular-orbit-demo visual_regression -- --nocapture
+
+# Update visual snapshots
+test-probar-visual-update:
+    @echo "📸 Updating visual snapshots..."
+    UPDATE_SNAPSHOTS=1 cargo test -p simular-orbit-demo visual_regression -- --nocapture
+
+# Full Probar suite
+test-probar-full: test-probar test-probar-fuzz test-probar-visual
+    @echo "✅ Full Probar suite passed"
+```
+
+### 12.6 CI Integration
+
+```yaml
+# .github/workflows/ci.yml additions
+
+  probar-wasm:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-action@stable
+
+      - name: Build WASM module
+        run: cargo build -p simular-orbit-demo --target wasm32-unknown-unknown
+
+      - name: Run Probar logic tests
+        run: cargo test -p simular-orbit-demo --test probar_orbit
+
+      - name: Run determinism verification
+        run: cargo test -p simular-orbit-demo determinism
+
+      - name: Run invariant fuzzing (1000 frames, CI mode)
+        run: cargo test -p simular-orbit-demo fuzz_ci --release
+
+  probar-visual:
+    runs-on: ubuntu-latest
+    needs: probar-wasm
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run visual regression tests
+        run: cargo test -p simular-orbit-demo visual_regression
+
+      - name: Upload visual diffs on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: visual-diffs
+          path: tests/__snapshots__/orbit/*.diff.png
+
+  probar-browser:
+    runs-on: ubuntu-latest
+    needs: probar-wasm
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Chromium
+        run: npx playwright install chromium
+
+      - name: Run browser golden master tests
+        run: cargo test -p simular-orbit-demo --features browser --test probar_browser
+```
+
+### 12.7 Toyota Way Alignment
+
+| TPS Principle | Probar Implementation |
+|---------------|----------------------|
+| **Poka-Yoke** | Type-safe `InvariantCheck` trait prevents runtime errors |
+| **Muda** | Zero-copy `MemoryView` eliminates serialization waste |
+| **Jidoka** | `InvariantChecker` halts on physics violations |
+| **Andon Cord** | Fail-fast mode stops on first critical failure |
+| **Genchi Genbutsu** | Direct WASM memory inspection, not DOM black box |
+
+---
+
+## 13. References
 
 ### Original Specification References [1-25]
 
@@ -1148,6 +1557,10 @@ jobs:
 
 [35] M. Rother, *Toyota Kata: Managing People for Improvement, Adaptiveness and Superior Results*. New York: McGraw-Hill, 2009. ISBN: 978-0-07-163523-3
 
+### Probar Integration Reference [36]
+
+[36] PAIML Engineering, "jugar-probar: Pure Rust WASM Testing Framework," GitHub Repository, 2025. [Online]. Available: https://github.com/paiml/jugar/tree/main/crates/jugar-probar
+
 ---
 
 ## Appendix A: Physical Constants
@@ -1196,6 +1609,7 @@ jobs:
 |---------|------|--------|---------|
 | 1.0.0 | 2025-12-10 | PAIML Engineering | Initial specification |
 | 1.1.0 | 2025-12-10 | PAIML Engineering | TPS review incorporation (Gemini feedback) |
+| 1.2.0 | 2025-12-10 | PAIML Engineering | jugar-probar WASM testing integration |
 
 ---
 
