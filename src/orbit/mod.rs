@@ -53,6 +53,9 @@ pub mod scenarios;
 pub mod render;
 pub mod metamorphic;
 
+#[cfg(feature = "wasm")]
+pub mod wasm;
+
 /// Prelude for convenient imports.
 pub mod prelude {
     pub use super::units::{

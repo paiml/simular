@@ -46,6 +46,12 @@ axum = { version = "0.7", features = ["ws"], optional = true }
 ratatui = { version = "0.29", optional = true }
 crossterm = { version = "0.28", optional = true }
 
+# WASM (optional)
+wasm-bindgen = { version = "0.2", optional = true }
+js-sys = { version = "0.3", optional = true }
+web-sys = { version = "0.3", features = ["console", "Window", "Performance"], optional = true }
+getrandom = { version = "0.2", features = ["js"], optional = true }
+
 # Numeric
 num-traits = "0.2"
 
@@ -71,11 +77,13 @@ tempfile = "3.14"
 default = []
 tui = ["dep:ratatui", "dep:crossterm"]
 web = ["dep:tokio", "dep:axum"]
+wasm = ["dep:wasm-bindgen", "dep:js-sys", "dep:web-sys", "dep:getrandom"]
 full = ["tui", "web"]
 
 [lib]
 name = "simular"
 path = "src/lib.rs"
+crate-type = ["cdylib", "rlib"]
 
 [[bin]]
 name = "simular"

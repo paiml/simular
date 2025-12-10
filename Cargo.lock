@@ -595,8 +595,10 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "335ff9f135e4384c8150d6f27c6daed433577f86b4750418338c01a1a2528592"
 dependencies = [
  "cfg-if",
+ "js-sys",
  "libc",
  "wasi",
+ "wasm-bindgen",
 ]
 
 [[package]]
@@ -1617,7 +1619,9 @@ dependencies = [
  "criterion",
  "crossbeam-deque",
  "crossterm",
+ "getrandom 0.2.16",
  "indexmap",
+ "js-sys",
  "memmap2",
  "num-traits",
  "proptest",
@@ -1633,6 +1637,8 @@ dependencies = [
  "toml",
  "uom",
  "validator",
+ "wasm-bindgen",
+ "web-sys",
  "zstd",
 ]
 

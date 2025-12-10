@@ -123,6 +123,7 @@ fn reverse_velocities(state: &NBodyState) -> NBodyState {
 }
 
 /// Scale all masses by a uniform factor.
+#[allow(dead_code)] // Reserved for MR-3 mass scaling relation
 fn scale_masses(state: &NBodyState, factor: f64) -> NBodyState {
     let scaled_bodies: Vec<OrbitBody> = state.bodies.iter().map(|body| {
         OrbitBody::new(
