@@ -101,6 +101,11 @@ path = "examples/reproducibility.rs"
 name = "jidoka_guards"
 path = "examples/jidoka_guards.rs"
 
+[[bin]]
+name = "orbit-tui"
+path = "src/bin/orbit_tui.rs"
+required-features = ["tui"]
+
 [profile.release]
 lto = true
 codegen-units = 1

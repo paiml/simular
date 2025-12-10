@@ -15,7 +15,6 @@ use crate::orbit::units::{
     Acceleration3D, OrbitMass, OrbitTime, Position3D, Velocity3D, G,
 };
 use crate::error::{SimError, SimResult};
-use uom::si::acceleration::meter_per_second_squared;
 use uom::si::length::meter;
 
 /// Body state in the N-body system.
@@ -373,6 +372,7 @@ impl AdaptiveIntegrator {
 mod tests {
     use super::*;
     use crate::orbit::units::{AU, SOLAR_MASS, EARTH_MASS};
+    use uom::si::acceleration::meter_per_second_squared;
 
     const EPSILON: f64 = 1e-10;
 
