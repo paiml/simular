@@ -51,6 +51,7 @@ pub mod jidoka;
 pub mod heijunka;
 pub mod scenarios;
 pub mod render;
+pub mod metamorphic;
 
 /// Prelude for convenient imports.
 pub mod prelude {
@@ -75,6 +76,12 @@ pub mod prelude {
         ScenarioType,
         KeplerConfig, NBodyConfig, BodyConfig,
         HohmannConfig, LagrangeConfig, LagrangePoint,
+    };
+    pub use super::metamorphic::{
+        MetamorphicResult, run_all_metamorphic_tests,
+        test_rotation_invariance, test_time_reversal,
+        test_energy_conservation, test_angular_momentum_conservation,
+        test_deterministic_replay,
     };
 }
 
