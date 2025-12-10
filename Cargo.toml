@@ -72,6 +72,8 @@ crossbeam-deque = "0.8"
 proptest = "1.5"
 criterion = { version = "0.5", features = ["html_reports"] }
 tempfile = "3.14"
+# Probar WASM testing framework
+jugar-probar = { path = "../jugar/crates/jugar-probar" }
 
 [features]
 default = []
