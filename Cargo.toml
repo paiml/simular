@@ -49,6 +49,9 @@ crossterm = { version = "0.28", optional = true }
 # Numeric
 num-traits = "0.2"
 
+# Type-safe physical units (Poka-Yoke)
+uom = { version = "0.36", features = ["serde"] }
+
 # TOML parsing (for stack discovery)
 toml = "0.8"
 
