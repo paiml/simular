@@ -48,28 +48,28 @@ roadmap:
   subtasks:
   - id: ORBIT-001-01
     title: 'Core: Type-safe units (Poka-Yoke) with uom crate'
-    status: pending
+    status: completed
   - id: ORBIT-001-02
     title: 'Physics: Gravity computation and symplectic integrators'
-    status: pending
+    status: completed
   - id: ORBIT-001-03
     title: 'Jidoka: Graceful degradation guards'
-    status: pending
+    status: completed
   - id: ORBIT-001-04
     title: 'Heijunka: Time-budget scheduler'
-    status: pending
+    status: completed
   - id: ORBIT-001-05
     title: 'Scenarios: Kepler, N-body, Hohmann, Lagrange'
-    status: pending
+    status: completed
   - id: ORBIT-001-06
     title: 'TUI: ratatui visualization'
-    status: pending
+    status: completed
   - id: ORBIT-001-07
     title: 'WASM: wasm-bindgen target'
-    status: pending
+    status: planned
   - id: ORBIT-001-08
     title: 'Testing: Probar E2E and metamorphic tests'
-    status: pending
+    status: planned
   estimated_effort: null
   labels:
   - demo
