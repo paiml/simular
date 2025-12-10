@@ -13,7 +13,7 @@ use crate::orbit::jidoka::JidokaStatus;
 use crate::orbit::heijunka::HeijunkaStatus;
 
 /// RGBA color representation.
-#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Color {
     pub r: u8,
     pub g: u8,
@@ -271,6 +271,7 @@ impl OrbitTrail {
 }
 
 /// Generate render commands from simulation state.
+#[must_use]
 pub fn render_state(
     state: &NBodyState,
     config: &RenderConfig,

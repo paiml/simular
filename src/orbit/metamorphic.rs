@@ -140,6 +140,7 @@ fn scale_masses(state: &NBodyState, factor: f64) -> NBodyState {
 ///
 /// Rotating the entire system should not change relative distances
 /// or the evolution of relative dynamics.
+#[must_use]
 pub fn test_rotation_invariance(
     initial_state: &NBodyState,
     steps: usize,
@@ -209,6 +210,7 @@ pub fn test_rotation_invariance(
 ///
 /// For symplectic integrators, running forward N steps then backward N steps
 /// should return to (approximately) the initial state.
+#[must_use]
 pub fn test_time_reversal(
     initial_state: &NBodyState,
     steps: usize,
@@ -288,6 +290,7 @@ pub fn test_time_reversal(
 /// MR-3: Energy Conservation Test
 ///
 /// Total mechanical energy should be conserved (bounded oscillation for symplectic).
+#[must_use]
 pub fn test_energy_conservation(
     initial_state: &NBodyState,
     steps: usize,
@@ -335,6 +338,7 @@ pub fn test_energy_conservation(
 /// MR-4: Angular Momentum Conservation Test
 ///
 /// Total angular momentum should be exactly conserved (to machine precision).
+#[must_use]
 pub fn test_angular_momentum_conservation(
     initial_state: &NBodyState,
     steps: usize,
@@ -382,6 +386,7 @@ pub fn test_angular_momentum_conservation(
 /// MR-5: Deterministic Replay Test
 ///
 /// Same initial conditions + same seed should produce identical results.
+#[must_use]
 pub fn test_deterministic_replay(
     initial_state: &NBodyState,
     steps: usize,
@@ -416,19 +421,16 @@ pub fn test_deterministic_replay(
         }
     }
 
-    // Compare bit-for-bit
-    let mut identical = true;
-    for (b1, b2) in state1.bodies.iter().zip(state2.bodies.iter()) {
+    // Compare bit-for-bit (intentional exact comparison for determinism test)
+    #[allow(clippy::float_cmp)]
+    let identical = state1.bodies.iter().zip(state2.bodies.iter()).all(|(b1, b2)| {
         let (x1, y1, z1) = b1.position.as_meters();
         let (x2, y2, z2) = b2.position.as_meters();
         let (vx1, vy1, vz1) = b1.velocity.as_mps();
         let (vx2, vy2, vz2) = b2.velocity.as_mps();
 
-        if x1 != x2 || y1 != y2 || z1 != z2 || vx1 != vx2 || vy1 != vy2 || vz1 != vz2 {
-            identical = false;
-            break;
-        }
-    }
+        x1 == x2 && y1 == y2 && z1 == z2 && vx1 == vx2 && vy1 == vy2 && vz1 == vz2
+    });
 
     if identical {
         MetamorphicResult::pass("Deterministic Replay", 0.0, 0.0)
@@ -443,6 +445,7 @@ pub fn test_deterministic_replay(
 }
 
 /// Run all metamorphic tests on a state.
+#[must_use]
 pub fn run_all_metamorphic_tests(
     state: &NBodyState,
     steps: usize,

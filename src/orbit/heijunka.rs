@@ -22,7 +22,7 @@ use crate::orbit::units::OrbitTime;
 use crate::error::SimResult;
 
 /// Quality level for adaptive degradation.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Default, Serialize, Deserialize)]
 pub enum QualityLevel {
     /// Minimum quality (fewest substeps).
     Minimum,
@@ -30,7 +30,8 @@ pub enum QualityLevel {
     Low,
     /// Medium quality.
     Medium,
-    /// High quality.
+    /// High quality (default).
+    #[default]
     High,
     /// Maximum quality (most substeps).
     Maximum,
@@ -44,8 +45,7 @@ impl QualityLevel {
             Self::Maximum => Self::High,
             Self::High => Self::Medium,
             Self::Medium => Self::Low,
-            Self::Low => Self::Minimum,
-            Self::Minimum => Self::Minimum,
+            Self::Low | Self::Minimum => Self::Minimum,
         }
     }
 
@@ -56,8 +56,7 @@ impl QualityLevel {
             Self::Minimum => Self::Low,
             Self::Low => Self::Medium,
             Self::Medium => Self::High,
-            Self::High => Self::Maximum,
-            Self::Maximum => Self::Maximum,
+            Self::High | Self::Maximum => Self::Maximum,
         }
     }
 
@@ -71,12 +70,6 @@ impl QualityLevel {
             Self::High => 8,
             Self::Maximum => 16,
         }
-    }
-}
-
-impl Default for QualityLevel {
-    fn default() -> Self {
-        Self::High
     }
 }
 

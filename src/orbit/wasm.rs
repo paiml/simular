@@ -20,6 +20,9 @@
 //! }
 //! ```
 
+// WASM-bindgen exports don't need #[must_use] - values returned to JS
+#![allow(clippy::must_use_candidate)]
+
 use wasm_bindgen::prelude::*;
 
 use crate::orbit::physics::{NBodyState, YoshidaIntegrator};
@@ -450,5 +453,126 @@ mod tests {
         assert!(sim.body_y(999).is_nan());
         assert!(sim.body_vx(999).is_nan());
         assert!(sim.body_mass(999).is_nan());
+    }
+
+    #[test]
+    fn test_orbit_simulation_body_z() {
+        let sim = OrbitSimulation::new();
+        // Z should be near zero for planar orbit
+        assert!(sim.body_z(0).abs() < 1e-10);
+        assert!(sim.body_z(1).abs() < 1e-10);
+        // Invalid index
+        assert!(sim.body_z(999).is_nan());
+    }
+
+    #[test]
+    fn test_orbit_simulation_body_y_au() {
+        let sim = OrbitSimulation::new();
+        // Sun at origin
+        assert!(sim.body_y_au(0).abs() < 1e-15);
+    }
+
+    #[test]
+    fn test_orbit_simulation_body_vy() {
+        let sim = OrbitSimulation::new();
+        // Earth has velocity in y direction
+        let vy = sim.body_vy(1);
+        assert!(vy.abs() > 20000.0); // Should be ~30 km/s
+        // Invalid index
+        assert!(sim.body_vy(999).is_nan());
+    }
+
+    #[test]
+    fn test_orbit_simulation_body_vz() {
+        let sim = OrbitSimulation::new();
+        // Z velocity should be zero for planar orbit
+        assert!(sim.body_vz(0).abs() < 1e-10);
+        assert!(sim.body_vz(1).abs() < 1e-10);
+        // Invalid index
+        assert!(sim.body_vz(999).is_nan());
+    }
+
+    #[test]
+    fn test_orbit_simulation_step_hours() {
+        let mut sim = OrbitSimulation::new();
+        assert!(sim.step_hours(1.0)); // 1 hour
+        assert!((sim.sim_time() - 3600.0).abs() < 0.001);
+    }
+
+    #[test]
+    fn test_orbit_simulation_pause_resume() {
+        let mut sim = OrbitSimulation::new();
+        assert!(!sim.paused());
+
+        // Manually pause
+        sim.paused = true;
+        assert!(sim.paused());
+
+        // Step should fail when paused
+        assert!(!sim.step(3600.0));
+
+        // Resume
+        sim.resume();
+        assert!(!sim.paused());
+
+        // Step should work again
+        assert!(sim.step(3600.0));
+    }
+
+    #[test]
+    fn test_orbit_simulation_velocities_flat() {
+        let sim = OrbitSimulation::new();
+        let velocities = sim.velocities_flat();
+
+        assert_eq!(velocities.len(), 6); // 2 bodies * 3 coords
+        // Sun should have near-zero velocity
+        assert!(velocities[0].abs() < 1e-10);
+        assert!(velocities[1].abs() < 1e-10);
+        assert!(velocities[2].abs() < 1e-10);
+    }
+
+    #[test]
+    fn test_orbit_simulation_positions_au_flat() {
+        let sim = OrbitSimulation::new();
+        let positions = sim.positions_au_flat();
+
+        assert_eq!(positions.len(), 6); // 2 bodies * 3 coords
+        // Sun at origin
+        assert!(positions[0].abs() < 1e-15);
+        assert!(positions[1].abs() < 1e-15);
+        assert!(positions[2].abs() < 1e-15);
+        // Earth at ~1 AU in x
+        assert!((positions[3] - 0.983).abs() < 0.02); // Perihelion
+    }
+
+    #[test]
+    fn test_orbit_simulation_default() {
+        let sim = OrbitSimulation::default();
+        assert_eq!(sim.num_bodies(), 2);
+    }
+
+    #[test]
+    fn test_orbit_simulation_angular_momentum() {
+        let sim = OrbitSimulation::new();
+        let l = sim.angular_momentum();
+        assert!(l > 0.0);
+    }
+
+    #[test]
+    fn test_orbit_simulation_run_steps_paused() {
+        let mut sim = OrbitSimulation::new();
+        sim.paused = true;
+
+        // Should complete 0 steps when paused
+        let completed = sim.run_steps(10, 3600.0);
+        assert_eq!(completed, 0);
+    }
+
+    #[test]
+    fn test_orbit_simulation_body_x_au() {
+        let sim = OrbitSimulation::new();
+        // Earth at perihelion ~0.983 AU
+        let x_au = sim.body_x_au(1);
+        assert!((x_au - 0.983).abs() < 0.02);
     }
 }
