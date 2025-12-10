@@ -46,6 +46,7 @@ pub mod falsification;
 pub mod scenarios;
 pub mod discovery;
 pub mod visualization;
+pub mod orbit;
 
 /// Prelude for convenient imports
 pub mod prelude {
