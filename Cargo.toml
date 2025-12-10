@@ -109,6 +109,10 @@ path = "examples/reproducibility.rs"
 name = "jidoka_guards"
 path = "examples/jidoka_guards.rs"
 
+[[example]]
+name = "orbit_demo"
+path = "examples/orbit_demo.rs"
+
 [[bin]]
 name = "orbit-tui"
 path = "src/bin/orbit_tui.rs"
