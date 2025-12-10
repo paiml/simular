@@ -575,4 +575,17 @@ mod tests {
         let x_au = sim.body_x_au(1);
         assert!((x_au - 0.983).abs() < 0.02);
     }
+
+    #[test]
+    fn test_wasm_init() {
+        // The init function should not panic
+        init();
+    }
+
+    #[test]
+    fn test_orbit_simulation_sim_time_days() {
+        let mut sim = OrbitSimulation::new();
+        sim.step_days(10.5);
+        assert!((sim.sim_time_days() - 10.5).abs() < 0.001);
+    }
 }
