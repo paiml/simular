@@ -797,7 +797,7 @@ falsification_criteria:
         function createTsp(n) {
             if (tsp) tsp.free();
             currentSeed = Math.floor(Math.random() * 1000000);
-            tsp = new WasmTspGrasp(currentSeed, n);
+            tsp = new WasmTspGrasp(BigInt(currentSeed), n);
             convergence = [];
             prevBest = Infinity;
             log('info', `Created TSP: n=${n}, seed=${currentSeed}`);
@@ -1004,8 +1004,8 @@ falsification_criteria:
             log(t5 ? 'pass' : 'fail', `[above-lb] ${t5 ? 'PASS' : 'FAIL'}`);
 
             // Test 6: Deterministic
-            const tsp1 = new WasmTspGrasp(currentSeed, 10);
-            const tsp2 = new WasmTspGrasp(currentSeed, 10);
+            const tsp1 = new WasmTspGrasp(BigInt(currentSeed), 10);
+            const tsp2 = new WasmTspGrasp(BigInt(currentSeed), 10);
             tsp1.runGrasp(5);
             tsp2.runGrasp(5);
             const t6 = Math.abs(tsp1.getBestTourLength() - tsp2.getBestTourLength()) < 1e-10;
@@ -1031,7 +1031,7 @@ falsification_criteria:
 
             for (let i = 0; i < 10; i++) {
                 const n = Math.floor(Math.random() * 20) + 5;
-                const fuzz = new WasmTspGrasp(Math.floor(Math.random() * 1000000), n);
+                const fuzz = new WasmTspGrasp(BigInt(Math.floor(Math.random() * 1000000)), n);
                 fuzz.runGrasp(10);
 
                 const tour = JSON.parse(fuzz.getTour());
