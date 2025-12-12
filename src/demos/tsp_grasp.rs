@@ -1164,9 +1164,8 @@ mod wasm {
         /// const demo = WasmTspGrasp.fromYaml(yaml);
         /// ```
         #[wasm_bindgen(js_name = fromYaml)]
-        pub fn from_yaml(yaml: &str) -> Result<Self, JsValue> {
-            let inner = TspGraspDemo::from_yaml(yaml)
-                .map_err(|e| JsValue::from_str(&e.to_string()))?;
+        pub fn from_yaml(yaml: &str) -> Result<Self, String> {
+            let inner = TspGraspDemo::from_yaml(yaml).map_err(|e| e.to_string())?;
             Ok(Self { inner })
         }
 
@@ -2847,5 +2846,346 @@ algorithm:
             "Same seed should produce same result"
         );
         assert_eq!(demo1.best_tour, demo2.best_tour);
+    }
+}
+
+// =============================================================================
+// WASM Binding Tests (OR-001-09: Probar-only, NO JavaScript)
+// =============================================================================
+
+#[cfg(all(test, feature = "wasm"))]
+mod wasm_tests {
+    use super::wasm::WasmTspGrasp;
+
+    const BAY_AREA_YAML: &str = include_str!("../../examples/experiments/bay_area_tsp.yaml");
+
+    const MINIMAL_YAML: &str = r#"
+meta:
+  id: "TEST-001"
+  version: "1.0.0"
+  description: "Minimal test"
+  units: "miles"
+  optimal_known: 20
+cities:
+  - id: 0
+    name: "A"
+    alias: "A"
+    coords: { lat: 0.0, lon: 0.0 }
+  - id: 1
+    name: "B"
+    alias: "B"
+    coords: { lat: 1.0, lon: 1.0 }
+  - id: 2
+    name: "C"
+    alias: "C"
+    coords: { lat: 2.0, lon: 0.0 }
+matrix:
+  - [0, 10, 15]
+  - [10, 0, 10]
+  - [15, 10, 0]
+algorithm:
+  method: "grasp"
+  params:
+    rcl_size: 2
+    restarts: 5
+    two_opt: true
+    seed: 42
+"#;
+
+    // =========================================================================
+    // Construction Tests
+    // =========================================================================
+
+    #[test]
+    fn test_wasm_new() {
+        let demo = WasmTspGrasp::new(42, 5);
+        assert_eq!(demo.get_n(), 5);
+    }
+
+    #[test]
+    fn test_wasm_from_yaml_bay_area() {
+        let result = WasmTspGrasp::from_yaml(BAY_AREA_YAML);
+        assert!(result.is_ok());
+        let demo = result.unwrap();
+        assert_eq!(demo.get_n(), 6);
+    }
+
+    #[test]
+    fn test_wasm_from_yaml_minimal() {
+        let result = WasmTspGrasp::from_yaml(MINIMAL_YAML);
+        assert!(result.is_ok());
+        let demo = result.unwrap();
+        assert_eq!(demo.get_n(), 3);
+    }
+
+    #[test]
+    fn test_wasm_from_yaml_invalid() {
+        let result = WasmTspGrasp::from_yaml("invalid yaml: [[[");
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_wasm_from_yaml_empty() {
+        let result = WasmTspGrasp::from_yaml("");
+        assert!(result.is_err());
+    }
+
+    // =========================================================================
+    // YAML-First Configuration Tests
+    // =========================================================================
+
+    #[test]
+    fn test_wasm_yaml_rcl_size_applied() {
+        let demo = WasmTspGrasp::from_yaml(BAY_AREA_YAML).expect("parse");
+        // YAML specifies rcl_size: 3
+        assert_eq!(demo.get_rcl_size(), 3);
+    }
+
+    #[test]
+    fn test_wasm_yaml_construction_method_applied() {
+        let demo = WasmTspGrasp::from_yaml(BAY_AREA_YAML).expect("parse");
+        // YAML specifies method: "grasp" → RandomizedGreedy (0)
+        assert_eq!(demo.get_construction_method(), 0);
+    }
+
+    #[test]
+    fn test_wasm_yaml_user_modified_method() {
+        let nn_yaml = BAY_AREA_YAML.replace("method: \"grasp\"", "method: \"nearest_neighbor\"");
+        let demo = WasmTspGrasp::from_yaml(&nn_yaml).expect("parse");
+        // NearestNeighbor = 1
+        assert_eq!(demo.get_construction_method(), 1);
+    }
+
+    // =========================================================================
+    // Simulation Control Tests
+    // =========================================================================
+
+    #[test]
+    fn test_wasm_step() {
+        let mut demo = WasmTspGrasp::from_yaml(MINIMAL_YAML).expect("parse");
+        demo.step();
+        // Step should not panic
+    }
+
+    #[test]
+    fn test_wasm_grasp_iteration() {
+        let mut demo = WasmTspGrasp::from_yaml(MINIMAL_YAML).expect("parse");
+        demo.grasp_iteration();
+        assert!(demo.get_tour_length() > 0.0);
+    }
+
+    #[test]
+    fn test_wasm_run_grasp() {
+        let mut demo = WasmTspGrasp::from_yaml(BAY_AREA_YAML).expect("parse");
+        demo.run_grasp(10);
+        assert!(demo.get_restarts() >= 10);
+        assert!(demo.get_best_tour_length() > 0.0);
+    }
+
+    #[test]
+    fn test_wasm_construct_tour() {
+        let mut demo = WasmTspGrasp::from_yaml(MINIMAL_YAML).expect("parse");
+        demo.construct_tour();
+        assert!(demo.get_tour_length() > 0.0);
+    }
+
+    #[test]
+    fn test_wasm_two_opt_pass() {
+        let mut demo = WasmTspGrasp::from_yaml(MINIMAL_YAML).expect("parse");
+        demo.construct_tour();
+        let _improved = demo.two_opt_pass();
+        // Just verify it doesn't panic
+    }
+
+    #[test]
+    fn test_wasm_two_opt_to_local_optimum() {
+        // Use Bay Area for more complex 2-opt scenarios
+        let mut demo = WasmTspGrasp::from_yaml(BAY_AREA_YAML).expect("parse");
+        demo.construct_tour();
+        let before = demo.get_tour_length();
+        demo.two_opt_to_local_optimum();
+        let after = demo.get_tour_length();
+        // 2-opt should not make tour worse
+        assert!(after <= before, "2-opt should improve or maintain tour");
+    }
+
+    #[test]
+    fn test_wasm_reset() {
+        let mut demo = WasmTspGrasp::from_yaml(MINIMAL_YAML).expect("parse");
+        demo.run_grasp(5);
+        let before_restarts = demo.get_restarts();
+        assert!(before_restarts >= 5);
+        demo.reset();
+        assert_eq!(demo.get_restarts(), 0);
+        // After reset, best_tour_length should be the default (infinity or 0)
+        // Just verify restarts are reset
+    }
+
+    // =========================================================================
+    // Configuration Tests
+    // =========================================================================
+
+    #[test]
+    fn test_wasm_set_construction_method() {
+        let mut demo = WasmTspGrasp::from_yaml(MINIMAL_YAML).expect("parse");
+        demo.set_construction_method(1); // NearestNeighbor
+        assert_eq!(demo.get_construction_method(), 1);
+
+        demo.set_construction_method(2); // Random
+        assert_eq!(demo.get_construction_method(), 2);
+
+        demo.set_construction_method(0); // RandomizedGreedy
+        assert_eq!(demo.get_construction_method(), 0);
+    }
+
+    #[test]
+    fn test_wasm_set_rcl_size() {
+        // Use Bay Area (6 cities) to test RCL size setting
+        let mut demo = WasmTspGrasp::from_yaml(BAY_AREA_YAML).expect("parse");
+        demo.set_rcl_size(5);
+        assert_eq!(demo.get_rcl_size(), 5);
+
+        // Verify clamping to n (6 cities)
+        demo.set_rcl_size(10);
+        assert_eq!(demo.get_rcl_size(), 6, "RCL size should be clamped to n");
+    }
+
+    // =========================================================================
+    // State Query Tests
+    // =========================================================================
+
+    #[test]
+    fn test_wasm_get_tour_length() {
+        let mut demo = WasmTspGrasp::from_yaml(MINIMAL_YAML).expect("parse");
+        demo.construct_tour();
+        assert!(demo.get_tour_length() > 0.0);
+    }
+
+    #[test]
+    fn test_wasm_get_best_tour_length() {
+        let mut demo = WasmTspGrasp::from_yaml(MINIMAL_YAML).expect("parse");
+        demo.run_grasp(3);
+        let best = demo.get_best_tour_length();
+        assert!(best > 0.0 && best < f64::INFINITY);
+    }
+
+    #[test]
+    fn test_wasm_get_optimality_gap() {
+        let mut demo = WasmTspGrasp::from_yaml(BAY_AREA_YAML).expect("parse");
+        demo.run_grasp(10);
+        let gap = demo.get_optimality_gap();
+        // Gap should be reasonable (<=100%)
+        assert!(gap < 1.0);
+    }
+
+    #[test]
+    fn test_wasm_get_lower_bound() {
+        let demo = WasmTspGrasp::from_yaml(BAY_AREA_YAML).expect("parse");
+        let lb = demo.get_lower_bound();
+        // Lower bound should be positive
+        assert!(lb > 0.0);
+    }
+
+    #[test]
+    fn test_wasm_get_restarts() {
+        let mut demo = WasmTspGrasp::from_yaml(MINIMAL_YAML).expect("parse");
+        assert_eq!(demo.get_restarts(), 0);
+        demo.run_grasp(7);
+        assert!(demo.get_restarts() >= 7);
+    }
+
+    #[test]
+    fn test_wasm_get_two_opt_iterations() {
+        // Use Bay Area for more complex 2-opt scenarios
+        let mut demo = WasmTspGrasp::from_yaml(BAY_AREA_YAML).expect("parse");
+        demo.run_grasp(5);
+        // 2-opt iterations counter should be non-negative
+        let _ = demo.get_two_opt_iterations();
+        // Just verify it returns a value (may be 0 or more)
+    }
+
+    #[test]
+    fn test_wasm_get_two_opt_improvements() {
+        let mut demo = WasmTspGrasp::from_yaml(MINIMAL_YAML).expect("parse");
+        demo.run_grasp(5);
+        // Improvements may or may not occur depending on initial tour
+        let _ = demo.get_two_opt_improvements();
+    }
+
+    #[test]
+    fn test_wasm_get_n() {
+        let demo = WasmTspGrasp::from_yaml(BAY_AREA_YAML).expect("parse");
+        assert_eq!(demo.get_n(), 6);
+    }
+
+    #[test]
+    fn test_wasm_get_restart_variance() {
+        let mut demo = WasmTspGrasp::from_yaml(MINIMAL_YAML).expect("parse");
+        demo.run_grasp(5);
+        let variance = demo.get_restart_variance();
+        // Variance >= 0
+        assert!(variance >= 0.0);
+    }
+
+    #[test]
+    fn test_wasm_get_restart_cv() {
+        let mut demo = WasmTspGrasp::from_yaml(MINIMAL_YAML).expect("parse");
+        demo.run_grasp(5);
+        let cv = demo.get_restart_cv();
+        // CV >= 0
+        assert!(cv >= 0.0);
+    }
+
+    // =========================================================================
+    // Deterministic Replay Tests (Probar Core)
+    // =========================================================================
+
+    #[test]
+    fn test_wasm_deterministic_replay_from_yaml() {
+        // Two WASM demos from same YAML should produce identical results
+        let mut demo1 = WasmTspGrasp::from_yaml(BAY_AREA_YAML).expect("parse 1");
+        let mut demo2 = WasmTspGrasp::from_yaml(BAY_AREA_YAML).expect("parse 2");
+
+        demo1.run_grasp(10);
+        demo2.run_grasp(10);
+
+        assert_eq!(
+            demo1.get_best_tour_length(),
+            demo2.get_best_tour_length(),
+            "Same YAML + same seed = identical results"
+        );
+    }
+
+    #[test]
+    fn test_wasm_bay_area_optimal_achievable() {
+        // Bay Area optimal is 115 miles - GRASP should find it or close
+        let mut demo = WasmTspGrasp::from_yaml(BAY_AREA_YAML).expect("parse");
+        demo.run_grasp(20);
+
+        let best = demo.get_best_tour_length();
+        // Within 10% of optimal 115
+        assert!(
+            best <= 115.0 * 1.1,
+            "Should find tour <= 126.5 miles, got {best}"
+        );
+    }
+
+    #[test]
+    fn test_wasm_user_modified_yaml_different_result() {
+        // User modifies distance → different results
+        let original = WasmTspGrasp::from_yaml(BAY_AREA_YAML).expect("original");
+
+        // User reduces SF→Oakland from 12 to 1 mile
+        let modified_yaml = BAY_AREA_YAML.replace("[ 0, 12, 48", "[ 0,  1, 48");
+        let modified = WasmTspGrasp::from_yaml(&modified_yaml).expect("modified");
+
+        // Lower bounds should differ
+        let orig_lb = original.get_lower_bound();
+        let mod_lb = modified.get_lower_bound();
+
+        assert!(
+            (orig_lb - mod_lb).abs() > 0.5,
+            "Modified YAML should produce different lower bound"
+        );
     }
 }
