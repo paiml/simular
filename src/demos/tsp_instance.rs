@@ -426,6 +426,209 @@ impl TspInstanceYaml {
     }
 }
 
+// =============================================================================
+// WASM Bindings (OR-001-06)
+// =============================================================================
+
+#[cfg(feature = "wasm")]
+mod wasm {
+    use super::TspInstanceYaml;
+    use wasm_bindgen::prelude::*;
+
+    /// WASM-exported TSP instance for JavaScript/TypeScript.
+    ///
+    /// Provides YAML-first configuration for TSP instances accessible from
+    /// web browsers via WebAssembly.
+    ///
+    /// # JavaScript Example
+    ///
+    /// ```javascript
+    /// import { TspWasmInstance } from 'simular';
+    ///
+    /// const yaml = `
+    /// meta:
+    ///   id: "MY-TSP"
+    ///   description: "Custom instance"
+    /// cities:
+    ///   - id: 0
+    ///     name: "A"
+    ///     alias: "A"
+    ///     coords: { lat: 0.0, lon: 0.0 }
+    /// matrix:
+    ///   - [0]
+    /// `;
+    ///
+    /// const instance = TspWasmInstance.from_yaml(yaml);
+    /// console.log(instance.city_count());
+    /// ```
+    #[wasm_bindgen]
+    pub struct TspWasmInstance {
+        inner: TspInstanceYaml,
+    }
+
+    // WASM exports don't need #[must_use] - values returned to JS
+    #[allow(clippy::must_use_candidate)]
+    #[wasm_bindgen]
+    impl TspWasmInstance {
+        /// Parse a TSP instance from YAML string.
+        ///
+        /// # Errors
+        ///
+        /// Returns error string if YAML is invalid or fails validation.
+        #[wasm_bindgen(js_name = fromYaml)]
+        pub fn from_yaml(yaml: &str) -> Result<TspWasmInstance, String> {
+            let inner = TspInstanceYaml::from_yaml(yaml).map_err(|e| e.to_string())?;
+            Ok(Self { inner })
+        }
+
+        /// Serialize the instance back to YAML.
+        #[wasm_bindgen(js_name = toYaml)]
+        pub fn to_yaml(&self) -> Result<String, String> {
+            self.inner.to_yaml().map_err(|e| e.to_string())
+        }
+
+        /// Validate the instance (Jidoka).
+        ///
+        /// Checks matrix dimensions, city IDs, symmetry, and triangle inequality.
+        #[wasm_bindgen]
+        pub fn validate(&self) -> Result<(), String> {
+            self.inner.validate().map_err(|e| e.to_string())
+        }
+
+        /// Check matrix symmetry.
+        #[wasm_bindgen(js_name = checkSymmetry)]
+        pub fn check_symmetry(&self) -> Result<(), String> {
+            self.inner.check_symmetry().map_err(|e| e.to_string())
+        }
+
+        /// Check triangle inequality.
+        #[wasm_bindgen(js_name = checkTriangleInequality)]
+        pub fn check_triangle_inequality(&self) -> Result<(), String> {
+            self.inner.check_triangle_inequality().map_err(|e| e.to_string())
+        }
+
+        /// Get the number of cities.
+        #[wasm_bindgen(js_name = cityCount)]
+        pub fn city_count(&self) -> usize {
+            self.inner.city_count()
+        }
+
+        /// Get distance between two cities.
+        #[wasm_bindgen]
+        pub fn distance(&self, from: usize, to: usize) -> u32 {
+            self.inner.distance(from, to)
+        }
+
+        /// Compute tour length for a given tour (city indices).
+        ///
+        /// Tour is specified as a JavaScript array of city indices.
+        #[wasm_bindgen(js_name = tourLength)]
+        pub fn tour_length(&self, tour: &[usize]) -> u32 {
+            self.inner.tour_length(tour)
+        }
+
+        /// Get instance ID.
+        #[wasm_bindgen(js_name = getId)]
+        pub fn get_id(&self) -> String {
+            self.inner.meta.id.clone()
+        }
+
+        /// Get instance description.
+        #[wasm_bindgen(js_name = getDescription)]
+        pub fn get_description(&self) -> String {
+            self.inner.meta.description.clone()
+        }
+
+        /// Get units (e.g., "miles", "km").
+        #[wasm_bindgen(js_name = getUnits)]
+        pub fn get_units(&self) -> String {
+            self.inner.meta.units.clone()
+        }
+
+        /// Get known optimal value (if any).
+        #[wasm_bindgen(js_name = getOptimalKnown)]
+        pub fn get_optimal_known(&self) -> Option<u32> {
+            self.inner.meta.optimal_known
+        }
+
+        /// Get algorithm method.
+        #[wasm_bindgen(js_name = getAlgorithmMethod)]
+        pub fn get_algorithm_method(&self) -> String {
+            self.inner.algorithm.method.clone()
+        }
+
+        /// Get algorithm seed.
+        #[wasm_bindgen(js_name = getSeed)]
+        pub fn get_seed(&self) -> u64 {
+            self.inner.algorithm.params.seed
+        }
+
+        /// Get RCL size parameter.
+        #[wasm_bindgen(js_name = getRclSize)]
+        pub fn get_rcl_size(&self) -> usize {
+            self.inner.algorithm.params.rcl_size
+        }
+
+        /// Get number of restarts.
+        #[wasm_bindgen(js_name = getRestarts)]
+        pub fn get_restarts(&self) -> usize {
+            self.inner.algorithm.params.restarts
+        }
+
+        /// Check if 2-opt is enabled.
+        #[wasm_bindgen(js_name = getTwoOptEnabled)]
+        pub fn get_two_opt_enabled(&self) -> bool {
+            self.inner.algorithm.params.two_opt
+        }
+
+        /// Get city names as JSON array.
+        #[wasm_bindgen(js_name = getCityNamesJson)]
+        pub fn get_city_names_json(&self) -> String {
+            let names: Vec<&str> = self.inner.cities.iter().map(|c| c.name.as_str()).collect();
+            serde_json::to_string(&names).unwrap_or_else(|_| "[]".to_string())
+        }
+
+        /// Get city aliases as JSON array.
+        #[wasm_bindgen(js_name = getCityAliasesJson)]
+        pub fn get_city_aliases_json(&self) -> String {
+            let aliases: Vec<&str> = self.inner.cities.iter().map(|c| c.alias.as_str()).collect();
+            serde_json::to_string(&aliases).unwrap_or_else(|_| "[]".to_string())
+        }
+
+        /// Get distance matrix as JSON (2D array).
+        #[wasm_bindgen(js_name = getMatrixJson)]
+        pub fn get_matrix_json(&self) -> String {
+            serde_json::to_string(&self.inner.matrix).unwrap_or_else(|_| "[]".to_string())
+        }
+
+        /// Get city coordinates as JSON array of {lat, lon} objects.
+        #[wasm_bindgen(js_name = getCityCoordsJson)]
+        pub fn get_city_coords_json(&self) -> String {
+            let coords: Vec<_> = self.inner.cities.iter().map(|c| &c.coords).collect();
+            serde_json::to_string(&coords).unwrap_or_else(|_| "[]".to_string())
+        }
+
+        /// Compute tour length with step-by-step verification.
+        ///
+        /// Returns JSON: `{"length": 115, "steps": ["Step 1: SF → OAK = 12 miles (total: 12)", ...]}`
+        #[wasm_bindgen(js_name = tourLengthVerifiedJson)]
+        pub fn tour_length_verified_json(&self, tour: &[usize]) -> String {
+            let (length, steps) = self.inner.tour_length_verified(tour);
+            serde_json::json!({
+                "length": length,
+                "steps": steps
+            })
+            .to_string()
+        }
+
+        /// Get full instance as JSON.
+        #[wasm_bindgen(js_name = toJson)]
+        pub fn to_json(&self) -> String {
+            serde_json::to_string(&self.inner).unwrap_or_else(|_| "{}".to_string())
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -955,5 +1158,237 @@ matrix:
         let err = TspInstanceError::ParseError("test".to_string());
         let debug = format!("{:?}", err);
         assert!(debug.contains("ParseError"));
+    }
+}
+
+// =============================================================================
+// WASM Binding Tests (OR-001-06)
+// =============================================================================
+
+#[cfg(all(test, feature = "wasm"))]
+mod wasm_tests {
+    use super::wasm::TspWasmInstance;
+
+    const BAY_AREA_YAML: &str = include_str!("../../examples/experiments/bay_area_tsp.yaml");
+
+    const MINIMAL_YAML: &str = r#"
+meta:
+  id: "TEST-001"
+  description: "Minimal test instance"
+cities:
+  - id: 0
+    name: "A"
+    alias: "A"
+    coords: { lat: 0.0, lon: 0.0 }
+  - id: 1
+    name: "B"
+    alias: "B"
+    coords: { lat: 1.0, lon: 1.0 }
+matrix:
+  - [0, 10]
+  - [10, 0]
+"#;
+
+    #[test]
+    fn test_wasm_from_yaml() {
+        let instance = TspWasmInstance::from_yaml(BAY_AREA_YAML);
+        assert!(instance.is_ok());
+    }
+
+    #[test]
+    fn test_wasm_from_yaml_invalid() {
+        let result = TspWasmInstance::from_yaml("invalid yaml: [[[");
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_wasm_to_yaml() {
+        let instance = TspWasmInstance::from_yaml(MINIMAL_YAML).expect("parse");
+        let yaml = instance.to_yaml();
+        assert!(yaml.is_ok());
+        assert!(yaml.unwrap().contains("TEST-001"));
+    }
+
+    #[test]
+    fn test_wasm_validate() {
+        let instance = TspWasmInstance::from_yaml(BAY_AREA_YAML).expect("parse");
+        assert!(instance.validate().is_ok());
+    }
+
+    #[test]
+    fn test_wasm_check_symmetry() {
+        let instance = TspWasmInstance::from_yaml(BAY_AREA_YAML).expect("parse");
+        assert!(instance.check_symmetry().is_ok());
+    }
+
+    #[test]
+    fn test_wasm_check_triangle_inequality() {
+        let instance = TspWasmInstance::from_yaml(BAY_AREA_YAML).expect("parse");
+        assert!(instance.check_triangle_inequality().is_ok());
+    }
+
+    #[test]
+    fn test_wasm_city_count() {
+        let instance = TspWasmInstance::from_yaml(BAY_AREA_YAML).expect("parse");
+        assert_eq!(instance.city_count(), 6);
+    }
+
+    #[test]
+    fn test_wasm_distance() {
+        let instance = TspWasmInstance::from_yaml(BAY_AREA_YAML).expect("parse");
+        assert_eq!(instance.distance(0, 1), 12); // SF to Oakland
+    }
+
+    #[test]
+    fn test_wasm_tour_length() {
+        let instance = TspWasmInstance::from_yaml(BAY_AREA_YAML).expect("parse");
+        let tour = [0, 1, 4, 5, 2, 3]; // Optimal tour
+        assert_eq!(instance.tour_length(&tour), 115);
+    }
+
+    #[test]
+    fn test_wasm_get_id() {
+        let instance = TspWasmInstance::from_yaml(BAY_AREA_YAML).expect("parse");
+        assert_eq!(instance.get_id(), "TSP-BAY-006");
+    }
+
+    #[test]
+    fn test_wasm_get_description() {
+        let instance = TspWasmInstance::from_yaml(BAY_AREA_YAML).expect("parse");
+        assert!(instance.get_description().contains("Bay Area"));
+    }
+
+    #[test]
+    fn test_wasm_get_units() {
+        let instance = TspWasmInstance::from_yaml(BAY_AREA_YAML).expect("parse");
+        assert_eq!(instance.get_units(), "miles");
+    }
+
+    #[test]
+    fn test_wasm_get_optimal_known() {
+        let instance = TspWasmInstance::from_yaml(BAY_AREA_YAML).expect("parse");
+        assert_eq!(instance.get_optimal_known(), Some(115));
+    }
+
+    #[test]
+    fn test_wasm_get_algorithm_method() {
+        let instance = TspWasmInstance::from_yaml(BAY_AREA_YAML).expect("parse");
+        assert_eq!(instance.get_algorithm_method(), "grasp");
+    }
+
+    #[test]
+    fn test_wasm_get_seed() {
+        let instance = TspWasmInstance::from_yaml(BAY_AREA_YAML).expect("parse");
+        assert_eq!(instance.get_seed(), 42);
+    }
+
+    #[test]
+    fn test_wasm_get_rcl_size() {
+        let instance = TspWasmInstance::from_yaml(BAY_AREA_YAML).expect("parse");
+        assert_eq!(instance.get_rcl_size(), 3);
+    }
+
+    #[test]
+    fn test_wasm_get_restarts() {
+        let instance = TspWasmInstance::from_yaml(BAY_AREA_YAML).expect("parse");
+        assert_eq!(instance.get_restarts(), 10);
+    }
+
+    #[test]
+    fn test_wasm_get_two_opt_enabled() {
+        let instance = TspWasmInstance::from_yaml(BAY_AREA_YAML).expect("parse");
+        assert!(instance.get_two_opt_enabled());
+    }
+
+    #[test]
+    fn test_wasm_get_city_names_json() {
+        let instance = TspWasmInstance::from_yaml(BAY_AREA_YAML).expect("parse");
+        let json = instance.get_city_names_json();
+        assert!(json.contains("San Francisco"));
+        assert!(json.contains("Oakland"));
+    }
+
+    #[test]
+    fn test_wasm_get_city_aliases_json() {
+        let instance = TspWasmInstance::from_yaml(BAY_AREA_YAML).expect("parse");
+        let json = instance.get_city_aliases_json();
+        assert!(json.contains("SF"));
+        assert!(json.contains("OAK"));
+    }
+
+    #[test]
+    fn test_wasm_get_matrix_json() {
+        let instance = TspWasmInstance::from_yaml(BAY_AREA_YAML).expect("parse");
+        let json = instance.get_matrix_json();
+        assert!(json.contains("[0,12")); // First row starts with 0,12
+    }
+
+    #[test]
+    fn test_wasm_get_city_coords_json() {
+        let instance = TspWasmInstance::from_yaml(BAY_AREA_YAML).expect("parse");
+        let json = instance.get_city_coords_json();
+        assert!(json.contains("37.7749")); // SF latitude
+    }
+
+    #[test]
+    fn test_wasm_tour_length_verified_json() {
+        let instance = TspWasmInstance::from_yaml(BAY_AREA_YAML).expect("parse");
+        let tour = [0, 1, 4, 5, 2, 3];
+        let json = instance.tour_length_verified_json(&tour);
+        assert!(json.contains("\"length\":115"));
+        assert!(json.contains("steps"));
+        assert!(json.contains("San Francisco"));
+    }
+
+    #[test]
+    fn test_wasm_to_json() {
+        let instance = TspWasmInstance::from_yaml(BAY_AREA_YAML).expect("parse");
+        let json = instance.to_json();
+        assert!(json.contains("TSP-BAY-006"));
+        assert!(json.contains("cities"));
+        assert!(json.contains("matrix"));
+    }
+
+    #[test]
+    fn test_wasm_check_symmetry_fails() {
+        let asymmetric_yaml = r#"
+meta:
+  id: "ASYM"
+  description: "Asymmetric"
+cities:
+  - id: 0
+    name: "A"
+    alias: "A"
+    coords: { lat: 0.0, lon: 0.0 }
+  - id: 1
+    name: "B"
+    alias: "B"
+    coords: { lat: 1.0, lon: 1.0 }
+matrix:
+  - [0, 10]
+  - [99, 0]
+"#;
+        let instance = TspWasmInstance::from_yaml(asymmetric_yaml).expect("parse");
+        assert!(instance.check_symmetry().is_err());
+    }
+
+    #[test]
+    fn test_wasm_validate_fails() {
+        let bad_yaml = r#"
+meta:
+  id: "BAD"
+  description: "Bad matrix"
+cities:
+  - id: 0
+    name: "A"
+    alias: "A"
+    coords: { lat: 0.0, lon: 0.0 }
+matrix:
+  - [0, 10, 20]
+  - [10, 0, 30]
+  - [20, 30, 0]
+"#;
+        let instance = TspWasmInstance::from_yaml(bad_yaml).expect("parse");
+        assert!(instance.validate().is_err());
     }
 }
