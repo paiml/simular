@@ -1141,7 +1141,7 @@ mod wasm {
         /// Create demo from YAML configuration string.
         ///
         /// This is the primary YAML-first entry point for web applications.
-        /// Load bay_area_tsp.yaml or user-modified YAML.
+        /// Load `bay_area_tsp.yaml` or user-modified YAML.
         ///
         /// # Example (JavaScript)
         /// ```javascript
@@ -1164,7 +1164,7 @@ mod wasm {
         /// const demo = WasmTspGrasp.fromYaml(yaml);
         /// ```
         #[wasm_bindgen(js_name = fromYaml)]
-        pub fn from_yaml(yaml: &str) -> Result<WasmTspGrasp, JsValue> {
+        pub fn from_yaml(yaml: &str) -> Result<Self, JsValue> {
             let inner = TspGraspDemo::from_yaml(yaml)
                 .map_err(|e| JsValue::from_str(&e.to_string()))?;
             Ok(Self { inner })
