@@ -1,7 +1,7 @@
 ---
 title: "Simple OR Example: Bay Area TSP Ground Truth"
 issue: OR-001
-status: Draft
+status: In Progress
 created: 2025-12-12
 updated: 2025-12-12
 ---
@@ -9,7 +9,7 @@ updated: 2025-12-12
 # OR-001: Simple Operations Research Example Specification
 
 **Ticket ID**: OR-001
-**Status**: Draft (Awaiting Review)
+**Status**: In Progress
 **Methodology**: Toyota Production System (TPS) + Popperian Falsification + Equation Driven Development (EDD)
 **Quality**: EXTREME TDD | 100% Coverage | Probar E2E
 
@@ -19,13 +19,43 @@ This specification defines a minimal, verifiable Traveling Salesman Problem (TSP
 
 **Core Principle**: YAML-first architecture where users can download, modify, and re-run experiments without touching code.
 
-### 1.1 Key Deliverables
+### 1.1 Unified Architecture
+
+**CRITICAL: ONE TSP Demo** - There is exactly ONE TSP implementation (`TspGraspDemo`) that:
+1. Supports YAML-first configuration via `TspInstanceYaml`
+2. Works in **TUI** (terminal ratatui)
+3. Works in **WASM** (browser WebAssembly)
+4. Uses the same GRASP algorithm and 2-opt local search
+
+```
+                    ┌─────────────────────────────────────┐
+                    │     bay_area_tsp.yaml (Ground Truth) │
+                    └──────────────────┬──────────────────┘
+                                       │
+                              TspInstanceYaml::from_yaml()
+                                       │
+                    ┌──────────────────▼──────────────────┐
+                    │          TspGraspDemo               │
+                    │   (Single Unified Implementation)   │
+                    └──────────────────┬──────────────────┘
+                                       │
+              ┌────────────────────────┼────────────────────────┐
+              │                        │                        │
+     ┌────────▼────────┐      ┌────────▼────────┐      ┌────────▼────────┐
+     │   TUI (ratatui) │      │   WASM (web)    │      │   CLI (batch)   │
+     │   tsp_tui.rs    │      │   WasmTspGrasp  │      │   via from_yaml │
+     └─────────────────┘      └─────────────────┘      └─────────────────┘
+```
+
+### 1.2 Key Deliverables
 
 | Deliverable | Description | Deployment |
 |-------------|-------------|------------|
+| `TspGraspDemo` | Unified TSP solver (GRASP + 2-opt) | `src/demos/tsp_grasp.rs` |
+| `TspInstanceYaml` | YAML configuration loader | `src/demos/tsp_instance.rs` |
 | `bay_area_tsp.yaml` | Ground truth instance (6 cities) | `examples/experiments/` |
-| WASM Module | Browser-executable TSP solver | `interactive.paiml.com` |
-| User Editor | In-browser YAML editor | Web UI component |
+| TUI App | Terminal visualization | `src/bin/tsp_tui.rs` |
+| WASM Module | Browser-executable solver | `web/tsp.html` |
 | Probar E2E | Deterministic replay tests | `tests/probar_tsp.rs` |
 
 ## 2. Equation Model Card (EMC)
@@ -197,18 +227,70 @@ algorithm:
 
 Each task follows EXTREME TDD: Write failing test → Implement → Verify 100% coverage.
 
-| Task ID | Description | Est. | Dependencies |
-|---------|-------------|------|--------------|
-| **OR-001-01** | Create `TspInstanceYaml` struct + serde | S | None |
-| **OR-001-02** | Implement `TspGraspDemo::from_yaml()` | M | OR-001-01 |
-| **OR-001-03** | Create `bay_area_tsp.yaml` ground truth | S | OR-001-01 |
-| **OR-001-04** | Add Jidoka validators (triangle ineq, symmetry) | M | OR-001-02 |
-| **OR-001-05** | Probar E2E: deterministic replay test | M | OR-001-03 |
-| **OR-001-06** | WASM: expose `from_yaml()` to JS | M | OR-001-02 |
-| **OR-001-07** | Web UI: YAML editor component | L | OR-001-06 |
-| **OR-001-08** | Web UI: Download/Upload handlers | S | OR-001-07 |
-| **OR-001-09** | Web UI: Algorithm selector | S | OR-001-07 |
-| **OR-001-10** | Integration test: full user flow | M | OR-001-08, OR-001-09 |
+| Task ID | Description | Status | Tests |
+|---------|-------------|--------|-------|
+| **OR-001-01** | `TspInstanceYaml` struct + serde | ✅ DONE | 43 tests |
+| **OR-001-02** | `from_yaml()` implementation | ✅ DONE | Included |
+| **OR-001-03** | `bay_area_tsp.yaml` ground truth | ✅ DONE | Verified |
+| **OR-001-04** | Jidoka validators (triangle ineq, symmetry) | ✅ DONE | 8 tests |
+| **OR-001-05** | Probar E2E: deterministic replay | ✅ DONE | 19 tests |
+| **OR-001-06** | WASM `TspWasmInstance` bindings | ✅ DONE | 26 tests |
+| **OR-001-07** | Integrate `TspGraspDemo` with `TspInstanceYaml` | 🔄 IN PROGRESS | - |
+| **OR-001-08** | TUI: YAML file loading support | 📋 PENDING | - |
+| **OR-001-09** | Web UI: existing tsp.html uses YAML | 📋 PENDING | - |
+| **OR-001-10** | Integration test: full TUI+WASM flow | 📋 PENDING | - |
+
+### 5.2 Unified Integration (OR-001-07)
+
+**Goal**: Connect `TspInstanceYaml` to `TspGraspDemo` so ONE demo serves TUI and WASM.
+
+```rust
+// TspGraspDemo gains YAML support
+impl TspGraspDemo {
+    /// Create demo from YAML instance configuration.
+    pub fn from_instance(instance: &TspInstanceYaml) -> Self {
+        let cities: Vec<City> = instance.cities.iter()
+            .map(|c| City::new(c.coords.lon, c.coords.lat))
+            .collect();
+
+        let mut demo = Self::with_cities(instance.algorithm.params.seed, cities);
+        demo.set_construction_method(/* from instance.algorithm.method */);
+        demo.set_rcl_size(instance.algorithm.params.rcl_size);
+        demo
+    }
+
+    /// Load from YAML string.
+    pub fn from_yaml(yaml: &str) -> Result<Self, TspInstanceError> {
+        let instance = TspInstanceYaml::from_yaml(yaml)?;
+        instance.validate()?;
+        Ok(Self::from_instance(&instance))
+    }
+}
+```
+
+### 5.3 TUI Integration (OR-001-08)
+
+**Goal**: TUI can load YAML files via command-line argument.
+
+```bash
+# Usage
+cargo run --bin tsp_tui -- examples/experiments/bay_area_tsp.yaml
+
+# Or interactive file picker
+cargo run --bin tsp_tui
+# Press 'L' to load YAML file
+```
+
+```rust
+// src/tui/tsp_app.rs additions
+impl TspApp {
+    pub fn from_yaml_file<P: AsRef<Path>>(path: P) -> Result<Self, TspInstanceError> {
+        let instance = TspInstanceYaml::from_yaml_file(path)?;
+        let demo = TspGraspDemo::from_instance(&instance);
+        Ok(Self { demo, instance: Some(instance), /* ... */ })
+    }
+}
+```
 
 ### 5.2 Task Details
 
