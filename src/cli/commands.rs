@@ -3,6 +3,7 @@
 //! This module contains the execution logic for each CLI command.
 //! Extracted to enable comprehensive testing of command behavior.
 
+use crate::edd::v2::{validate_emc_yaml, validate_experiment_yaml, SchemaValidationError};
 use crate::edd::{ExperimentRunner, RunnerConfig};
 use std::path::Path;
 use std::process::ExitCode;
@@ -25,6 +26,7 @@ pub fn run_cli(args: Args) -> ExitCode {
             seed_override,
             verbose,
         } => run_experiment(&experiment_path, seed_override, verbose),
+        Command::Validate { experiment_path } => validate_experiment(&experiment_path),
         Command::Verify {
             experiment_path,
             runs,
@@ -89,6 +91,64 @@ pub fn run_experiment(path: &Path, seed_override: Option<u64>, verbose: bool) ->
         }
         Err(e) => {
             eprintln!("Error: {e}");
+            ExitCode::from(1)
+        }
+    }
+}
+
+/// Validate an experiment YAML file against the EDD v2 schema.
+///
+/// # Arguments
+///
+/// * `path` - Path to the experiment YAML file
+#[must_use]
+pub fn validate_experiment(path: &Path) -> ExitCode {
+    println!("╔═══════════════════════════════════════════════════════════════╗");
+    println!("║       simular - EDD v2 Experiment Schema Validation           ║");
+    println!("╚═══════════════════════════════════════════════════════════════╝\n");
+
+    println!("Validating: {}\n", path.display());
+
+    // Read file
+    let contents = match std::fs::read_to_string(path) {
+        Ok(c) => c,
+        Err(e) => {
+            eprintln!("✗ Error reading file: {e}");
+            return ExitCode::from(1);
+        }
+    };
+
+    // Validate against EDD v2 schema
+    match validate_experiment_yaml(&contents) {
+        Ok(()) => {
+            println!("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+            println!("✓ Schema validation PASSED");
+            println!("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n");
+            println!("EDD v2 Compliance:");
+            println!("  ✓ Required fields present (id, seed, emc_ref, simulation, falsification)");
+            println!("  ✓ Falsification criteria defined");
+            println!("  ✓ No prohibited custom code fields");
+            println!("\nNext steps:");
+            println!("  • Run: simular run {}", path.display());
+            println!("  • Verify: simular verify {}", path.display());
+            ExitCode::SUCCESS
+        }
+        Err(e) => {
+            println!("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+            println!("✗ Schema validation FAILED");
+            println!("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n");
+            match e {
+                SchemaValidationError::ValidationFailed(errors) => {
+                    println!("Validation errors:");
+                    for (i, err) in errors.iter().enumerate() {
+                        println!("  {}. {err}", i + 1);
+                    }
+                }
+                other => {
+                    println!("Error: {other}");
+                }
+            }
+            println!("\nSee: docs/specifications/EDD-spec-unified.md for schema requirements");
             ExitCode::from(1)
         }
     }
@@ -252,7 +312,7 @@ pub fn list_emc() -> ExitCode {
     }
 }
 
-/// Validate an EMC YAML file against the schema.
+/// Validate an EMC YAML file against the EDD v2 schema.
 ///
 /// # Arguments
 ///
@@ -260,18 +320,43 @@ pub fn list_emc() -> ExitCode {
 #[must_use]
 pub fn emc_validate(path: &Path) -> ExitCode {
     println!("╔═══════════════════════════════════════════════════════════════╗");
-    println!("║          simular - EMC Schema Validation                      ║");
+    println!("║        simular - EDD v2 EMC Schema Validation                 ║");
     println!("╚═══════════════════════════════════════════════════════════════╝\n");
     println!("Validating EMC: {}\n", path.display());
 
     let contents = match std::fs::read_to_string(path) {
         Ok(c) => c,
         Err(e) => {
-            eprintln!("Error reading file: {e}");
+            eprintln!("✗ Error reading file: {e}");
             return ExitCode::from(1);
         }
     };
 
+    // First, validate against EDD v2 JSON schema
+    match validate_emc_yaml(&contents) {
+        Ok(()) => {
+            println!("✓ EDD v2 JSON Schema validation PASSED\n");
+        }
+        Err(e) => {
+            println!("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+            println!("✗ EDD v2 JSON Schema validation FAILED");
+            println!("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n");
+            match e {
+                SchemaValidationError::ValidationFailed(errors) => {
+                    println!("Validation errors:");
+                    for (i, err) in errors.iter().enumerate() {
+                        println!("  {}. {err}", i + 1);
+                    }
+                }
+                other => {
+                    println!("Error: {other}");
+                }
+            }
+            return ExitCode::from(1);
+        }
+    }
+
+    // Then run the semantic validation
     let yaml: serde_yaml::Value = match serde_yaml::from_str(&contents) {
         Ok(y) => y,
         Err(e) => {
@@ -284,6 +369,9 @@ pub fn emc_validate(path: &Path) -> ExitCode {
     print_emc_validation_results(&yaml, &errors, &warnings);
 
     if errors.is_empty() {
+        println!("\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+        println!("✓ All EMC validations PASSED");
+        println!("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
         ExitCode::SUCCESS
     } else {
         ExitCode::from(1)

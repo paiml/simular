@@ -1,6 +1,6 @@
 //! EDD Showcase Demos - Interactive demonstrations of the EDD methodology.
 //!
-//! This module provides six interactive WASM demonstrations that embody the
+//! This module provides interactive demonstrations that embody the
 //! Equation-Driven Development methodology. Each demo follows the complete cycle:
 //!
 //! 1. **Equation** - Define the governing equation
@@ -8,6 +8,15 @@
 //! 3. **Implementation** - Implement the simulation
 //! 4. **Verification** - Test passes, equation verified
 //! 5. **Falsification** - Demonstrate conditions that break the equation
+//!
+//! # Architecture (SIMULAR-DEMO-001)
+//!
+//! All demos implement the [`DemoEngine`] trait which ensures:
+//! - **YAML-first**: Single source of truth for configuration
+//! - **Deterministic replay**: Same seed → same output
+//! - **Renderer independence**: TUI/WASM produce identical state sequences
+//! - **Metamorphic testing**: Per Chen et al. (2018)
+//! - **Falsification criteria**: Per Popperian methodology
 //!
 //! # Demos
 //!
@@ -23,6 +32,7 @@
 //! All demos compile to `wasm32-unknown-unknown` and export a standard interface
 //! for integration with web frontends.
 
+pub mod engine;
 pub mod harmonic_oscillator;
 pub mod kepler_orbit;
 pub mod kingmans_hockey;
@@ -31,10 +41,22 @@ pub mod monte_carlo_pi;
 pub mod tsp_grasp;
 pub mod tsp_instance;
 
+// WASM module: DOM operations require unwrap/expect - if elements don't exist, app can't run.
 #[cfg(feature = "wasm")]
+#[allow(clippy::unwrap_used)]
+#[allow(clippy::expect_used)]
+#[allow(clippy::missing_panics_doc)]
+#[allow(clippy::missing_errors_doc)]
+#[allow(clippy::cast_lossless)]
+#[allow(clippy::redundant_closure_for_method_calls)]
+#[allow(clippy::manual_let_else)]
 pub mod tsp_wasm_app;
 
 // Re-exports for convenience
+pub use engine::{
+    CriterionResult, DemoEngine, DemoError, DemoMeta, DeterministicReplay,
+    FalsificationCriterion, MetamorphicRelation, MrResult, RendererIndependent, Severity,
+};
 pub use harmonic_oscillator::HarmonicOscillatorDemo;
 pub use kepler_orbit::KeplerOrbitDemo;
 pub use kingmans_hockey::KingmanHockeyDemo;

@@ -1225,6 +1225,7 @@ length: "10 km"
     #[test]
     fn test_poka_yoke_yaml_rejects_invalid() {
         #[derive(Debug, Deserialize)]
+        #[allow(dead_code)]
         struct TestConfig {
             velocity: Velocity,
         }

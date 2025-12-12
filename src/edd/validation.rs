@@ -1544,7 +1544,7 @@ mod tests {
     #[should_panic(expected = "requires at least 3 values")]
     fn test_richardson_extrapolation_requires_minimum_values() {
         let values = vec![1.0, 0.5];
-        richardson_extrapolation(&values, 2.0, 2.0, 0.1);
+        let _ = richardson_extrapolation(&values, 2.0, 2.0, 0.1);
     }
 
     #[test]

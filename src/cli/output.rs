@@ -66,7 +66,7 @@ pub fn print_experiment_result(result: &ExperimentResult, verbose: bool) {
     print_header(&result.name, &result.experiment_id, result.seed);
     print_verification(&result.verification, verbose);
     print_falsification(&result.falsification, verbose);
-    print_reproducibility(&result.reproducibility);
+    print_reproducibility(result.reproducibility.as_ref());
     print_execution(&result.execution);
     print_warnings(&result.warnings);
     print_footer(status_symbol, status);
@@ -122,8 +122,8 @@ fn print_falsification(falsification: &crate::edd::FalsificationSummary, verbose
     }
 }
 
-fn print_reproducibility(reproducibility: &Option<crate::edd::ReproducibilitySummary>) {
-    if let Some(ref repro) = reproducibility {
+fn print_reproducibility(reproducibility: Option<&crate::edd::ReproducibilitySummary>) {
+    if let Some(repro) = reproducibility {
         println!("\nReproducibility:");
         let sym = if repro.passed { "✓" } else { "✗" };
         println!("  {} {} runs, identical: {}", sym, repro.runs, repro.identical);

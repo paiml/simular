@@ -24,6 +24,11 @@ pub enum Command {
         /// Enable verbose output.
         verbose: bool,
     },
+    /// Validate experiment YAML against EDD v2 schema
+    Validate {
+        /// Path to the experiment YAML file.
+        experiment_path: PathBuf,
+    },
     /// Verify reproducibility of an experiment
     Verify {
         /// Path to the experiment YAML file.
@@ -36,7 +41,7 @@ pub enum Command {
         /// Path to the experiment YAML file.
         experiment_path: PathBuf,
     },
-    /// Validate an EMC YAML file
+    /// Validate an EMC YAML file against EDD v2 EMC schema
     EmcValidate {
         /// Path to the EMC file.
         emc_path: PathBuf,
@@ -80,6 +85,7 @@ impl Args {
 
         let command = match args[1].as_str() {
             "run" => Self::parse_run_command(args),
+            "validate" => Self::parse_validate_command(args),
             "verify" => Self::parse_verify_command(args),
             "emc-check" => Self::parse_emc_check_command(args),
             "emc-validate" => Self::parse_emc_validate_command(args),
@@ -130,6 +136,18 @@ impl Args {
             experiment_path: PathBuf::from(&args[2]),
             seed_override,
             verbose,
+        }
+    }
+
+    /// Parse the 'validate' command arguments.
+    fn parse_validate_command(args: &[String]) -> Command {
+        if args.len() < 3 {
+            eprintln!("Error: 'validate' command requires experiment path");
+            return Command::Help;
+        }
+
+        Command::Validate {
+            experiment_path: PathBuf::from(&args[2]),
         }
     }
 

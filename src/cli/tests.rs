@@ -623,7 +623,8 @@ fn test_command_inequality() {
 // ============================================================================
 
 use super::commands::{
-    emc_check, emc_validate, list_emc, run_cli, run_experiment, verify_reproducibility,
+    emc_check, emc_validate, list_emc, run_cli, run_experiment, validate_experiment,
+    verify_reproducibility,
 };
 use std::process::ExitCode;
 
@@ -694,6 +695,172 @@ fn test_emc_validate_file_not_found() {
 fn test_list_emc_returns_success() {
     let exit = list_emc();
     assert_eq!(exit, ExitCode::SUCCESS);
+}
+
+// ============================================================================
+// validate_experiment tests
+// ============================================================================
+
+#[test]
+fn test_validate_experiment_file_not_found() {
+    let exit = validate_experiment(std::path::Path::new("nonexistent.yaml"));
+    assert_ne!(exit, ExitCode::SUCCESS);
+}
+
+#[test]
+fn test_validate_experiment_valid_file() {
+    // Note: Existing experiment files use legacy format.
+    // This test uses a new-format YAML to verify schema validation works.
+    let temp_dir = std::env::temp_dir();
+    let temp_file = temp_dir.join("new_format_experiment.yaml");
+    std::fs::write(
+        &temp_file,
+        r#"
+id: "TSP-001"
+seed: 42
+simulation:
+  type: "tsp"
+  parameters:
+    n_cities: 25
+falsification:
+  criteria:
+    - id: "gap"
+      threshold: 0.25
+      condition: "gap < threshold"
+"#,
+    )
+    .ok();
+    let exit = validate_experiment(&temp_file);
+    assert_eq!(exit, ExitCode::SUCCESS);
+    std::fs::remove_file(&temp_file).ok();
+}
+
+#[test]
+fn test_validate_experiment_invalid_yaml() {
+    let temp_dir = std::env::temp_dir();
+    let temp_file = temp_dir.join("invalid_experiment.yaml");
+    std::fs::write(
+        &temp_file,
+        r#"
+id: "TEST-001"
+# Missing required fields: seed, emc_ref, simulation, falsification
+"#,
+    )
+    .ok();
+    let exit = validate_experiment(&temp_file);
+    assert_ne!(exit, ExitCode::SUCCESS);
+    std::fs::remove_file(&temp_file).ok();
+}
+
+#[test]
+fn test_validate_experiment_with_valid_structure() {
+    let temp_dir = std::env::temp_dir();
+    let temp_file = temp_dir.join("valid_experiment.yaml");
+    std::fs::write(
+        &temp_file,
+        r#"
+id: "TEST-001"
+seed: 42
+emc_ref: "test/emc"
+simulation:
+  type: "test"
+falsification:
+  criteria:
+    - id: "gap"
+      threshold: 0.25
+      condition: "gap < threshold"
+"#,
+    )
+    .ok();
+    let exit = validate_experiment(&temp_file);
+    assert_eq!(exit, ExitCode::SUCCESS);
+    std::fs::remove_file(&temp_file).ok();
+}
+
+#[test]
+fn test_validate_experiment_monte_carlo() {
+    // Test Monte Carlo style experiment validation with new format
+    let temp_dir = std::env::temp_dir();
+    let temp_file = temp_dir.join("monte_carlo_experiment.yaml");
+    std::fs::write(
+        &temp_file,
+        r#"
+id: "MC-001"
+seed: 42
+simulation:
+  type: "monte_carlo"
+  parameters:
+    samples: 10000
+falsification:
+  criteria:
+    - id: "convergence"
+      threshold: 0.01
+      condition: "error < threshold"
+"#,
+    )
+    .ok();
+    let exit = validate_experiment(&temp_file);
+    assert_eq!(exit, ExitCode::SUCCESS);
+    std::fs::remove_file(&temp_file).ok();
+}
+
+#[test]
+fn test_validate_experiment_tsp_grasp() {
+    // Test TSP GRASP style experiment validation with new format
+    let temp_dir = std::env::temp_dir();
+    let temp_file = temp_dir.join("tsp_grasp_experiment.yaml");
+    std::fs::write(
+        &temp_file,
+        r#"
+id: "TSP-GRASP-001"
+seed: 42
+simulation:
+  type: "tsp_grasp"
+  parameters:
+    n_cities: 25
+    rcl_size: 5
+falsification:
+  criteria:
+    - id: "optimality_gap"
+      threshold: 0.25
+      condition: "gap < threshold"
+"#,
+    )
+    .ok();
+    let exit = validate_experiment(&temp_file);
+    assert_eq!(exit, ExitCode::SUCCESS);
+    std::fs::remove_file(&temp_file).ok();
+}
+
+#[test]
+fn test_run_cli_validate_command() {
+    // Test run_cli with validate command using new format
+    let temp_dir = std::env::temp_dir();
+    let temp_file = temp_dir.join("cli_validate_experiment.yaml");
+    std::fs::write(
+        &temp_file,
+        r#"
+id: "CLI-001"
+seed: 42
+simulation:
+  type: "test"
+falsification:
+  criteria:
+    - id: "test"
+      threshold: 0.1
+      condition: "value < threshold"
+"#,
+    )
+    .ok();
+
+    let args = Args {
+        command: Command::Validate {
+            experiment_path: temp_file.clone(),
+        },
+    };
+    let exit = run_cli(args);
+    assert_eq!(exit, ExitCode::SUCCESS);
+    std::fs::remove_file(&temp_file).ok();
 }
 
 // Test with actual valid experiment file

@@ -19,6 +19,7 @@ bincode = "1.3"
 # Validation
 validator = { version = "0.20", features = ["derive"] }
 thiserror = "2.0"
+jsonschema = { version = "0.29", optional = true }
 
 # Random number generation (deterministic)
 rand = "0.8"
@@ -82,21 +83,23 @@ z3 = { version = "0.12", optional = true }
 proptest = "1.5"
 criterion = { version = "0.5", features = ["html_reports"] }
 tempfile = "3.14"
-# Probar WASM testing framework
-probar = { path = "../probar/crates/probar" }
+# Probar WASM testing framework (published as jugar-probar on crates.io)
+jugar-probar = "0.2.0"
 
 [features]
-default = []
+default = ["schema-validation"]
 tui = ["dep:ratatui", "dep:crossterm"]
 web = ["dep:tokio", "dep:axum"]
 wasm = ["dep:wasm-bindgen", "dep:js-sys", "dep:web-sys", "dep:getrandom", "dep:serde-wasm-bindgen", "dep:console_error_panic_hook"]
-full = ["tui", "web"]
+full = ["tui", "web", "schema-validation"]
 # EDD verification feature - enables extended verification tests
 verification = []
 # Property-based testing feature
 proptest = []
 # Z3 equation proofs - MANDATORY for EDD compliance (quality gate EDD-11, EDD-12)
 z3-proofs = ["dep:z3"]
+# JSON Schema validation (disabled for WASM due to getrandom 0.3 issues)
+schema-validation = ["dep:jsonschema"]
 
 [lib]
 name = "simular"
@@ -156,6 +159,10 @@ opt-level = 3
 
 [package.metadata.wasm-pack.profile.release]
 wasm-opt = false
+
+# Force getrandom to use js feature for WASM
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+getrandom = { version = "0.2", features = ["js"] }
 
 [lints.rust]
 unsafe_code = "deny"

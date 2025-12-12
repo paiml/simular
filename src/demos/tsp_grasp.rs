@@ -3718,9 +3718,6 @@ algorithm:
     seed: 42
 "#;
 
-    // Full 20-city California instance from file
-    const CALIFORNIA_20_YAML: &str = include_str!("../../examples/experiments/bay_area_tsp.yaml");
-
     const MINIMAL_YAML: &str = r#"
 meta:
   id: "TEST-001"

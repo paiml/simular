@@ -1168,4 +1168,91 @@ mod tests {
         }
         let _ = SimularTui::render_energy_chart(&state_data, area);
     }
+
+    // =========================================================================
+    // Additional tests for DashboardState accessor methods
+    // =========================================================================
+
+    #[test]
+    fn test_dashboard_toggle_pause_method() {
+        let mut state = DashboardState::default();
+        assert!(!state.is_paused());
+        assert!(state.is_running());
+
+        state.toggle_pause();
+        assert!(state.is_paused());
+        assert_eq!(state.status, "Paused by user");
+
+        state.toggle_pause();
+        assert!(!state.is_paused());
+        assert_eq!(state.status, "Resumed");
+    }
+
+    #[test]
+    fn test_dashboard_request_reset_method() {
+        let mut state = DashboardState::default();
+        state.request_reset();
+        assert_eq!(state.status, "Reset requested");
+    }
+
+    #[test]
+    fn test_dashboard_stop_method_call() {
+        let mut state = DashboardState::default();
+        assert!(state.is_running());
+        state.stop();
+        assert!(!state.is_running());
+    }
+
+    #[test]
+    fn test_dashboard_set_status_method() {
+        let mut state = DashboardState::default();
+        state.set_status("Custom status");
+        assert_eq!(state.status, "Custom status");
+
+        state.set_status(String::from("String status"));
+        assert_eq!(state.status, "String status");
+    }
+
+    #[test]
+    fn test_dashboard_series_accessors() {
+        let mut state = DashboardState::default();
+        state.energy_series.push(0.0, 100.0);
+        state.ke_series.push(0.0, 60.0);
+        state.pe_series.push(0.0, 40.0);
+        state.throughput_series.push(0.0, 1000.0);
+        state.metrics.step = 42;
+
+        // Test accessors
+        assert_eq!(state.energy_series().len(), 1);
+        assert_eq!(state.ke_series().len(), 1);
+        assert_eq!(state.pe_series().len(), 1);
+        assert_eq!(state.throughput_series().len(), 1);
+        assert_eq!(state.metrics().step, 42);
+    }
+
+    #[test]
+    fn test_format_controls_text_when_running() {
+        let state = DashboardState::default();
+        let text = state.format_controls_text();
+        assert!(text.contains("RUNNING"));
+        assert!(text.contains("[Space] Pause/Resume"));
+        assert!(text.contains("[R] Reset"));
+        assert!(text.contains("[Q] Quit"));
+    }
+
+    #[test]
+    fn test_format_controls_text_when_paused() {
+        let mut state = DashboardState::default();
+        state.toggle_pause();
+        let text = state.format_controls_text();
+        assert!(text.contains("PAUSED"));
+    }
+
+    #[test]
+    fn test_format_controls_text_when_stopped() {
+        let mut state = DashboardState::default();
+        state.stop();
+        let text = state.format_controls_text();
+        assert!(text.contains("STOPPED"));
+    }
 }
