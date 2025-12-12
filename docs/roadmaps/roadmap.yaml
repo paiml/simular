@@ -142,3 +142,79 @@ roadmap:
   - pmat
   - quality
   notes: "Current coverage 93.86%. TUI binaries mocked with TestBackend. Gap of 1.14% to 95% target."
+- id: OR-001
+  github_issue: null
+  item_type: epic
+  title: "Simple OR Example: Bay Area TSP Ground Truth"
+  status: inprogress
+  priority: high
+  assigned_to: null
+  created: 2025-12-12T14:30:00+00:00
+  updated: 2025-12-12T14:30:00+00:00
+  spec: docs/specifications/simple-or-example.md
+  acceptance_criteria:
+  - "AC-1: TspGraspDemo::from_yaml() parses bay_area_tsp.yaml"
+  - "AC-2: Bay Area instance returns optimal 115 miles"
+  - "AC-3: User can modify YAML cities"
+  - "AC-4: User can switch algorithm via YAML"
+  - "AC-5: Probar E2E tests pass with deterministic replay"
+  - "QG-1: 100% test coverage on tsp_instance.rs"
+  phases: []
+  subtasks:
+  - id: OR-001-01
+    github_issue: null
+    title: "TspInstanceYaml struct + serde"
+    status: inprogress
+    completion: 0
+  - id: OR-001-02
+    github_issue: null
+    title: "from_yaml() implementation"
+    status: pending
+    completion: 0
+  - id: OR-001-03
+    github_issue: null
+    title: "bay_area_tsp.yaml ground truth"
+    status: pending
+    completion: 0
+  - id: OR-001-04
+    github_issue: null
+    title: "Jidoka validators"
+    status: pending
+    completion: 0
+  - id: OR-001-05
+    github_issue: null
+    title: "Probar E2E tests"
+    status: pending
+    completion: 0
+  - id: OR-001-06
+    github_issue: null
+    title: "WASM from_yaml() binding"
+    status: pending
+    completion: 0
+  - id: OR-001-07
+    github_issue: null
+    title: "Web UI: YAML editor"
+    status: pending
+    completion: 0
+  - id: OR-001-08
+    github_issue: null
+    title: "Web UI: Download/Upload"
+    status: pending
+    completion: 0
+  - id: OR-001-09
+    github_issue: null
+    title: "Web UI: Algorithm selector"
+    status: pending
+    completion: 0
+  - id: OR-001-10
+    github_issue: null
+    title: "Integration test: full flow"
+    status: pending
+    completion: 0
+  estimated_effort: null
+  labels:
+  - or
+  - tsp
+  - yaml-first
+  - wasm
+  notes: "YAML-first TSP with Bay Area ground truth. 6 cities, optimal 115 miles."

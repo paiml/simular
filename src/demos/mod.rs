@@ -29,6 +29,7 @@ pub mod kingmans_hockey;
 pub mod littles_law_factory;
 pub mod monte_carlo_pi;
 pub mod tsp_grasp;
+pub mod tsp_instance;
 
 // Re-exports for convenience
 pub use harmonic_oscillator::HarmonicOscillatorDemo;
@@ -37,6 +38,7 @@ pub use kingmans_hockey::KingmanHockeyDemo;
 pub use littles_law_factory::LittlesLawFactoryDemo;
 pub use monte_carlo_pi::MonteCarloPlDemo;
 pub use tsp_grasp::TspGraspDemo;
+pub use tsp_instance::{TspInstanceYaml, TspInstanceError, TspMeta, TspCity, TspParams, TspAlgorithmConfig, Coords};
 
 use serde::{Deserialize, Serialize};
 
