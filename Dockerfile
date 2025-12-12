@@ -3,7 +3,7 @@
 # SHA256 pinned for deterministic builds
 
 # Build stage
-ARG RUST_VERSION=1.83.0
+ARG RUST_VERSION=1.85.0
 FROM rust:${RUST_VERSION}-slim-bookworm AS builder
 
 # Install build dependencies
