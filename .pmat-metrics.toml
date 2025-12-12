@@ -83,3 +83,13 @@ warnings_as_errors = true
 require_testable_predictions = true
 null_hypothesis_testing = true
 refutation_over_confirmation = true
+
+[exclude]
+# Generated artifacts - not source code
+paths = [
+    "book/",
+    "pkg/",
+    "web/pkg/",
+    "target/",
+    "*.min.js"
+]

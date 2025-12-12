@@ -145,6 +145,10 @@ name = "tsp-tui"
 path = "src/bin/tsp_tui.rs"
 required-features = ["tui"]
 
+[[bench]]
+name = "simulation_benchmarks"
+harness = false
+
 [profile.release]
 lto = true
 codegen-units = 1

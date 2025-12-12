@@ -283,52 +283,58 @@ pub fn init_tsp_app() -> Result<(), JsValue> {
     }
 
     // Tab switching
-    if let Ok(tabs) = document.query_selector_all(".tab") {
-        for i in 0..tabs.length() {
-            if let Some(tab) = tabs.get(i) {
-                let doc = document.clone();
-                let closure = Closure::wrap(Box::new(move |e: web_sys::Event| {
-                    if let Some(target) = e.target() {
-                        if let Some(el) = target.dyn_ref::<web_sys::Element>() {
-                            // Remove active from all tabs
-                            if let Ok(all_tabs) = doc.query_selector_all(".tab") {
-                                for j in 0..all_tabs.length() {
-                                    if let Some(t) = all_tabs.get(j) {
-                                        if let Some(t_el) = t.dyn_ref::<web_sys::Element>() {
-                                            let _ = t_el.class_list().remove_1("active");
-                                        }
-                                    }
-                                }
-                            }
-                            // Remove active from all mains
-                            if let Ok(all_mains) = doc.query_selector_all("main") {
-                                for j in 0..all_mains.length() {
-                                    if let Some(m) = all_mains.get(j) {
-                                        if let Some(m_el) = m.dyn_ref::<web_sys::Element>() {
-                                            let _ = m_el.class_list().remove_1("active");
-                                        }
-                                    }
-                                }
-                            }
-                            // Add active to clicked tab
-                            let _ = el.class_list().add_1("active");
-                            // Add active to corresponding view
-                            if let Some(view) = el.get_attribute("data-view") {
-                                if let Some(main) = doc.get_element_by_id(&format!("view-{view}")) {
-                                    let _ = main.class_list().add_1("active");
-                                }
-                            }
-                        }
-                    }
-                }) as Box<dyn FnMut(_)>);
+    setup_tabs(&document)?;
 
-                tab.add_event_listener_with_callback("click", closure.as_ref().unchecked_ref())?;
-                closure.forget();
+    Ok(())
+}
+
+fn setup_tabs(document: &web_sys::Document) -> Result<(), JsValue> {
+    let tabs = match document.query_selector_all(".tab") {
+        Ok(t) => t,
+        Err(_) => return Ok(()),
+    };
+
+    for i in 0..tabs.length() {
+        let Some(tab) = tabs.get(i) else { continue };
+        let doc = document.clone();
+        let closure = Closure::wrap(Box::new(move |e: web_sys::Event| {
+            handle_tab_click(&doc, &e);
+        }) as Box<dyn FnMut(_)>);
+
+        tab.add_event_listener_with_callback("click", closure.as_ref().unchecked_ref())?;
+        closure.forget();
+    }
+    Ok(())
+}
+
+fn handle_tab_click(doc: &web_sys::Document, e: &web_sys::Event) {
+    let Some(target) = e.target() else { return };
+    let Some(el) = target.dyn_ref::<web_sys::Element>() else { return };
+
+    // Remove active from all tabs
+    remove_class_from_all(doc, ".tab", "active");
+    // Remove active from all mains
+    remove_class_from_all(doc, "main", "active");
+    // Add active to clicked tab
+    let _ = el.class_list().add_1("active");
+    // Add active to corresponding view
+    if let Some(view) = el.get_attribute("data-view") {
+        if let Some(main) = doc.get_element_by_id(&format!("view-{view}")) {
+            let _ = main.class_list().add_1("active");
+        }
+    }
+}
+
+fn remove_class_from_all(doc: &web_sys::Document, selector: &str, class: &str) {
+    if let Ok(elements) = doc.query_selector_all(selector) {
+        for j in 0..elements.length() {
+            if let Some(el) = elements.get(j) {
+                if let Some(el_ref) = el.dyn_ref::<web_sys::Element>() {
+                    let _ = el_ref.class_list().remove_1(class);
+                }
             }
         }
     }
-
-    Ok(())
 }
 
 fn setup_button<F>(document: &web_sys::Document, id: &str, mut callback: F) -> Result<(), JsValue>

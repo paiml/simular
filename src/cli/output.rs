@@ -63,44 +63,56 @@ pub fn print_experiment_result(result: &ExperimentResult, verbose: bool) {
     let status = if result.passed { "PASSED" } else { "FAILED" };
     let status_symbol = if result.passed { "✓" } else { "✗" };
 
+    print_header(&result.name, &result.experiment_id, result.seed);
+    print_verification(&result.verification, verbose);
+    print_falsification(&result.falsification, verbose);
+    print_reproducibility(&result.reproducibility);
+    print_execution(&result.execution);
+    print_warnings(&result.warnings);
+    print_footer(status_symbol, status);
+}
+
+fn print_header(name: &str, id: &str, seed: u64) {
     println!("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-    println!("Experiment: {}", result.name);
-    println!("ID: {}", result.experiment_id);
-    println!("Seed: {}", result.seed);
+    println!("Experiment: {name}");
+    println!("ID: {id}");
+    println!("Seed: {seed}");
     println!("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n");
+}
 
-    // Verification results
+fn print_verification(verification: &crate::edd::VerificationSummary, verbose: bool) {
     println!("Verification Tests:");
-    println!("  Total:  {}", result.verification.total);
-    println!("  Passed: {}", result.verification.passed);
-    println!("  Failed: {}", result.verification.failed);
+    println!("  Total:  {}", verification.total);
+    println!("  Passed: {}", verification.passed);
+    println!("  Failed: {}", verification.failed);
 
-    if verbose && !result.verification.tests.is_empty() {
+    if verbose && !verification.tests.is_empty() {
         println!();
-        for test in &result.verification.tests {
+        for test in &verification.tests {
             let sym = if test.passed { "✓" } else { "✗" };
             println!("  {} {}: {}", sym, test.id, test.name);
-            if !test.passed {
-                if let Some(ref err) = test.error {
+            if let Some(ref err) = test.error {
+                if !test.passed {
                     println!("      Error: {err}");
                 }
             }
         }
     }
+}
 
-    // Falsification results
+fn print_falsification(falsification: &crate::edd::FalsificationSummary, verbose: bool) {
     println!("\nFalsification Criteria:");
-    println!("  Total:     {}", result.falsification.total);
-    println!("  Passed:    {}", result.falsification.passed);
-    println!("  Triggered: {}", result.falsification.triggered);
+    println!("  Total:     {}", falsification.total);
+    println!("  Passed:    {}", falsification.passed);
+    println!("  Triggered: {}", falsification.triggered);
 
-    if result.falsification.jidoka_triggered {
+    if falsification.jidoka_triggered {
         println!("  Jidoka:    TRIGGERED (stop-on-error)");
     }
 
-    if verbose && !result.falsification.criteria.is_empty() {
+    if verbose && !falsification.criteria.is_empty() {
         println!();
-        for crit in &result.falsification.criteria {
+        for crit in &falsification.criteria {
             let sym = if crit.triggered { "✗" } else { "✓" };
             println!("  {} {}: {}", sym, crit.id, crit.name);
             if crit.triggered {
@@ -108,31 +120,33 @@ pub fn print_experiment_result(result: &ExperimentResult, verbose: bool) {
             }
         }
     }
+}
 
-    // Reproducibility
-    if let Some(ref repro) = result.reproducibility {
+fn print_reproducibility(reproducibility: &Option<crate::edd::ReproducibilitySummary>) {
+    if let Some(ref repro) = reproducibility {
         println!("\nReproducibility:");
         let sym = if repro.passed { "✓" } else { "✗" };
-        println!(
-            "  {} {} runs, identical: {}",
-            sym, repro.runs, repro.identical
-        );
+        println!("  {} {} runs, identical: {}", sym, repro.runs, repro.identical);
         println!("  Reference hash: {}", repro.reference_hash);
     }
+}
 
-    // Execution metrics
+fn print_execution(execution: &crate::edd::ExecutionMetrics) {
     println!("\nExecution:");
-    println!("  Duration:     {} ms", result.execution.duration_ms);
-    println!("  Replications: {}", result.execution.replications);
+    println!("  Duration:     {} ms", execution.duration_ms);
+    println!("  Replications: {}", execution.replications);
+}
 
-    // Warnings
-    if !result.warnings.is_empty() {
+fn print_warnings(warnings: &[String]) {
+    if !warnings.is_empty() {
         println!("\nWarnings:");
-        for warning in &result.warnings {
+        for warning in warnings {
             println!("  ! {warning}");
         }
     }
+}
 
+fn print_footer(status_symbol: &str, status: &str) {
     println!("\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
     println!("{status_symbol} Result: {status}");
     println!("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n");

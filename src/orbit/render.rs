@@ -293,130 +293,103 @@ pub fn render_state(
 ) -> Vec<RenderCommand> {
     let mut commands = Vec::new();
 
-    // Clear screen
-    commands.push(RenderCommand::Clear {
-        color: Color::BLACK,
-    });
-
-    // Set camera
+    commands.push(RenderCommand::Clear { color: Color::BLACK });
     commands.push(RenderCommand::SetCamera {
         center_x: config.camera.center_x,
         center_y: config.camera.center_y,
         zoom: config.camera.zoom,
     });
 
-    // Draw orbit trails
-    for (i, trail) in trails.iter().enumerate() {
-        if i < config.bodies.len() && config.bodies[i].show_orbit_trail {
-            let scaled_points: Vec<(f64, f64)> = trail
-                .points()
-                .iter()
-                .map(|(x, y)| (x / config.scale_factor, y / config.scale_factor))
-                .collect();
+    render_orbit_trails(&mut commands, trails, config);
+    render_bodies(&mut commands, state, config);
+    render_jidoka_status(&mut commands, jidoka, config.show_jidoka_status);
+    render_heijunka_status(&mut commands, heijunka, config.show_heijunka_status);
 
-            if !scaled_points.is_empty() {
-                commands.push(RenderCommand::DrawOrbitPath {
-                    points: scaled_points,
-                    color: config.bodies[i].color,
-                });
-            }
+    commands
+}
+
+fn render_orbit_trails(commands: &mut Vec<RenderCommand>, trails: &[OrbitTrail], config: &RenderConfig) {
+    for (i, trail) in trails.iter().enumerate() {
+        let Some(body_config) = config.bodies.get(i) else { continue };
+        if !body_config.show_orbit_trail { continue; }
+
+        let scaled_points: Vec<(f64, f64)> = trail
+            .points()
+            .iter()
+            .map(|(x, y)| (x / config.scale_factor, y / config.scale_factor))
+            .collect();
+
+        if !scaled_points.is_empty() {
+            commands.push(RenderCommand::DrawOrbitPath {
+                points: scaled_points,
+                color: body_config.color,
+            });
         }
     }
+}
 
-    // Draw bodies
+fn render_bodies(commands: &mut Vec<RenderCommand>, state: &NBodyState, config: &RenderConfig) {
     for (i, body) in state.bodies.iter().enumerate() {
         let (x, y, _) = body.position.as_meters();
         let sx = x / config.scale_factor;
         let sy = y / config.scale_factor;
-
         let appearance = config.bodies.get(i).cloned().unwrap_or_default();
 
-        // Draw body
         commands.push(RenderCommand::DrawCircle {
-            x: sx,
-            y: sy,
-            radius: appearance.radius,
-            color: appearance.color,
-            filled: true,
+            x: sx, y: sy, radius: appearance.radius, color: appearance.color, filled: true,
         });
 
-        // Draw velocity vector
         if appearance.show_velocity {
             let (vx, vy, _) = body.velocity.as_mps();
             commands.push(RenderCommand::DrawVelocity {
-                x: sx,
-                y: sy,
+                x: sx, y: sy,
                 vx: vx * config.velocity_scale,
                 vy: vy * config.velocity_scale,
-                scale: 1.0,
-                color: Color::GREEN,
+                scale: 1.0, color: Color::GREEN,
             });
         }
 
-        // Draw label
         commands.push(RenderCommand::DrawText {
-            x: sx + appearance.radius + 2.0,
-            y: sy,
-            text: appearance.name.clone(),
-            color: Color::WHITE,
+            x: sx + appearance.radius + 2.0, y: sy,
+            text: appearance.name.clone(), color: Color::WHITE,
         });
     }
+}
 
-    // Draw Jidoka status
-    if config.show_jidoka_status {
-        if let Some(status) = jidoka {
-            let status_color = if status.energy_ok && status.angular_momentum_ok && status.finite_ok
-            {
-                Color::GREEN
-            } else if status.warning_count > 0 {
-                Color::ORANGE
-            } else {
-                Color::RED
-            };
+fn render_jidoka_status(commands: &mut Vec<RenderCommand>, jidoka: Option<&JidokaStatus>, show: bool) {
+    let Some(status) = jidoka.filter(|_| show) else { return };
 
-            commands.push(RenderCommand::DrawText {
-                x: 10.0,
-                y: 10.0,
-                text: format!(
-                    "Jidoka: E={:.2e} L={:.2e} {}",
-                    status.energy_error,
-                    status.angular_momentum_error,
-                    if status.close_encounter_warning {
-                        "⚠ Close"
-                    } else {
-                        "OK"
-                    }
-                ),
-                color: status_color,
-            });
-        }
+    let status_color = jidoka_status_color(status);
+    let suffix = if status.close_encounter_warning { "⚠ Close" } else { "OK" };
+    commands.push(RenderCommand::DrawText {
+        x: 10.0, y: 10.0,
+        text: format!("Jidoka: E={:.2e} L={:.2e} {suffix}", status.energy_error, status.angular_momentum_error),
+        color: status_color,
+    });
+}
+
+fn jidoka_status_color(status: &JidokaStatus) -> Color {
+    if status.energy_ok && status.angular_momentum_ok && status.finite_ok {
+        Color::GREEN
+    } else if status.warning_count > 0 {
+        Color::ORANGE
+    } else {
+        Color::RED
     }
+}
 
-    // Draw Heijunka status
-    if config.show_heijunka_status {
-        if let Some(status) = heijunka {
-            let budget_color = if status.utilization <= 1.0 {
-                Color::GREEN
-            } else {
-                Color::RED
-            };
+fn render_heijunka_status(commands: &mut Vec<RenderCommand>, heijunka: Option<&HeijunkaStatus>, show: bool) {
+    let Some(status) = heijunka.filter(|_| show) else { return };
 
-            commands.push(RenderCommand::DrawText {
-                x: 10.0,
-                y: 25.0,
-                text: format!(
-                    "Heijunka: {:.1}ms/{:.1}ms ({:.0}%) Q={:?}",
-                    status.used_ms,
-                    status.budget_ms,
-                    status.utilization * 100.0,
-                    status.quality,
-                ),
-                color: budget_color,
-            });
-        }
-    }
-
-    commands
+    let budget_color = if status.utilization <= 1.0 { Color::GREEN } else { Color::RED };
+    commands.push(RenderCommand::DrawText {
+        x: 10.0, y: 25.0,
+        text: format!(
+            "Heijunka: {:.1}ms/{:.1}ms ({:.0}%) Q={:?}",
+            status.used_ms, status.budget_ms, status.utilization * 100.0, status.quality,
+        ),
+        color: budget_color,
+    });
 }
 
 #[cfg(test)]
