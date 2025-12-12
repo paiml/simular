@@ -1,0 +1,18 @@
+# Cargo Configuration for Reproducible Builds
+
+[build]
+# Use deterministic compiler flags
+rustflags = ["-C", "overflow-checks=yes"]
+
+[target.wasm32-unknown-unknown]
+# WASM-specific settings
+rustflags = ["-C", "target-feature=+simd128"]
+
+[profile.release]
+# Reproducible release builds
+codegen-units = 1
+lto = "thin"
+
+[env]
+# Deterministic environment
+CARGO_INCREMENTAL = "0"
