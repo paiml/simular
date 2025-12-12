@@ -9,21 +9,23 @@
 fn main() -> std::io::Result<()> {
     use simular::tui::tsp_app::TspApp;
 
-    let args: Vec<String> = std::env::args().collect();
+    // YAML-FIRST: Default to Bay Area ground truth instance
+    const DEFAULT_YAML: &str = "examples/experiments/bay_area_tsp.yaml";
 
-    let app = if args.len() > 1 {
-        // Load from YAML file
-        let yaml_path = &args[1];
-        match TspApp::from_yaml_file(yaml_path) {
-            Ok(app) => app,
-            Err(e) => {
-                eprintln!("Error loading YAML file '{}': {}", yaml_path, e);
-                std::process::exit(1);
-            }
+    let args: Vec<String> = std::env::args().collect();
+    let yaml_path = if args.len() > 1 { &args[1] } else { DEFAULT_YAML };
+
+    let app = match TspApp::from_yaml_file(yaml_path) {
+        Ok(app) => {
+            eprintln!("Loaded: {} ({} cities, {} units)",
+                yaml_path, app.demo.n, app.demo.units);
+            app
         }
-    } else {
-        // Default: 30 random cities
-        TspApp::new(30, 42)
+        Err(e) => {
+            eprintln!("Error loading '{}': {}", yaml_path, e);
+            eprintln!("Usage: tsp-tui [path/to/instance.yaml]");
+            std::process::exit(1);
+        }
     };
 
     tui::run(app)
