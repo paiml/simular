@@ -1,0 +1,67 @@
+# Bay Area TSP Ground Truth Instance
+#
+# User-editable TSP instance - modify cities and distances freely.
+# This file follows the YAML-first architecture: change data here,
+# not in code.
+#
+# Optimal Tour: SF -> Oakland -> Berkeley -> Fremont -> San Jose -> Palo Alto -> SF
+# Optimal Distance: 115 miles
+#
+# References:
+#   - Miller, Tucker, Zemlin (1960) - MTZ subtour elimination
+#   - Feo & Resende (1995) - GRASP metaheuristic
+#   - OR-001 Specification: docs/specifications/simple-or-example.md
+
+meta:
+  id: "TSP-BAY-006"
+  version: "1.0.0"
+  description: "6-city Bay Area ground truth instance with verified driving distances"
+  source: "Google Maps (Dec 2024), adjusted for triangle inequality"
+  units: "miles"
+  optimal_known: 115
+
+cities:
+  - id: 0
+    name: "San Francisco"
+    alias: "SF"
+    coords: { lat: 37.7749, lon: -122.4194 }
+  - id: 1
+    name: "Oakland"
+    alias: "OAK"
+    coords: { lat: 37.8044, lon: -122.2712 }
+  - id: 2
+    name: "San Jose"
+    alias: "SJ"
+    coords: { lat: 37.3382, lon: -121.8863 }
+  - id: 3
+    name: "Palo Alto"
+    alias: "PA"
+    coords: { lat: 37.4419, lon: -122.1430 }
+  - id: 4
+    name: "Berkeley"
+    alias: "BRK"
+    coords: { lat: 37.8716, lon: -122.2727 }
+  - id: 5
+    name: "Fremont"
+    alias: "FRE"
+    coords: { lat: 37.5485, lon: -121.9886 }
+
+# Distance Matrix (Row=From, Col=To)
+# Symmetric matrix satisfying triangle inequality
+# Order: SF, OAK, SJ, PA, BRK, FRE
+matrix:
+  - [ 0, 12, 48, 35, 14, 42]  # From SF
+  - [12,  0, 42, 30,  4, 30]  # From OAK
+  - [48, 42,  0, 15, 46, 17]  # From SJ
+  - [35, 30, 15,  0, 32, 18]  # From PA
+  - [14,  4, 46, 32,  0, 32]  # From BRK
+  - [42, 30, 17, 18, 32,  0]  # From FRE
+
+# Algorithm configuration (user-selectable)
+algorithm:
+  method: "grasp"  # Options: greedy, grasp, brute_force
+  params:
+    rcl_size: 3        # Restricted Candidate List size for GRASP
+    restarts: 10       # Number of GRASP restarts
+    two_opt: true      # Enable 2-opt local search
+    seed: 42           # For reproducibility

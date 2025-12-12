@@ -123,12 +123,12 @@ cities:
 # Symmetric matrix - users can modify any value
 # Order: SF, OAK, SJ, PA, BRK, FRE
 matrix:
-  - [ 0, 12, 48, 35, 14, 43]  # From SF
+  - [ 0, 12, 48, 35, 14, 42]  # From SF
   - [12,  0, 42, 30,  4, 30]  # From OAK
-  - [48, 42,  0, 15, 47, 17]  # From SJ
+  - [48, 42,  0, 15, 46, 17]  # From SJ
   - [35, 30, 15,  0, 32, 18]  # From PA
-  - [14,  4, 47, 32,  0, 32]  # From BRK
-  - [43, 30, 17, 18, 32,  0]  # From FRE
+  - [14,  4, 46, 32,  0, 32]  # From BRK
+  - [42, 30, 17, 18, 32,  0]  # From FRE
 
 # Algorithm configuration (user-selectable)
 algorithm:
