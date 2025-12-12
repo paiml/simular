@@ -244,6 +244,43 @@ algorithm:
 | **Algorithm Switch** | Radio: Greedy / GRASP / Brute Force | Config update |
 | **Live Validation** | Red border on invalid YAML | Schema check |
 
+### 4.3 Metrics Display (TUI + WASM)
+
+**CRITICAL: All metrics must be clearly labeled with units.**
+
+Both TUI and WASM must display:
+
+| Metric | Label | Example | Source |
+|--------|-------|---------|--------|
+| Number of cities | `[cities]` | `6 [cities]` | `TspInstanceYaml.city_count()` |
+| Best tour distance | `[miles]` | `115 [miles]` | `TspGraspDemo.best_tour_length` |
+| Optimal known | `[miles]` | `Optimal: 115 [miles]` | `TspInstanceYaml.meta.optimal_known` |
+
+**TUI Display Example:**
+```
+┌─────────────────────────────────────────┐
+│  TSP GRASP Demo                         │
+├─────────────────────────────────────────┤
+│  Cities: 6 [cities]                     │
+│  Best:   115 [miles]                    │
+│  Optimal: 115 [miles] ✓                 │
+│  Gap:    0.0%                           │
+└─────────────────────────────────────────┘
+```
+
+**WASM API Methods:**
+```rust
+// TspWasmInstance
+fn city_count(&self) -> usize;           // Returns count
+fn get_units(&self) -> String;           // Returns "miles"
+fn get_optimal_known(&self) -> Option<u32>;
+
+// WasmTspGrasp
+fn get_n(&self) -> usize;                // City count
+fn get_best_tour_length(&self) -> f64;   // In miles (from YAML)
+fn get_units(&self) -> String;           // NEW: Returns unit label
+```
+
 ## 5. Implementation Tasks (pmat work)
 
 ### 5.1 Task Breakdown
