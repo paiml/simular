@@ -1,0 +1,8 @@
+# Rust Toolchain Configuration
+# Ensures reproducible builds across all environments
+
+[toolchain]
+channel = "1.83.0"
+components = ["rustfmt", "clippy", "rust-analyzer"]
+targets = ["wasm32-unknown-unknown"]
+profile = "default"
