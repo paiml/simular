@@ -77,8 +77,11 @@ WORKDIR /app
 # Copy manifests
 COPY Cargo.toml Cargo.lock ./
 
-# Copy source
+# Copy source and other directories referenced in Cargo.toml
 COPY src ./src
+COPY benches ./benches
+COPY examples ./examples
+COPY tests ./tests
 
 # Build WASM
 RUN wasm-pack build --target web --no-default-features --features wasm
