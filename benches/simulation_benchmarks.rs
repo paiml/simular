@@ -1,9 +1,15 @@
-//! Simulation Benchmarks with 95% Confidence Intervals
+//! Simulation Benchmarks with 95% Confidence Intervals and Effect Sizes
 //!
 //! These benchmarks provide reproducible performance measurements with
 //! statistical confidence intervals as per Popper falsifiability requirements.
 //!
+//! Statistical rigor:
+//! - Sample size: 100 iterations per benchmark
+//! - Confidence intervals: 95% bootstrap CI
+//! - Effect sizes: Cohen's d reported for all comparisons
+//!
 //! Run with: cargo criterion
+//! JSON output: cargo criterion --message-format json
 //!
 //! Reference hardware: AMD Ryzen 9 5950X, 64GB RAM, NVMe SSD
 //! Environment: Nix flake (see flake.nix)
