@@ -17,12 +17,12 @@ fn main() -> std::io::Result<()> {
 
     let app = match TspApp::from_yaml_file(yaml_path) {
         Ok(app) => {
-            eprintln!("Loaded: {} ({} cities, {} units)",
-                yaml_path, app.demo.n, app.demo.units);
+            eprintln!("Loaded: {yaml_path} ({} cities, {} units)",
+                app.demo.n, app.demo.units);
             app
         }
         Err(e) => {
-            eprintln!("Error loading '{}': {}", yaml_path, e);
+            eprintln!("Error loading '{yaml_path}': {e}");
             eprintln!("Usage: tsp-tui [path/to/instance.yaml]");
             std::process::exit(1);
         }
@@ -50,7 +50,7 @@ mod tui {
         style::{Color, Modifier, Style},
         text::{Line, Span},
         widgets::{
-            canvas::{Canvas, Line as CanvasLine, Points},
+            canvas::{Canvas, Line as CanvasLine},
             Block, Borders, Paragraph, Sparkline,
         },
         Frame, Terminal,
@@ -83,12 +83,21 @@ mod tui {
     fn run_main_loop(
         terminal: &mut Terminal<CrosstermBackend<io::Stdout>>,
         app: &mut TspApp,
-        tick_rate: Duration,
+        base_tick_rate: Duration,
     ) -> io::Result<()> {
         let mut last_tick = Instant::now();
 
         loop {
             terminal.draw(|f| ui(f, app))?;
+
+            // HEIJUNKA: Adaptive tick rate based on convergence
+            // - Faster when improving (200ms)
+            // - Slower when converged (500ms) - reduce CPU waste
+            let tick_rate = if app.demo.converged {
+                Duration::from_millis(500) // Converged: slower updates
+            } else {
+                base_tick_rate
+            };
 
             let timeout = tick_rate.saturating_sub(last_tick.elapsed());
             if crossterm::event::poll(timeout)? {
@@ -100,7 +109,10 @@ mod tui {
             }
 
             if last_tick.elapsed() >= tick_rate {
-                app.step();
+                // HEIJUNKA: Only step simulation if not converged (level load)
+                if !app.demo.converged {
+                    app.step();
+                }
                 last_tick = Instant::now();
             }
 
@@ -162,7 +174,7 @@ mod tui {
             Span::raw("- EDD Demo 6 "),
             Span::styled(
                 "[EMC: optimization/tsp_grasp_2opt]",
-                Style::default().fg(Color::DarkGray),
+                Style::default().fg(Color::Gray), // Improved contrast
             ),
         ])])
         .block(Block::default().borders(Borders::ALL).title("simular"));
@@ -171,7 +183,6 @@ mod tui {
 
     fn render_equations(f: &mut Frame, area: Rect, app: &TspApp) {
         let gap = app.optimality_gap();
-        let n = app.demo.n;
         let lower_bound = app.demo.lower_bound;
         let best_tour = app.demo.best_tour_length;
 
@@ -179,7 +190,7 @@ mod tui {
             Line::from(vec![
                 Span::styled("Tour Length: ", Style::default().fg(Color::Yellow)),
                 Span::raw("L(π) = Σᵢ d(π(i), π(i+1)) + d(π(n), π(1))  "),
-                Span::styled(format!("L = {best_tour:.4}"), Style::default().fg(Color::Green)),
+                Span::styled(format!("L = {best_tour:.1}"), Style::default().fg(Color::Green)),
             ]),
             Line::from(vec![
                 Span::styled("2-Opt Δ:     ", Style::default().fg(Color::Yellow)),
@@ -190,12 +201,9 @@ mod tui {
                 ),
             ]),
             Line::from(vec![
-                Span::styled("Lower Bound: ", Style::default().fg(Color::Yellow)),
-                Span::raw("L* ≥ 1-tree(G)  "),
-                Span::styled(
-                    format!("1-tree = {lower_bound:.4}"),
-                    Style::default().fg(Color::Blue),
-                ),
+                Span::styled("1-Tree LB:   ", Style::default().fg(Color::Yellow)),
+                Span::raw("L* ≥ MST(G\\{v₀}) + 2 shortest edges to v₀  "),
+                Span::styled(format!("= {lower_bound:.1}"), Style::default().fg(Color::Blue)),
                 Span::raw("  "),
                 Span::styled(
                     format!("Gap = {:.1}%", gap * 100.0),
@@ -203,12 +211,11 @@ mod tui {
                 ),
             ]),
             Line::from(vec![
-                Span::styled("BHH:         ", Style::default().fg(Color::Yellow)),
-                #[allow(clippy::cast_precision_loss)]
-                Span::raw(format!(
-                    "E[L] ≈ 0.7124·√(n·A) = 0.7124·√{n} ≈ {:.3}",
-                    0.7124 * (n as f64).sqrt()
-                )),
+                Span::styled("             ", Style::default().fg(Color::Yellow)),
+                Span::styled(
+                    "(Held-Karp 1970: 1-tree is subgraph of optimal tour → valid lower bound)",
+                    Style::default().fg(Color::Gray), // Improved contrast + citation year
+                ),
             ]),
         ];
 
@@ -224,7 +231,14 @@ mod tui {
 
     fn render_city_plot(f: &mut Frame, area: Rect, app: &TspApp) {
         let cities = &app.demo.cities;
-        let tour = &app.demo.best_tour;
+        let best_tour = &app.demo.best_tour;
+        let current_tour = &app.demo.tour; // Current exploration (changes every iteration)
+
+        // Get city aliases from loaded YAML instance (if available)
+        let aliases: Vec<String> = app.loaded_instance.as_ref().map_or_else(
+            || (0..cities.len()).map(|i| format!("{i}")).collect(),
+            |inst| inst.cities.iter().map(|c| c.alias.clone()).collect(),
+        );
 
         let (min_x, max_x, min_y, max_y) = cities.iter().fold(
             (f64::MAX, f64::MIN, f64::MAX, f64::MIN),
@@ -238,7 +252,7 @@ mod tui {
             },
         );
 
-        let padding = 0.1;
+        let padding = 0.15; // Slightly more padding for labels
         let x_range = (max_x - min_x).max(0.1);
         let y_range = (max_y - min_y).max(0.1);
         let x_min = min_x - padding * x_range;
@@ -250,16 +264,33 @@ mod tui {
             .block(
                 Block::default()
                     .borders(Borders::ALL)
-                    .title("Tour Visualization"),
+                    .title("Tour Visualization (Green=Best, Blue=Current, Yellow=Cities)"),
             )
             .x_bounds([x_min, x_max])
             .y_bounds([y_min, y_max])
-            .paint(|ctx| {
-                if tour.len() > 1 {
-                    for i in 0..tour.len() {
-                        let j = (i + 1) % tour.len();
-                        let c1 = &cities[tour[i]];
-                        let c2 = &cities[tour[j]];
+            .paint(move |ctx| {
+                // Draw CURRENT exploration tour (blue, changes every iteration)
+                if current_tour.len() > 1 {
+                    for i in 0..current_tour.len() {
+                        let j = (i + 1) % current_tour.len();
+                        let c1 = &cities[current_tour[i]];
+                        let c2 = &cities[current_tour[j]];
+                        ctx.draw(&CanvasLine {
+                            x1: c1.x,
+                            y1: c1.y,
+                            x2: c2.x,
+                            y2: c2.y,
+                            color: Color::Blue,
+                        });
+                    }
+                }
+
+                // Draw BEST tour (green, only updates when better found)
+                if best_tour.len() > 1 {
+                    for i in 0..best_tour.len() {
+                        let j = (i + 1) % best_tour.len();
+                        let c1 = &cities[best_tour[i]];
+                        let c2 = &cities[best_tour[j]];
                         ctx.draw(&CanvasLine {
                             x1: c1.x,
                             y1: c1.y,
@@ -270,24 +301,55 @@ mod tui {
                     }
                 }
 
-                let city_coords: Vec<(f64, f64)> = cities.iter().map(|c| (c.x, c.y)).collect();
-                ctx.draw(&Points {
-                    coords: &city_coords,
-                    color: Color::Yellow,
-                });
+                // Draw cities with labels (yellow - FIXED geographic positions)
+                for (i, city) in cities.iter().enumerate() {
+                    // Draw city label (clone to satisfy lifetime requirements)
+                    let label = aliases.get(i).cloned().unwrap_or_else(|| format!("{i}"));
+                    ctx.print(
+                        city.x,
+                        city.y,
+                        Span::styled(label, Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD)),
+                    );
+                }
             });
 
         f.render_widget(canvas, area);
     }
 
+    #[allow(clippy::cast_precision_loss)] // Tour lengths fit in f64 mantissa
     fn render_convergence(f: &mut Frame, area: Rect, app: &TspApp) {
         let data: Vec<u64> = app.convergence_history.clone();
+
+        // Calculate statistics for visual control (Kaizen: show trend)
+        let (min_val, max_val, improving) = if data.len() >= 2 {
+            let min = data.iter().copied().min().unwrap_or(0);
+            let max = data.iter().copied().max().unwrap_or(0);
+            // Improving if recent values lower than older values
+            let recent_avg: f64 = data.iter().rev().take(5).map(|&v| v as f64).sum::<f64>()
+                / data.len().min(5) as f64;
+            let older_avg: f64 = data.iter().take(5).map(|&v| v as f64).sum::<f64>()
+                / data.len().min(5) as f64;
+            (min, max, recent_avg < older_avg)
+        } else {
+            (0, 0, false)
+        };
+
+        // Visual Control: Show trend indicator
+        let trend = if improving { "↓" } else if data.len() < 2 { "—" } else { "→" };
+        let trend_color = if improving { Color::Green } else { Color::Yellow };
+
+        let title = format!(
+            "Convergence {trend} (min:{:.1}k max:{:.1}k)",
+            min_val as f64 / 1000.0,
+            max_val as f64 / 1000.0
+        );
 
         let sparkline = Sparkline::default()
             .block(
                 Block::default()
                     .borders(Borders::ALL)
-                    .title("Convergence (Best Tour Length)"),
+                    .title(title)
+                    .border_style(Style::default().fg(trend_color)),
             )
             .data(&data)
             .style(Style::default().fg(Color::Cyan));
@@ -295,79 +357,82 @@ mod tui {
         f.render_widget(sparkline, area);
     }
 
-    fn render_stats(f: &mut Frame, area: Rect, app: &TspApp) {
-        let method_str = app.construction_method_name();
-        let gap = app.optimality_gap() * 100.0;
-        let verified = app.verify_equation();
-        let units = &app.demo.units;
-
-        let mut stats_text = vec![
+    /// Build instance info lines (Cities, Restarts).
+    fn stats_instance_lines(app: &TspApp) -> Vec<Line<'static>> {
+        vec![
             Line::from(vec![
                 Span::raw("Cities: "),
-                Span::styled(
-                    format!("{}", app.demo.n),
-                    Style::default().fg(Color::Yellow),
-                ),
-                Span::styled(" [cities]", Style::default().fg(Color::DarkGray)),
+                Span::styled(format!("{}", app.demo.n), Style::default().fg(Color::Yellow)),
+                Span::styled(" [cities]", Style::default().fg(Color::Gray)), // Improved contrast
             ]),
             Line::from(vec![
-                Span::raw("Method: "),
-                Span::styled(method_str, Style::default().fg(Color::Cyan)),
-            ]),
-            Line::from(vec![
-                Span::raw("RCL Size: "),
+                Span::raw("Restarts: "),
                 Span::styled(
-                    format!("{}", app.demo.rcl_size),
-                    Style::default().fg(Color::Yellow),
+                    format!("{}", app.demo.restarts),
+                    Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD),
                 ),
+                Span::styled(" [iterations]", Style::default().fg(Color::Gray)), // Improved contrast
             ]),
             Line::from(""),
+        ]
+    }
+
+    /// Build algorithm config lines (Method, RCL).
+    fn stats_algorithm_lines(app: &TspApp) -> Vec<Line<'static>> {
+        vec![
             Line::from(vec![
-                Span::raw("Tour Length: "),
-                Span::styled(
-                    format!("{:.1}", app.demo.tour_length),
-                    Style::default().fg(Color::Green),
-                ),
-                Span::styled(format!(" [{units}]"), Style::default().fg(Color::DarkGray)),
+                Span::raw("Method: "),
+                Span::styled(app.construction_method_name(), Style::default().fg(Color::Cyan)),
             ]),
             Line::from(vec![
-                Span::raw("Best Tour: "),
+                Span::raw("RCL: "),
+                Span::styled(format!("{}", app.demo.rcl_size), Style::default().fg(Color::Yellow)),
+                Span::styled(" [candidates]", Style::default().fg(Color::Gray)), // Improved contrast
+            ]),
+            Line::from(""),
+        ]
+    }
+
+    /// Build tour result lines (Current, Best, Optimal, Lower Bound, Gap).
+    fn stats_tour_lines(app: &TspApp, gap: f64, converged: bool) -> Vec<Line<'static>> {
+        let units = &app.demo.units;
+        let mut lines = vec![
+            Line::from(vec![
+                Span::raw("Current: "),
+                Span::styled(format!("{:.1}", app.demo.tour_length), Style::default().fg(Color::Green)),
+                Span::styled(format!(" [{units}]"), Style::default().fg(Color::Gray)), // Improved contrast
+            ]),
+            Line::from(vec![
+                Span::raw("Best: "),
                 Span::styled(
                     format!("{:.1}", app.demo.best_tour_length),
-                    Style::default()
-                        .fg(Color::Green)
-                        .add_modifier(Modifier::BOLD),
+                    Style::default().fg(Color::Green).add_modifier(Modifier::BOLD),
                 ),
-                Span::styled(format!(" [{units}]"), Style::default().fg(Color::DarkGray)),
+                Span::styled(format!(" [{units}]"), Style::default().fg(Color::Gray)), // Improved contrast
+                if converged {
+                    Span::styled(" CONVERGED", Style::default().fg(Color::Cyan))
+                } else {
+                    Span::styled(" searching...", Style::default().fg(Color::Yellow))
+                },
             ]),
         ];
 
-        // Show optimal if known from YAML
         if let Some(optimal) = app.demo.optimal_known {
             let is_optimal = (app.demo.best_tour_length - f64::from(optimal)).abs() < 0.5;
-            stats_text.push(Line::from(vec![
+            lines.push(Line::from(vec![
                 Span::raw("Optimal: "),
-                Span::styled(
-                    format!("{optimal}"),
-                    Style::default().fg(Color::Magenta),
-                ),
-                Span::styled(format!(" [{units}]"), Style::default().fg(Color::DarkGray)),
+                Span::styled(format!("{optimal}"), Style::default().fg(Color::Magenta)),
+                Span::styled(format!(" [{units}]"), Style::default().fg(Color::Gray)), // Improved contrast
                 Span::raw(" "),
-                Span::styled(
-                    if is_optimal { "✓" } else { "" },
-                    Style::default().fg(Color::Green),
-                ),
+                Span::styled(if is_optimal { "✓" } else { "" }, Style::default().fg(Color::Green)),
             ]));
         }
 
-        stats_text.extend(vec![
+        lines.extend(vec![
             Line::from(vec![
                 Span::raw("Lower Bound: "),
-                Span::styled(
-                    format!("{:.1}", app.demo.lower_bound),
-                    Style::default().fg(Color::Blue),
-                ),
-                Span::styled(format!(" [{units}]"), Style::default().fg(Color::DarkGray)),
+                Span::styled(format!("{:.1}", app.demo.lower_bound), Style::default().fg(Color::Blue)),
+                Span::styled(format!(" [{units}]"), Style::default().fg(Color::Gray)), // Improved contrast
             ]),
             Line::from(vec![
                 Span::raw("Gap: "),
@@ -377,30 +442,26 @@ mod tui {
                 ),
             ]),
             Line::from(""),
+        ]);
+        lines
+    }
+
+    /// Build optimization status lines (2-opt, Crossings, Verified).
+    fn stats_optimization_lines(app: &TspApp, verified: bool) -> Vec<Line<'static>> {
+        let crossings = app.demo.count_crossings();
+        vec![
             Line::from(vec![
-                Span::raw("Restarts: "),
-                Span::styled(
-                    app.demo.restarts.to_string(),
-                    Style::default().fg(Color::Yellow),
-                ),
+                Span::raw("2-opt: "),
+                Span::styled(app.demo.two_opt_improvements.to_string(), Style::default().fg(Color::Yellow)),
+                Span::styled(" [improvements]", Style::default().fg(Color::Gray)), // Improved contrast
             ]),
             Line::from(vec![
-                Span::raw("2-opt Improvements: "),
+                Span::raw("Crossings: "),
                 Span::styled(
-                    app.demo.two_opt_improvements.to_string(),
-                    Style::default().fg(Color::Yellow),
+                    format!("{crossings}"),
+                    Style::default().fg(if crossings == 0 { Color::Green } else { Color::Red }),
                 ),
-            ]),
-            Line::from(vec![
-                Span::raw("Edge Crossings: "),
-                Span::styled(
-                    format!("{}", app.demo.count_crossings()),
-                    Style::default().fg(if app.demo.count_crossings() == 0 {
-                        Color::Green
-                    } else {
-                        Color::Red
-                    }),
-                ),
+                Span::styled(" [edges]", Style::default().fg(Color::Gray)), // Improved contrast
             ]),
             Line::from(""),
             Line::from(vec![
@@ -410,28 +471,48 @@ mod tui {
                     Style::default().fg(if verified { Color::Green } else { Color::Red }),
                 ),
             ]),
-        ]);
+        ]
+    }
+
+    fn render_stats(f: &mut Frame, area: Rect, app: &TspApp) {
+        let gap = app.optimality_gap() * 100.0;
+        let verified = app.verify_equation();
+        // MUDA: Use algorithm's stagnation-based convergence OR optimal/gap criteria
+        let converged = app.demo.converged
+            || app.demo.optimal_known.is_some_and(|opt| {
+                (app.demo.best_tour_length - f64::from(opt)).abs() < 0.5
+            })
+            || gap < 1.0;
+
+        let mut stats_text = stats_instance_lines(app);
+        stats_text.extend(stats_algorithm_lines(app));
+        stats_text.extend(stats_tour_lines(app, gap, converged));
+        stats_text.extend(stats_optimization_lines(app, verified));
 
         let stats = Paragraph::new(stats_text)
             .block(Block::default().borders(Borders::ALL).title("Statistics"));
-
         f.render_widget(stats, area);
     }
 
     fn render_controls(f: &mut Frame, area: Rect, app: &TspApp) {
-        let status = if app.auto_run { "RUNNING" } else { "PAUSED" };
+        // HEIJUNKA: Show running/paused/converged status
+        let (status, status_color) = if app.demo.converged {
+            ("CONVERGED", Color::Cyan)
+        } else if app.auto_run {
+            ("RUNNING", Color::Green)
+        } else {
+            ("PAUSED", Color::Yellow)
+        };
 
         let controls_text = vec![
             Line::from(vec![
                 Span::raw("Status: "),
-                Span::styled(
-                    status,
-                    Style::default().fg(if app.auto_run {
-                        Color::Green
-                    } else {
-                        Color::Yellow
-                    }),
-                ),
+                Span::styled(status, Style::default().fg(status_color)),
+                if app.demo.converged {
+                    Span::styled(" (stagnated)", Style::default().fg(Color::Gray))
+                } else {
+                    Span::raw("")
+                },
             ]),
             Line::from(""),
             Line::from(Span::styled(
@@ -455,20 +536,33 @@ mod tui {
     fn render_status_bar(f: &mut Frame, area: Rect, app: &TspApp) {
         let status = app.falsification_status();
 
-        let status_color = if status.verified {
-            Color::Green
+        // JIDOKA: Visual prominence for stop-the-line alerts
+        let is_jidoka_stop = status.message.contains("JIDOKA STOP");
+
+        let (status_style, border_style) = if status.verified {
+            (Style::default().fg(Color::Green), Style::default().fg(Color::Green))
+        } else if is_jidoka_stop {
+            // JIDOKA STOP: High-visibility red background (Andon board style)
+            (
+                Style::default()
+                    .fg(Color::White)
+                    .bg(Color::Red)
+                    .add_modifier(Modifier::BOLD),
+                Style::default().fg(Color::Red),
+            )
         } else {
-            Color::Red
+            (Style::default().fg(Color::Yellow), Style::default().fg(Color::Yellow))
         };
 
         let status_text = Line::from(vec![
             Span::raw(" EDD Status: "),
-            Span::styled(&status.message, Style::default().fg(status_color)),
+            Span::styled(&status.message, status_style),
             Span::raw(" | "),
             Span::raw(format!("Frame: {} ", app.frame_count)),
         ]);
 
-        let status_bar = Paragraph::new(status_text).block(Block::default().borders(Borders::ALL));
+        let status_bar = Paragraph::new(status_text)
+            .block(Block::default().borders(Borders::ALL).border_style(border_style));
 
         f.render_widget(status_bar, area);
     }
