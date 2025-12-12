@@ -117,8 +117,5 @@ fn test_orbit_energy_conservation() {
 
     // Energy should be conserved within Jidoka tolerance
     let relative_error = ((final_energy - initial_energy) / initial_energy).abs();
-    assert!(
-        relative_error < 0.01,
-        "Energy drift: {relative_error:.6}"
-    );
+    assert!(relative_error < 0.01, "Energy drift: {relative_error:.6}");
 }

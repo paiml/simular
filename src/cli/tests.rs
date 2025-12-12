@@ -166,7 +166,13 @@ fn test_parse_run_command_seed_without_value() {
 
 #[test]
 fn test_parse_run_command_seed_invalid_value() {
-    let args = Args::parse_from(["simular", "run", "experiment.yaml", "--seed", "not-a-number"]);
+    let args = Args::parse_from([
+        "simular",
+        "run",
+        "experiment.yaml",
+        "--seed",
+        "not-a-number",
+    ]);
     match args.command {
         Command::Run { seed_override, .. } => {
             assert_eq!(seed_override, None);
@@ -180,7 +186,9 @@ fn test_parse_run_command_unknown_flag() {
     let args = Args::parse_from(["simular", "run", "experiment.yaml", "--unknown"]);
     // Unknown flags are ignored
     match args.command {
-        Command::Run { experiment_path, .. } => {
+        Command::Run {
+            experiment_path, ..
+        } => {
             assert_eq!(experiment_path, PathBuf::from("experiment.yaml"));
         }
         _ => panic!("Expected Run command"),
@@ -1097,8 +1105,8 @@ fn test_emc_validate_monte_carlo() {
 #[test]
 fn test_run_experiment_harmonic_oscillator() {
     let manifest_dir = std::env::var("CARGO_MANIFEST_DIR").unwrap_or_else(|_| ".".to_string());
-    let exp_path = std::path::Path::new(&manifest_dir)
-        .join("examples/experiments/harmonic_oscillator.yaml");
+    let exp_path =
+        std::path::Path::new(&manifest_dir).join("examples/experiments/harmonic_oscillator.yaml");
 
     if exp_path.exists() {
         // This test checks that the experiment runs without panicking
@@ -1110,8 +1118,8 @@ fn test_run_experiment_harmonic_oscillator() {
 #[test]
 fn test_run_experiment_harmonic_oscillator_verbose() {
     let manifest_dir = std::env::var("CARGO_MANIFEST_DIR").unwrap_or_else(|_| ".".to_string());
-    let exp_path = std::path::Path::new(&manifest_dir)
-        .join("examples/experiments/harmonic_oscillator.yaml");
+    let exp_path =
+        std::path::Path::new(&manifest_dir).join("examples/experiments/harmonic_oscillator.yaml");
 
     if exp_path.exists() {
         let _ = run_experiment(&exp_path, None, true);
@@ -1121,8 +1129,8 @@ fn test_run_experiment_harmonic_oscillator_verbose() {
 #[test]
 fn test_run_experiment_with_seed() {
     let manifest_dir = std::env::var("CARGO_MANIFEST_DIR").unwrap_or_else(|_| ".".to_string());
-    let exp_path = std::path::Path::new(&manifest_dir)
-        .join("examples/experiments/monte_carlo_pi.yaml");
+    let exp_path =
+        std::path::Path::new(&manifest_dir).join("examples/experiments/monte_carlo_pi.yaml");
 
     if exp_path.exists() {
         let _ = run_experiment(&exp_path, Some(12345), false);
@@ -1132,8 +1140,8 @@ fn test_run_experiment_with_seed() {
 #[test]
 fn test_verify_reproducibility_harmonic() {
     let manifest_dir = std::env::var("CARGO_MANIFEST_DIR").unwrap_or_else(|_| ".".to_string());
-    let exp_path = std::path::Path::new(&manifest_dir)
-        .join("examples/experiments/harmonic_oscillator.yaml");
+    let exp_path =
+        std::path::Path::new(&manifest_dir).join("examples/experiments/harmonic_oscillator.yaml");
 
     if exp_path.exists() {
         // Just run without panicking
@@ -1144,8 +1152,8 @@ fn test_verify_reproducibility_harmonic() {
 #[test]
 fn test_emc_check_harmonic() {
     let manifest_dir = std::env::var("CARGO_MANIFEST_DIR").unwrap_or_else(|_| ".".to_string());
-    let exp_path = std::path::Path::new(&manifest_dir)
-        .join("examples/experiments/harmonic_oscillator.yaml");
+    let exp_path =
+        std::path::Path::new(&manifest_dir).join("examples/experiments/harmonic_oscillator.yaml");
 
     if exp_path.exists() {
         let _ = emc_check(&exp_path);
@@ -1162,8 +1170,8 @@ fn test_list_emc_shows_entries() {
 #[test]
 fn test_run_cli_with_run_verbose() {
     let manifest_dir = std::env::var("CARGO_MANIFEST_DIR").unwrap_or_else(|_| ".".to_string());
-    let exp_path = std::path::Path::new(&manifest_dir)
-        .join("examples/experiments/harmonic_oscillator.yaml");
+    let exp_path =
+        std::path::Path::new(&manifest_dir).join("examples/experiments/harmonic_oscillator.yaml");
 
     if exp_path.exists() {
         let args = Args {
@@ -1180,8 +1188,8 @@ fn test_run_cli_with_run_verbose() {
 #[test]
 fn test_run_cli_with_verify() {
     let manifest_dir = std::env::var("CARGO_MANIFEST_DIR").unwrap_or_else(|_| ".".to_string());
-    let exp_path = std::path::Path::new(&manifest_dir)
-        .join("examples/experiments/harmonic_oscillator.yaml");
+    let exp_path =
+        std::path::Path::new(&manifest_dir).join("examples/experiments/harmonic_oscillator.yaml");
 
     if exp_path.exists() {
         let args = Args {
@@ -1197,8 +1205,8 @@ fn test_run_cli_with_verify() {
 #[test]
 fn test_run_cli_with_emc_check() {
     let manifest_dir = std::env::var("CARGO_MANIFEST_DIR").unwrap_or_else(|_| ".".to_string());
-    let exp_path = std::path::Path::new(&manifest_dir)
-        .join("examples/experiments/harmonic_oscillator.yaml");
+    let exp_path =
+        std::path::Path::new(&manifest_dir).join("examples/experiments/harmonic_oscillator.yaml");
 
     if exp_path.exists() {
         let args = Args {

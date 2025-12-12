@@ -1099,7 +1099,9 @@ hypothesis:
         let result = exp.validate_schema();
         assert!(result.is_err());
         let errors = result.err().unwrap();
-        assert!(errors.iter().any(|e| e.contains("meaningful null hypothesis")));
+        assert!(errors
+            .iter()
+            .any(|e| e.contains("meaningful null hypothesis")));
     }
 
     #[test]

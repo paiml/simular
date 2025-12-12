@@ -15,8 +15,8 @@
 //! Environment: Nix flake (see flake.nix)
 
 use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion};
-use simular::demos::tsp_grasp::TspGraspDemo;
 use simular::demos::monte_carlo_pi::MonteCarloPlDemo;
+use simular::demos::tsp_grasp::TspGraspDemo;
 
 /// TSP GRASP Benchmark - Measures iteration time with confidence intervals
 ///
@@ -74,13 +74,17 @@ fn bench_monte_carlo_pi(c: &mut Criterion) {
     group.confidence_level(0.95);
 
     for samples in [1000u64, 10000, 100000].iter() {
-        group.bench_with_input(BenchmarkId::new("estimate_pi", samples), samples, |b, &n| {
-            b.iter(|| {
-                let mut demo = MonteCarloPlDemo::new(42);
-                demo.run_to_n(n);
-                black_box(demo.pi_estimate)
-            });
-        });
+        group.bench_with_input(
+            BenchmarkId::new("estimate_pi", samples),
+            samples,
+            |b, &n| {
+                b.iter(|| {
+                    let mut demo = MonteCarloPlDemo::new(42);
+                    demo.run_to_n(n);
+                    black_box(demo.pi_estimate)
+                });
+            },
+        );
     }
 
     group.finish();

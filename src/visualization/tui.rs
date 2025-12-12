@@ -1164,7 +1164,9 @@ mod tests {
         // With data
         let mut state_data = DashboardState::default();
         for i in 0..50 {
-            state_data.energy_series.push(i as f64 * 0.1, 100.0 - i as f64 * 0.01);
+            state_data
+                .energy_series
+                .push(i as f64 * 0.1, 100.0 - i as f64 * 0.01);
         }
         let _ = SimularTui::render_energy_chart(&state_data, area);
     }

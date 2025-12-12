@@ -899,7 +899,11 @@ mod tests {
             runs: 3,
             identical: false,
             reference_hash: "abc123".to_string(),
-            run_hashes: vec!["abc123".to_string(), "def456".to_string(), "ghi789".to_string()],
+            run_hashes: vec![
+                "abc123".to_string(),
+                "def456".to_string(),
+                "ghi789".to_string(),
+            ],
             platform: "x86_64".to_string(),
         });
 

@@ -805,7 +805,7 @@ mod tests {
         let mut demo = MonteCarloPlDemo::new(42);
         // Add history with zero error points (should be filtered)
         demo.history = vec![
-            (100, 3.14159, 0.0),  // Zero error - filtered
+            (100, 3.14159, 0.0), // Zero error - filtered
             (200, 3.14, 0.001),
             (400, 3.141, 0.0005),
             (800, 3.1415, 0.00009),

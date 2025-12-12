@@ -17,10 +17,10 @@
 //! - Event handling via closures
 //! - State management in Rust structs
 
-use wasm_bindgen::prelude::*;
-use wasm_bindgen::JsCast;
 use std::cell::RefCell;
 use std::rc::Rc;
+use wasm_bindgen::prelude::*;
+use wasm_bindgen::JsCast;
 
 use crate::demos::tsp_grasp::TspGraspDemo;
 use crate::demos::tsp_instance::TspInstanceYaml;
@@ -49,8 +49,8 @@ impl TspAppState {
             .unwrap();
 
         // Load Bay Area TSP from embedded YAML - same as TUI
-        let instance = TspInstanceYaml::from_yaml(BAY_AREA_YAML)
-            .expect("embedded YAML should be valid");
+        let instance =
+            TspInstanceYaml::from_yaml(BAY_AREA_YAML).expect("embedded YAML should be valid");
         let tsp = TspGraspDemo::from_instance(&instance);
 
         Self {
@@ -88,9 +88,15 @@ impl TspAppState {
 
         // Compute bounds for normalization (Bay Area coordinates)
         let min_x = cities.iter().map(|c| c[0]).fold(f64::INFINITY, f64::min);
-        let max_x = cities.iter().map(|c| c[0]).fold(f64::NEG_INFINITY, f64::max);
+        let max_x = cities
+            .iter()
+            .map(|c| c[0])
+            .fold(f64::NEG_INFINITY, f64::max);
         let min_y = cities.iter().map(|c| c[1]).fold(f64::INFINITY, f64::min);
-        let max_y = cities.iter().map(|c| c[1]).fold(f64::NEG_INFINITY, f64::max);
+        let max_y = cities
+            .iter()
+            .map(|c| c[1])
+            .fold(f64::NEG_INFINITY, f64::max);
 
         let range_x = (max_x - min_x).max(0.001);
         let range_y = (max_y - min_y).max(0.001);
@@ -139,19 +145,25 @@ impl TspAppState {
             // City dot
             self.ctx.set_fill_style_str("#ffd93d");
             self.ctx.begin_path();
-            self.ctx.arc(x, y, 6.0, 0.0, std::f64::consts::PI * 2.0).unwrap();
+            self.ctx
+                .arc(x, y, 6.0, 0.0, std::f64::consts::PI * 2.0)
+                .unwrap();
             self.ctx.fill();
 
             // City index label
             self.ctx.set_fill_style_str("#e0e0e0");
             self.ctx.set_font("10px 'JetBrains Mono', monospace");
-            self.ctx.fill_text(&format!("{i}"), x + 8.0, y + 4.0).unwrap();
+            self.ctx
+                .fill_text(&format!("{i}"), x + 8.0, y + 4.0)
+                .unwrap();
         }
 
         // Draw title
         self.ctx.set_fill_style_str("#4ecdc4");
         self.ctx.set_font("bold 14px 'JetBrains Mono', monospace");
-        self.ctx.fill_text("Bay Area TSP - 20 Cities", 10.0, 20.0).unwrap();
+        self.ctx
+            .fill_text("Bay Area TSP - 20 Cities", 10.0, 20.0)
+            .unwrap();
     }
 
     fn update_stats(&self, document: &web_sys::Document) {
@@ -178,14 +190,30 @@ impl TspAppState {
         let cv_ok = cv <= 0.05 || restarts < 2;
 
         set_text(document, "fals-gap", &format!("{:.1}%", gap * 100.0));
-        set_class(document, "fals-gap", &format!("stat-value {}", if gap_ok { "ok" } else { "error" }));
+        set_class(
+            document,
+            "fals-gap",
+            &format!("stat-value {}", if gap_ok { "ok" } else { "error" }),
+        );
 
         set_text(document, "fals-cv", &format!("{:.1}%", cv * 100.0));
-        set_class(document, "fals-cv", &format!("stat-value {}", if cv_ok { "ok" } else { "warn" }));
+        set_class(
+            document,
+            "fals-cv",
+            &format!("stat-value {}", if cv_ok { "ok" } else { "warn" }),
+        );
 
         let verified = gap_ok && cv_ok;
-        set_text(document, "fals-status", if verified { "VERIFIED" } else { "PENDING" });
-        set_class(document, "fals-status", &format!("stat-value {}", if verified { "ok" } else { "warn" }));
+        set_text(
+            document,
+            "fals-status",
+            if verified { "VERIFIED" } else { "PENDING" },
+        );
+        set_class(
+            document,
+            "fals-status",
+            &format!("stat-value {}", if verified { "ok" } else { "warn" }),
+        );
     }
 
     fn step(&mut self) {
@@ -207,8 +235,8 @@ impl TspAppState {
     fn reset(&mut self, _n: usize) {
         self.seed = (js_sys::Math::random() * 1_000_000.0) as u32;
         // Reload from embedded YAML - same cities, new seed
-        let instance = TspInstanceYaml::from_yaml(BAY_AREA_YAML)
-            .expect("embedded YAML should be valid");
+        let instance =
+            TspInstanceYaml::from_yaml(BAY_AREA_YAML).expect("embedded YAML should be valid");
         self.tsp = TspGraspDemo::from_instance(&instance);
         self.tsp.seed = u64::from(self.seed);
         self.convergence.clear();
@@ -424,7 +452,9 @@ fn setup_tabs(document: &web_sys::Document) -> Result<(), JsValue> {
 
 fn handle_tab_click(doc: &web_sys::Document, e: &web_sys::Event) {
     let Some(target) = e.target() else { return };
-    let Some(el) = target.dyn_ref::<web_sys::Element>() else { return };
+    let Some(el) = target.dyn_ref::<web_sys::Element>() else {
+        return;
+    };
 
     // Remove active from all tabs
     remove_class_from_all(doc, ".tab", "active");

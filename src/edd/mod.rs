@@ -41,6 +41,11 @@ pub mod v2;
 pub mod validation;
 
 // Re-exports
+pub use audit::{
+    hash_state, verify_rng_consistency, AuditLogReplayer, Decision, EquationEval,
+    GeneratedTestCase, ReplaySpeed, ReplayState, SimulationAuditLog, StepEntry, TspStateSnapshot,
+    TspStepType,
+};
 pub use equation::Citation;
 pub use equation::{EquationClass, EquationVariable, GoverningEquation};
 pub use experiment::{
@@ -49,9 +54,13 @@ pub use experiment::{
 pub use falsifiable::{
     ExperimentSeed, FalsifiableSimulation, FalsificationResult, ParamSpace, Trajectory,
 };
+pub use gui_coverage::GuiCoverage;
 pub use loader::{EmcYaml, ExperimentYaml};
 pub use model_card::{DomainConstraint, EmcBuilder, EquationModelCard};
 pub use operations::{BullwhipEffect, KingmanFormula, LittlesLaw, SquareRootLaw};
+#[cfg(feature = "z3-proofs")]
+pub use prover::z3_impl;
+pub use prover::{ProofError, ProofResult, Z3Provable};
 pub use report::{ReportFormat, ReportGenerator};
 pub use runner::{
     EddComplianceChecklist, EmcComplianceReport, EmcRegistry, ExecutionMetrics, ExperimentDomain,
@@ -71,14 +80,6 @@ pub use validation::{
     richardson_extrapolation, ConvergenceAnalysis, EddComplianceSummary, EddResult, EddValidator,
     EddViolation, TpsGrade, ViolationSeverity,
 };
-pub use prover::{ProofError, ProofResult, Z3Provable};
-#[cfg(feature = "z3-proofs")]
-pub use prover::z3_impl;
-pub use audit::{
-    AuditLogReplayer, Decision, EquationEval, GeneratedTestCase, ReplaySpeed, ReplayState,
-    SimulationAuditLog, StepEntry, TspStateSnapshot, TspStepType, hash_state, verify_rng_consistency,
-};
-pub use gui_coverage::GuiCoverage;
 
 #[cfg(test)]
 mod tests {

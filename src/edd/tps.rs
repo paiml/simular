@@ -1003,8 +1003,7 @@ mod tests {
 
     #[test]
     fn test_tps_test_result_rejected() {
-        let result = TpsTestResult::new(TpsTestCase::BatchSizeReduction)
-            .rejected(0.01, 0.5);
+        let result = TpsTestResult::new(TpsTestCase::BatchSizeReduction).rejected(0.01, 0.5);
         assert!(result.h0_rejected);
         assert!((result.p_value - 0.01).abs() < f64::EPSILON);
         assert!((result.effect_size - 0.5).abs() < f64::EPSILON);
@@ -1018,16 +1017,14 @@ mod tests {
             cycle_time: Some(2.0),
             ..Default::default()
         };
-        let result = TpsTestResult::new(TpsTestCase::LittlesLawStochastic)
-            .with_metrics(metrics);
+        let result = TpsTestResult::new(TpsTestCase::LittlesLawStochastic).with_metrics(metrics);
         assert_eq!(result.metrics.wip, Some(10.0));
         assert_eq!(result.metrics.throughput, Some(5.0));
     }
 
     #[test]
     fn test_tps_test_result_with_summary() {
-        let result = TpsTestResult::new(TpsTestCase::HeijunkaBullwhip)
-            .with_summary("Test passed");
+        let result = TpsTestResult::new(TpsTestCase::HeijunkaBullwhip).with_summary("Test passed");
         assert_eq!(result.summary, "Test passed");
     }
 

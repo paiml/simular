@@ -68,10 +68,15 @@ fn run_phase_2_failing_test(n: usize, seed: u64) -> (f64, f64) {
 fn print_failing_test_results(random_length: f64, greedy_length: f64) {
     println!("Random construction tour length:  {:.4}", random_length);
     println!("Greedy construction tour length:  {:.4}", greedy_length);
-    println!("Greedy improvement: {:.1}%", (random_length - greedy_length) / random_length * 100.0);
+    println!(
+        "Greedy improvement: {:.1}%",
+        (random_length - greedy_length) / random_length * 100.0
+    );
     println!();
-    println!("✗ Random construction fails: tour is {:.1}% longer than greedy",
-        (random_length - greedy_length) / greedy_length * 100.0);
+    println!(
+        "✗ Random construction fails: tour is {:.1}% longer than greedy",
+        (random_length - greedy_length) / greedy_length * 100.0
+    );
     println!();
 }
 
@@ -95,7 +100,10 @@ fn run_phase_3_implementation(seed: u64, n: usize, iterations: usize) -> TspGras
         demo.grasp_iteration();
         if i <= 5 || i == 10 || i == 15 || i == iterations {
             let gap = demo.optimality_gap() * 100.0;
-            println!("  Iteration {:2}: best_tour = {:.4}, gap = {:.1}%", i, demo.best_tour_length, gap);
+            println!(
+                "  Iteration {:2}: best_tour = {:.4}, gap = {:.1}%",
+                i, demo.best_tour_length, gap
+            );
         }
     }
     println!();
@@ -138,7 +146,10 @@ fn run_phase_5_falsification() {
 
     println!("Results over {} trials:", trials);
     println!("  • Greedy wins: {}/{}", greedy_wins, trials);
-    println!("  • Average improvement: {:.1}%", total_improvement / trials as f64 * 100.0);
+    println!(
+        "  • Average improvement: {:.1}%",
+        total_improvement / trials as f64 * 100.0
+    );
     println!();
 
     if greedy_wins > trials / 2 {
@@ -182,13 +193,22 @@ fn run_visualization(demo: &TspGraspDemo) {
     for (i, &city_idx) in tour.iter().enumerate() {
         let city = &cities[city_idx];
         if i < 5 || i >= tour.len() - 2 {
-            println!("  {:2}. City {:2} at ({:.3}, {:.3})", i + 1, city_idx, city.x, city.y);
+            println!(
+                "  {:2}. City {:2} at ({:.3}, {:.3})",
+                i + 1,
+                city_idx,
+                city.x,
+                city.y
+            );
         } else if i == 5 {
             println!("  ... ({} more cities) ...", tour.len() - 7);
         }
     }
     let first_city = &cities[tour[0]];
-    println!("  →  City {:2} at ({:.3}, {:.3}) [return]", tour[0], first_city.x, first_city.y);
+    println!(
+        "  →  City {:2} at ({:.3}, {:.3}) [return]",
+        tour[0], first_city.x, first_city.y
+    );
     println!();
 }
 
@@ -202,7 +222,10 @@ fn run_edd_trait_info(demo: &TspGraspDemo) {
     println!("Status: {}", status.message);
     for criterion in &status.criteria {
         let mark = if criterion.passed { "✓" } else { "✗" };
-        println!("  {} {} = {:.4} (threshold: {:.4})", mark, criterion.name, criterion.value, criterion.threshold);
+        println!(
+            "  {} {} = {:.4} (threshold: {:.4})",
+            mark, criterion.name, criterion.value, criterion.threshold
+        );
     }
     println!();
 }

@@ -516,10 +516,7 @@ mod tests {
         let state_clone = state.clone();
 
         // Concurrent reads should work
-        let (count1, count2) = tokio::join!(
-            state.client_count(),
-            state_clone.client_count()
-        );
+        let (count1, count2) = tokio::join!(state.client_count(), state_clone.client_count());
 
         assert_eq!(count1, 0);
         assert_eq!(count2, 0);

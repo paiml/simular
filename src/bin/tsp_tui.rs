@@ -13,12 +13,18 @@ fn main() -> std::io::Result<()> {
     const DEFAULT_YAML: &str = "examples/experiments/bay_area_tsp.yaml";
 
     let args: Vec<String> = std::env::args().collect();
-    let yaml_path = if args.len() > 1 { &args[1] } else { DEFAULT_YAML };
+    let yaml_path = if args.len() > 1 {
+        &args[1]
+    } else {
+        DEFAULT_YAML
+    };
 
     let app = match TspApp::from_yaml_file(yaml_path) {
         Ok(app) => {
-            eprintln!("Loaded: {yaml_path} ({} cities, {} units)",
-                app.demo.n, app.demo.units);
+            eprintln!(
+                "Loaded: {yaml_path} ({} cities, {} units)",
+                app.demo.n, app.demo.units
+            );
             app
         }
         Err(e) => {
@@ -190,7 +196,10 @@ mod tui {
             Line::from(vec![
                 Span::styled("Tour Length: ", Style::default().fg(Color::Yellow)),
                 Span::raw("L(π) = Σᵢ d(π(i), π(i+1)) + d(π(n), π(1))  "),
-                Span::styled(format!("L = {best_tour:.1}"), Style::default().fg(Color::Green)),
+                Span::styled(
+                    format!("L = {best_tour:.1}"),
+                    Style::default().fg(Color::Green),
+                ),
             ]),
             Line::from(vec![
                 Span::styled("2-Opt Δ:     ", Style::default().fg(Color::Yellow)),
@@ -203,7 +212,10 @@ mod tui {
             Line::from(vec![
                 Span::styled("1-Tree LB:   ", Style::default().fg(Color::Yellow)),
                 Span::raw("L* ≥ MST(G\\{v₀}) + 2 shortest edges to v₀  "),
-                Span::styled(format!("= {lower_bound:.1}"), Style::default().fg(Color::Blue)),
+                Span::styled(
+                    format!("= {lower_bound:.1}"),
+                    Style::default().fg(Color::Blue),
+                ),
                 Span::raw("  "),
                 Span::styled(
                     format!("Gap = {:.1}%", gap * 100.0),
@@ -308,7 +320,12 @@ mod tui {
                     ctx.print(
                         city.x,
                         city.y,
-                        Span::styled(label, Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD)),
+                        Span::styled(
+                            label,
+                            Style::default()
+                                .fg(Color::Yellow)
+                                .add_modifier(Modifier::BOLD),
+                        ),
                     );
                 }
             });
@@ -327,16 +344,26 @@ mod tui {
             // Improving if recent values lower than older values
             let recent_avg: f64 = data.iter().rev().take(5).map(|&v| v as f64).sum::<f64>()
                 / data.len().min(5) as f64;
-            let older_avg: f64 = data.iter().take(5).map(|&v| v as f64).sum::<f64>()
-                / data.len().min(5) as f64;
+            let older_avg: f64 =
+                data.iter().take(5).map(|&v| v as f64).sum::<f64>() / data.len().min(5) as f64;
             (min, max, recent_avg < older_avg)
         } else {
             (0, 0, false)
         };
 
         // Visual Control: Show trend indicator
-        let trend = if improving { "↓" } else if data.len() < 2 { "—" } else { "→" };
-        let trend_color = if improving { Color::Green } else { Color::Yellow };
+        let trend = if improving {
+            "↓"
+        } else if data.len() < 2 {
+            "—"
+        } else {
+            "→"
+        };
+        let trend_color = if improving {
+            Color::Green
+        } else {
+            Color::Yellow
+        };
 
         let title = format!(
             "Convergence {trend} (min:{:.1}k max:{:.1}k)",
@@ -362,14 +389,19 @@ mod tui {
         vec![
             Line::from(vec![
                 Span::raw("Cities: "),
-                Span::styled(format!("{}", app.demo.n), Style::default().fg(Color::Yellow)),
+                Span::styled(
+                    format!("{}", app.demo.n),
+                    Style::default().fg(Color::Yellow),
+                ),
                 Span::styled(" [cities]", Style::default().fg(Color::Gray)), // Improved contrast
             ]),
             Line::from(vec![
                 Span::raw("Restarts: "),
                 Span::styled(
                     format!("{}", app.demo.restarts),
-                    Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD),
+                    Style::default()
+                        .fg(Color::Yellow)
+                        .add_modifier(Modifier::BOLD),
                 ),
                 Span::styled(" [iterations]", Style::default().fg(Color::Gray)), // Improved contrast
             ]),
@@ -382,11 +414,17 @@ mod tui {
         vec![
             Line::from(vec![
                 Span::raw("Method: "),
-                Span::styled(app.construction_method_name(), Style::default().fg(Color::Cyan)),
+                Span::styled(
+                    app.construction_method_name(),
+                    Style::default().fg(Color::Cyan),
+                ),
             ]),
             Line::from(vec![
                 Span::raw("RCL: "),
-                Span::styled(format!("{}", app.demo.rcl_size), Style::default().fg(Color::Yellow)),
+                Span::styled(
+                    format!("{}", app.demo.rcl_size),
+                    Style::default().fg(Color::Yellow),
+                ),
                 Span::styled(" [candidates]", Style::default().fg(Color::Gray)), // Improved contrast
             ]),
             Line::from(""),
@@ -399,14 +437,19 @@ mod tui {
         let mut lines = vec![
             Line::from(vec![
                 Span::raw("Current: "),
-                Span::styled(format!("{:.1}", app.demo.tour_length), Style::default().fg(Color::Green)),
+                Span::styled(
+                    format!("{:.1}", app.demo.tour_length),
+                    Style::default().fg(Color::Green),
+                ),
                 Span::styled(format!(" [{units}]"), Style::default().fg(Color::Gray)), // Improved contrast
             ]),
             Line::from(vec![
                 Span::raw("Best: "),
                 Span::styled(
                     format!("{:.1}", app.demo.best_tour_length),
-                    Style::default().fg(Color::Green).add_modifier(Modifier::BOLD),
+                    Style::default()
+                        .fg(Color::Green)
+                        .add_modifier(Modifier::BOLD),
                 ),
                 Span::styled(format!(" [{units}]"), Style::default().fg(Color::Gray)), // Improved contrast
                 if converged {
@@ -424,14 +467,20 @@ mod tui {
                 Span::styled(format!("{optimal}"), Style::default().fg(Color::Magenta)),
                 Span::styled(format!(" [{units}]"), Style::default().fg(Color::Gray)), // Improved contrast
                 Span::raw(" "),
-                Span::styled(if is_optimal { "✓" } else { "" }, Style::default().fg(Color::Green)),
+                Span::styled(
+                    if is_optimal { "✓" } else { "" },
+                    Style::default().fg(Color::Green),
+                ),
             ]));
         }
 
         lines.extend(vec![
             Line::from(vec![
                 Span::raw("Lower Bound: "),
-                Span::styled(format!("{:.1}", app.demo.lower_bound), Style::default().fg(Color::Blue)),
+                Span::styled(
+                    format!("{:.1}", app.demo.lower_bound),
+                    Style::default().fg(Color::Blue),
+                ),
                 Span::styled(format!(" [{units}]"), Style::default().fg(Color::Gray)), // Improved contrast
             ]),
             Line::from(vec![
@@ -452,14 +501,21 @@ mod tui {
         vec![
             Line::from(vec![
                 Span::raw("2-opt: "),
-                Span::styled(app.demo.two_opt_improvements.to_string(), Style::default().fg(Color::Yellow)),
+                Span::styled(
+                    app.demo.two_opt_improvements.to_string(),
+                    Style::default().fg(Color::Yellow),
+                ),
                 Span::styled(" [improvements]", Style::default().fg(Color::Gray)), // Improved contrast
             ]),
             Line::from(vec![
                 Span::raw("Crossings: "),
                 Span::styled(
                     format!("{crossings}"),
-                    Style::default().fg(if crossings == 0 { Color::Green } else { Color::Red }),
+                    Style::default().fg(if crossings == 0 {
+                        Color::Green
+                    } else {
+                        Color::Red
+                    }),
                 ),
                 Span::styled(" [edges]", Style::default().fg(Color::Gray)), // Improved contrast
             ]),
@@ -479,9 +535,10 @@ mod tui {
         let verified = app.verify_equation();
         // MUDA: Use algorithm's stagnation-based convergence OR optimal/gap criteria
         let converged = app.demo.converged
-            || app.demo.optimal_known.is_some_and(|opt| {
-                (app.demo.best_tour_length - f64::from(opt)).abs() < 0.5
-            })
+            || app
+                .demo
+                .optimal_known
+                .is_some_and(|opt| (app.demo.best_tour_length - f64::from(opt)).abs() < 0.5)
             || gap < 1.0;
 
         let mut stats_text = stats_instance_lines(app);
@@ -540,7 +597,10 @@ mod tui {
         let is_jidoka_stop = status.message.contains("JIDOKA STOP");
 
         let (status_style, border_style) = if status.verified {
-            (Style::default().fg(Color::Green), Style::default().fg(Color::Green))
+            (
+                Style::default().fg(Color::Green),
+                Style::default().fg(Color::Green),
+            )
         } else if is_jidoka_stop {
             // JIDOKA STOP: High-visibility red background (Andon board style)
             (
@@ -551,7 +611,10 @@ mod tui {
                 Style::default().fg(Color::Red),
             )
         } else {
-            (Style::default().fg(Color::Yellow), Style::default().fg(Color::Yellow))
+            (
+                Style::default().fg(Color::Yellow),
+                Style::default().fg(Color::Yellow),
+            )
         };
 
         let status_text = Line::from(vec![
@@ -561,8 +624,11 @@ mod tui {
             Span::raw(format!("Frame: {} ", app.frame_count)),
         ]);
 
-        let status_bar = Paragraph::new(status_text)
-            .block(Block::default().borders(Borders::ALL).border_style(border_style));
+        let status_bar = Paragraph::new(status_text).block(
+            Block::default()
+                .borders(Borders::ALL)
+                .border_style(border_style),
+        );
 
         f.render_widget(status_bar, area);
     }

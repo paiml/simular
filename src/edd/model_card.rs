@@ -646,8 +646,8 @@ mod tests {
 
     #[test]
     fn test_emc_builder_add_variable_full() {
-        let var = EquationVariable::new("x", "input", "units")
-            .with_description("Test input variable");
+        let var =
+            EquationVariable::new("x", "input", "units").with_description("Test input variable");
 
         let emc = EmcBuilder::new()
             .name("Test")

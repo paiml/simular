@@ -67,7 +67,13 @@ pub struct TspCity {
 impl TspCity {
     /// Create a new city.
     #[must_use]
-    pub fn new(id: usize, name: impl Into<String>, alias: impl Into<String>, lat: f64, lon: f64) -> Self {
+    pub fn new(
+        id: usize,
+        name: impl Into<String>,
+        alias: impl Into<String>,
+        lat: f64,
+        lon: f64,
+    ) -> Self {
         Self {
             id,
             name: name.into(),
@@ -209,11 +215,20 @@ pub enum TspInstanceError {
     /// Matrix dimensions don't match city count.
     MatrixDimensionMismatch { expected: usize, got_rows: usize },
     /// Matrix row has wrong number of columns.
-    MatrixRowMismatch { row: usize, expected: usize, got: usize },
+    MatrixRowMismatch {
+        row: usize,
+        expected: usize,
+        got: usize,
+    },
     /// Triangle inequality violated.
     TriangleInequalityViolation { i: usize, j: usize, k: usize },
     /// Matrix is not symmetric.
-    AsymmetricMatrix { i: usize, j: usize, forward: u32, backward: u32 },
+    AsymmetricMatrix {
+        i: usize,
+        j: usize,
+        forward: u32,
+        backward: u32,
+    },
     /// Invalid city ID.
     InvalidCityId { id: usize, max: usize },
     /// IO error.
@@ -231,10 +246,21 @@ impl std::fmt::Display for TspInstanceError {
                 write!(f, "Matrix row {row} has {got} columns, expected {expected}")
             }
             Self::TriangleInequalityViolation { i, j, k } => {
-                write!(f, "Triangle inequality violated: d({i},{k}) > d({i},{j}) + d({j},{k})")
+                write!(
+                    f,
+                    "Triangle inequality violated: d({i},{k}) > d({i},{j}) + d({j},{k})"
+                )
             }
-            Self::AsymmetricMatrix { i, j, forward, backward } => {
-                write!(f, "Asymmetric matrix: d({i},{j})={forward} != d({j},{i})={backward}")
+            Self::AsymmetricMatrix {
+                i,
+                j,
+                forward,
+                backward,
+            } => {
+                write!(
+                    f,
+                    "Asymmetric matrix: d({i},{j})={forward} != d({j},{i})={backward}"
+                )
             }
             Self::InvalidCityId { id, max } => {
                 write!(f, "Invalid city ID {id}, max is {max}")
@@ -262,7 +288,8 @@ impl TspInstanceYaml {
     ///
     /// Returns error if file cannot be read or YAML is invalid.
     pub fn from_yaml_file<P: AsRef<std::path::Path>>(path: P) -> Result<Self, TspInstanceError> {
-        let content = std::fs::read_to_string(path).map_err(|e| TspInstanceError::IoError(e.to_string()))?;
+        let content =
+            std::fs::read_to_string(path).map_err(|e| TspInstanceError::IoError(e.to_string()))?;
         Self::from_yaml(&content)
     }
 
@@ -321,7 +348,10 @@ impl TspInstanceYaml {
         // Check city IDs are valid
         for city in &self.cities {
             if city.id >= n {
-                return Err(TspInstanceError::InvalidCityId { id: city.id, max: n - 1 });
+                return Err(TspInstanceError::InvalidCityId {
+                    id: city.id,
+                    max: n - 1,
+                });
             }
         }
 
@@ -340,7 +370,12 @@ impl TspInstanceYaml {
                 let forward = self.matrix[i][j];
                 let backward = self.matrix[j][i];
                 if forward != backward {
-                    return Err(TspInstanceError::AsymmetricMatrix { i, j, forward, backward });
+                    return Err(TspInstanceError::AsymmetricMatrix {
+                        i,
+                        j,
+                        forward,
+                        backward,
+                    });
                 }
             }
         }
@@ -504,7 +539,9 @@ mod wasm {
         /// Check triangle inequality.
         #[wasm_bindgen(js_name = checkTriangleInequality)]
         pub fn check_triangle_inequality(&self) -> Result<(), String> {
-            self.inner.check_triangle_inequality().map_err(|e| e.to_string())
+            self.inner
+                .check_triangle_inequality()
+                .map_err(|e| e.to_string())
         }
 
         /// Get the number of cities.
@@ -831,7 +868,10 @@ matrix:
 "#;
         let instance = TspInstanceYaml::from_yaml(yaml).expect("Parse");
         let result = instance.validate();
-        assert!(matches!(result, Err(TspInstanceError::MatrixDimensionMismatch { .. })));
+        assert!(matches!(
+            result,
+            Err(TspInstanceError::MatrixDimensionMismatch { .. })
+        ));
     }
 
     #[test]
@@ -855,7 +895,10 @@ matrix:
 "#;
         let instance = TspInstanceYaml::from_yaml(yaml).expect("Parse");
         let result = instance.validate();
-        assert!(matches!(result, Err(TspInstanceError::MatrixRowMismatch { .. })));
+        assert!(matches!(
+            result,
+            Err(TspInstanceError::MatrixRowMismatch { .. })
+        ));
     }
 
     #[test]
@@ -879,7 +922,10 @@ matrix:
 "#;
         let instance = TspInstanceYaml::from_yaml(yaml).expect("Parse");
         let result = instance.validate();
-        assert!(matches!(result, Err(TspInstanceError::InvalidCityId { .. })));
+        assert!(matches!(
+            result,
+            Err(TspInstanceError::InvalidCityId { .. })
+        ));
     }
 
     #[test]
@@ -909,7 +955,10 @@ matrix:
 "#;
         let instance = TspInstanceYaml::from_yaml(yaml).expect("Parse");
         let result = instance.check_symmetry();
-        assert!(matches!(result, Err(TspInstanceError::AsymmetricMatrix { .. })));
+        assert!(matches!(
+            result,
+            Err(TspInstanceError::AsymmetricMatrix { .. })
+        ));
     }
 
     #[test]
@@ -945,7 +994,10 @@ matrix:
 "#;
         let instance = TspInstanceYaml::from_yaml(yaml).expect("Parse");
         let result = instance.check_triangle_inequality();
-        assert!(matches!(result, Err(TspInstanceError::TriangleInequalityViolation { .. })));
+        assert!(matches!(
+            result,
+            Err(TspInstanceError::TriangleInequalityViolation { .. })
+        ));
     }
 
     // =========================================================================
@@ -1002,7 +1054,7 @@ matrix:
     fn test_distance() {
         let instance = TspInstanceYaml::from_yaml(BAY_AREA_YAML).expect("Parse");
         assert_eq!(instance.distance(0, 1), 12); // SF to Oakland
-        assert_eq!(instance.distance(1, 4), 4);  // Oakland to Berkeley
+        assert_eq!(instance.distance(1, 4), 4); // Oakland to Berkeley
     }
 
     // =========================================================================
@@ -1017,7 +1069,10 @@ matrix:
 
     #[test]
     fn test_error_display_matrix_dimension() {
-        let err = TspInstanceError::MatrixDimensionMismatch { expected: 6, got_rows: 4 };
+        let err = TspInstanceError::MatrixDimensionMismatch {
+            expected: 6,
+            got_rows: 4,
+        };
         let msg = err.to_string();
         assert!(msg.contains("6x6"));
         assert!(msg.contains("4 rows"));
@@ -1025,7 +1080,11 @@ matrix:
 
     #[test]
     fn test_error_display_matrix_row() {
-        let err = TspInstanceError::MatrixRowMismatch { row: 2, expected: 6, got: 4 };
+        let err = TspInstanceError::MatrixRowMismatch {
+            row: 2,
+            expected: 6,
+            got: 4,
+        };
         let msg = err.to_string();
         assert!(msg.contains("row 2"));
         assert!(msg.contains("4 columns"));
@@ -1039,7 +1098,12 @@ matrix:
 
     #[test]
     fn test_error_display_asymmetric() {
-        let err = TspInstanceError::AsymmetricMatrix { i: 0, j: 1, forward: 10, backward: 20 };
+        let err = TspInstanceError::AsymmetricMatrix {
+            i: 0,
+            j: 1,
+            forward: 10,
+            backward: 20,
+        };
         let msg = err.to_string();
         assert!(msg.contains("Asymmetric"));
         assert!(msg.contains("10"));
@@ -1084,7 +1148,10 @@ matrix:
 
     #[test]
     fn test_coords_clone_and_copy() {
-        let coords = Coords { lat: 37.0, lon: -122.0 };
+        let coords = Coords {
+            lat: 37.0,
+            lon: -122.0,
+        };
         let cloned = coords.clone();
         let copied = coords;
         assert_eq!(coords, cloned);
@@ -1093,9 +1160,18 @@ matrix:
 
     #[test]
     fn test_coords_partial_eq() {
-        let c1 = Coords { lat: 37.0, lon: -122.0 };
-        let c2 = Coords { lat: 37.0, lon: -122.0 };
-        let c3 = Coords { lat: 38.0, lon: -122.0 };
+        let c1 = Coords {
+            lat: 37.0,
+            lon: -122.0,
+        };
+        let c2 = Coords {
+            lat: 37.0,
+            lon: -122.0,
+        };
+        let c3 = Coords {
+            lat: 38.0,
+            lon: -122.0,
+        };
         assert_eq!(c1, c2);
         assert_ne!(c1, c3);
     }
@@ -1137,7 +1213,8 @@ matrix:
 
     #[test]
     fn test_error_is_error_trait() {
-        let err: Box<dyn std::error::Error> = Box::new(TspInstanceError::ParseError("test".to_string()));
+        let err: Box<dyn std::error::Error> =
+            Box::new(TspInstanceError::ParseError("test".to_string()));
         assert!(!err.to_string().is_empty());
     }
 
@@ -1147,7 +1224,10 @@ matrix:
 
     #[test]
     fn test_coords_debug() {
-        let coords = Coords { lat: 37.0, lon: -122.0 };
+        let coords = Coords {
+            lat: 37.0,
+            lon: -122.0,
+        };
         let debug = format!("{:?}", coords);
         assert!(debug.contains("Coords"));
         assert!(debug.contains("37"));

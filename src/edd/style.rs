@@ -144,6 +144,9 @@ mod tests {
 
         // Contrast ratio approximation
         let ratio = (text_lum + 0.05) / (bg_lum + 0.05);
-        assert!(ratio > 4.5, "Text contrast ratio should exceed WCAG AA: {ratio}");
+        assert!(
+            ratio > 4.5,
+            "Text contrast ratio should exceed WCAG AA: {ratio}"
+        );
     }
 }

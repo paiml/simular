@@ -1375,13 +1375,13 @@ mod tests {
     #[test]
     fn test_validate_three_pillars_all_pass() {
         let violations = EddValidator::validate_three_pillars(
-            true,  // z3_proofs_passed
-            true,  // has_yaml_config
-            true,  // seed_specified
-            true,  // probar_tui_passed
-            5,     // probar_tui_test_count
-            true,  // probar_wasm_passed
-            3,     // probar_wasm_test_count
+            true, // z3_proofs_passed
+            true, // has_yaml_config
+            true, // seed_specified
+            true, // probar_tui_passed
+            5,    // probar_tui_test_count
+            true, // probar_wasm_passed
+            3,    // probar_wasm_test_count
         );
         assert!(violations.is_empty(), "All pillars should pass");
     }
@@ -1399,8 +1399,7 @@ mod tests {
     #[test]
     fn test_validate_three_pillars_yaml_fails() {
         let violations = EddValidator::validate_three_pillars(
-            true,
-            false, // has_yaml_config
+            true, false, // has_yaml_config
             true, true, 5, true, 3,
         );
         assert_eq!(violations.len(), 1);
@@ -1410,8 +1409,7 @@ mod tests {
     #[test]
     fn test_validate_three_pillars_seed_missing() {
         let violations = EddValidator::validate_three_pillars(
-            true, true,
-            false, // seed_specified
+            true, true, false, // seed_specified
             true, 5, true, 3,
         );
         assert_eq!(violations.len(), 1);
@@ -1421,10 +1419,8 @@ mod tests {
     #[test]
     fn test_validate_three_pillars_probar_fails() {
         let violations = EddValidator::validate_three_pillars(
-            true, true, true,
-            false, // probar_tui_passed
-            5,
-            false, // probar_wasm_passed
+            true, true, true, false, // probar_tui_passed
+            5, false, // probar_wasm_passed
             3,
         );
         assert_eq!(violations.len(), 2);
@@ -1444,7 +1440,11 @@ mod tests {
             0,     // probar_wasm_test_count
         );
         // Should have multiple violations
-        assert!(violations.len() >= 4, "Expected multiple violations: {:?}", violations);
+        assert!(
+            violations.len() >= 4,
+            "Expected multiple violations: {:?}",
+            violations
+        );
     }
 
     // =========================================================================

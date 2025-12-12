@@ -638,8 +638,8 @@ description: "A test experiment"
 
     #[test]
     fn test_experiment_spec_builder_emc() {
-        use crate::edd::model_card::{EmcBuilder, VerificationTest};
         use crate::edd::equation::Citation;
+        use crate::edd::model_card::{EmcBuilder, VerificationTest};
 
         let emc = EmcBuilder::new()
             .name("TestEMC")
@@ -718,7 +718,10 @@ description: "A test experiment"
     fn test_falsification_action_variants() {
         assert_ne!(FalsificationAction::Warn, FalsificationAction::Stop);
         assert_ne!(FalsificationAction::Stop, FalsificationAction::RejectModel);
-        assert_ne!(FalsificationAction::RejectModel, FalsificationAction::FlagReview);
+        assert_ne!(
+            FalsificationAction::RejectModel,
+            FalsificationAction::FlagReview
+        );
         assert_ne!(FalsificationAction::FlagReview, FalsificationAction::Warn);
     }
 
