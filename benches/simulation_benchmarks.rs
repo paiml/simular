@@ -16,7 +16,7 @@
 
 use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion};
 use simular::demos::tsp_grasp::TspGraspDemo;
-use simular::demos::monte_carlo_pi::MonteCarloDemo;
+use simular::demos::monte_carlo_pi::MonteCarloPlDemo;
 
 /// TSP GRASP Benchmark - Measures iteration time with confidence intervals
 ///
@@ -34,7 +34,7 @@ fn bench_tsp_grasp_iteration(c: &mut Criterion) {
             let mut demo = TspGraspDemo::new(42, n);
             b.iter(|| {
                 demo.grasp_iteration();
-                black_box(&demo.best_tour_length)
+                black_box(demo.best_tour_length)
             });
         });
     }
@@ -55,8 +55,8 @@ fn bench_tsp_two_opt(c: &mut Criterion) {
             let mut demo = TspGraspDemo::new(42, n);
             demo.construct_tour();
             b.iter(|| {
-                demo.two_opt();
-                black_box(&demo.tour_length)
+                demo.two_opt_pass();
+                black_box(demo.tour_length)
             });
         });
     }
@@ -73,11 +73,12 @@ fn bench_monte_carlo_pi(c: &mut Criterion) {
     group.sample_size(100);
     group.confidence_level(0.95);
 
-    for samples in [1000, 10000, 100000].iter() {
+    for samples in [1000u64, 10000, 100000].iter() {
         group.bench_with_input(BenchmarkId::new("estimate_pi", samples), samples, |b, &n| {
             b.iter(|| {
-                let demo = MonteCarloDemo::new(42, n);
-                black_box(demo.estimate())
+                let mut demo = MonteCarloPlDemo::new(42);
+                demo.run_to_n(n);
+                black_box(demo.pi_estimate)
             });
         });
     }
@@ -101,7 +102,7 @@ fn bench_full_grasp(c: &mut Criterion) {
                 b.iter(|| {
                     let mut demo = TspGraspDemo::new(42, 25);
                     demo.run_grasp(iters);
-                    black_box(&demo.best_tour_length)
+                    black_box(demo.best_tour_length)
                 });
             },
         );
