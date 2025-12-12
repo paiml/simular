@@ -1138,6 +1138,38 @@ mod wasm {
             }
         }
 
+        /// Create demo from YAML configuration string.
+        ///
+        /// This is the primary YAML-first entry point for web applications.
+        /// Load bay_area_tsp.yaml or user-modified YAML.
+        ///
+        /// # Example (JavaScript)
+        /// ```javascript
+        /// const yaml = `
+        /// meta:
+        ///   id: "MY-TSP"
+        /// cities:
+        ///   - id: 0
+        ///     name: "A"
+        ///     alias: "A"
+        ///     coords: { lat: 0.0, lon: 0.0 }
+        ///   - id: 1
+        ///     name: "B"
+        ///     alias: "B"
+        ///     coords: { lat: 1.0, lon: 1.0 }
+        /// matrix:
+        ///   - [0, 10]
+        ///   - [10, 0]
+        /// `;
+        /// const demo = WasmTspGrasp.fromYaml(yaml);
+        /// ```
+        #[wasm_bindgen(js_name = fromYaml)]
+        pub fn from_yaml(yaml: &str) -> Result<WasmTspGrasp, JsValue> {
+            let inner = TspGraspDemo::from_yaml(yaml)
+                .map_err(|e| JsValue::from_str(&e.to_string()))?;
+            Ok(Self { inner })
+        }
+
         /// Create demo with cities from JavaScript array.
         /// Expected format: [[x1, y1], [x2, y2], ...]
         #[wasm_bindgen(js_name = withCities)]
