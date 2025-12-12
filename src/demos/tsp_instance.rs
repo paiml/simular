@@ -865,6 +865,16 @@ matrix:
         assert!(matches!(result, Err(TspInstanceError::IoError(_))));
     }
 
+    #[test]
+    fn test_from_yaml_file_success() {
+        // Use the actual bay_area_tsp.yaml file
+        let result = TspInstanceYaml::from_yaml_file("examples/experiments/bay_area_tsp.yaml");
+        assert!(result.is_ok());
+        let instance = result.unwrap();
+        assert_eq!(instance.meta.id, "TSP-BAY-006");
+        assert_eq!(instance.city_count(), 6);
+    }
+
     // =========================================================================
     // Trait implementations
     // =========================================================================
