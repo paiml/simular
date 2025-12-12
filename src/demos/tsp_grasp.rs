@@ -28,6 +28,7 @@
 //! - [54] Christofides (1976) "Worst-Case Analysis of a New Heuristic for the TSP"
 //! - [55] Beardwood, Halton & Hammersley (1959) "The Shortest Path Through Many Points"
 
+use super::tsp_instance::{TspInstanceError, TspInstanceYaml};
 use super::{CriterionStatus, EddDemo, FalsificationStatus};
 use crate::edd::audit::{
     Decision, EquationEval, SimulationAuditLog, StepEntry, TspStateSnapshot, TspStepType,
@@ -250,6 +251,116 @@ impl TspGraspDemo {
         demo.precompute_distances();
         demo.compute_lower_bound();
         demo
+    }
+
+    /// Create demo from a YAML instance configuration.
+    ///
+    /// This enables the YAML-first architecture where users can modify
+    /// `bay_area_tsp.yaml` and run the same demo in TUI or WASM.
+    ///
+    /// # Arguments
+    ///
+    /// * `instance` - Parsed YAML configuration
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use simular::demos::{TspGraspDemo, TspInstanceYaml};
+    ///
+    /// let yaml = r#"
+    /// meta:
+    ///   id: "TEST"
+    ///   description: "Test"
+    /// cities:
+    ///   - id: 0
+    ///     name: "A"
+    ///     alias: "A"
+    ///     coords: { lat: 0.0, lon: 0.0 }
+    ///   - id: 1
+    ///     name: "B"
+    ///     alias: "B"
+    ///     coords: { lat: 1.0, lon: 1.0 }
+    /// matrix:
+    ///   - [0, 10]
+    ///   - [10, 0]
+    /// "#;
+    ///
+    /// let instance = TspInstanceYaml::from_yaml(yaml).unwrap();
+    /// let demo = TspGraspDemo::from_instance(&instance);
+    /// assert_eq!(demo.n, 2);
+    /// ```
+    #[must_use]
+    pub fn from_instance(instance: &TspInstanceYaml) -> Self {
+        // Convert TspCity coords (lat/lon) to City (x/y)
+        // Use lon as x, lat as y (standard mapping)
+        let cities: Vec<City> = instance
+            .cities
+            .iter()
+            .map(|c| City::new(c.coords.lon, c.coords.lat))
+            .collect();
+
+        let seed = instance.algorithm.params.seed;
+        let mut demo = Self::with_cities(seed, cities);
+
+        // Apply algorithm configuration
+        demo.set_rcl_size(instance.algorithm.params.rcl_size);
+
+        // Set construction method based on YAML config
+        let method = match instance.algorithm.method.as_str() {
+            "nearest_neighbor" | "nn" => ConstructionMethod::NearestNeighbor,
+            "random" => ConstructionMethod::Random,
+            _ => ConstructionMethod::RandomizedGreedy, // "grasp" is default
+        };
+        demo.set_construction_method(method);
+
+        // Override distance matrix with YAML-provided distances
+        // This allows users to specify exact driving distances rather than Euclidean
+        demo.distance_matrix = instance
+            .matrix
+            .iter()
+            .map(|row| row.iter().map(|&d| f64::from(d)).collect())
+            .collect();
+
+        // Recompute lower bound with actual distances
+        demo.compute_lower_bound();
+
+        demo
+    }
+
+    /// Load demo from YAML string.
+    ///
+    /// This is the primary entry point for YAML-first configuration.
+    ///
+    /// # Errors
+    ///
+    /// Returns error if:
+    /// - YAML parsing fails
+    /// - Validation fails (matrix size, symmetry, etc.)
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use simular::demos::TspGraspDemo;
+    ///
+    /// let yaml = include_str!("../../examples/experiments/bay_area_tsp.yaml");
+    /// let demo = TspGraspDemo::from_yaml(yaml).expect("YAML should parse");
+    /// assert_eq!(demo.n, 6);
+    /// ```
+    pub fn from_yaml(yaml: &str) -> Result<Self, TspInstanceError> {
+        let instance = TspInstanceYaml::from_yaml(yaml)?;
+        instance.validate()?;
+        Ok(Self::from_instance(&instance))
+    }
+
+    /// Load demo from YAML file.
+    ///
+    /// # Errors
+    ///
+    /// Returns error if file cannot be read or YAML is invalid.
+    pub fn from_yaml_file<P: AsRef<std::path::Path>>(path: P) -> Result<Self, TspInstanceError> {
+        let instance = TspInstanceYaml::from_yaml_file(path)?;
+        instance.validate()?;
+        Ok(Self::from_instance(&instance))
     }
 
     /// Set construction method.
@@ -2494,5 +2605,215 @@ mod tests {
 
         // Best should be <= first attempt
         assert!(final_best <= first_best + f64::EPSILON);
+    }
+
+    // =========================================================================
+    // YAML Integration Tests (OR-001-07)
+    // =========================================================================
+
+    const BAY_AREA_YAML: &str = include_str!("../../examples/experiments/bay_area_tsp.yaml");
+
+    #[test]
+    fn test_from_yaml_bay_area() {
+        let demo = TspGraspDemo::from_yaml(BAY_AREA_YAML).expect("YAML should parse");
+        assert_eq!(demo.n, 6);
+        assert_eq!(demo.rcl_size, 3);
+    }
+
+    #[test]
+    fn test_from_yaml_uses_yaml_distances() {
+        let demo = TspGraspDemo::from_yaml(BAY_AREA_YAML).expect("YAML should parse");
+
+        // SF to Oakland should be 12 miles (from YAML matrix)
+        let sf_to_oakland = demo.distance(0, 1);
+        assert!(
+            (sf_to_oakland - 12.0).abs() < 0.1,
+            "SF→Oakland should be 12 miles, got {sf_to_oakland}"
+        );
+
+        // Oakland to Berkeley should be 4 miles
+        let oakland_to_berkeley = demo.distance(1, 4);
+        assert!(
+            (oakland_to_berkeley - 4.0).abs() < 0.1,
+            "Oakland→Berkeley should be 4 miles, got {oakland_to_berkeley}"
+        );
+    }
+
+    #[test]
+    fn test_from_yaml_optimal_tour_115() {
+        let demo = TspGraspDemo::from_yaml(BAY_AREA_YAML).expect("YAML should parse");
+
+        // Optimal tour: SF(0) → OAK(1) → BRK(4) → FRE(5) → SJ(2) → PA(3) → SF(0)
+        let optimal_tour = vec![0, 1, 4, 5, 2, 3];
+        let length = demo.compute_tour_length(&optimal_tour);
+
+        // 12 + 4 + 32 + 17 + 15 + 35 = 115
+        assert!(
+            (length - 115.0).abs() < 0.1,
+            "Optimal tour should be 115 miles, got {length}"
+        );
+    }
+
+    #[test]
+    fn test_from_yaml_grasp_finds_good_tour() {
+        let mut demo = TspGraspDemo::from_yaml(BAY_AREA_YAML).expect("YAML should parse");
+
+        // Run GRASP
+        demo.run_grasp(10);
+
+        // Should find tour within 20% of optimal (115)
+        assert!(
+            demo.best_tour_length <= 115.0 * 1.2,
+            "GRASP should find tour ≤138 miles, got {}",
+            demo.best_tour_length
+        );
+    }
+
+    #[test]
+    fn test_from_yaml_invalid() {
+        let result = TspGraspDemo::from_yaml("invalid yaml: [[[");
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_from_yaml_validates() {
+        // YAML with mismatched matrix dimensions should fail validation
+        let bad_yaml = r#"
+meta:
+  id: "BAD"
+  description: "Bad"
+cities:
+  - id: 0
+    name: "A"
+    alias: "A"
+    coords: { lat: 0.0, lon: 0.0 }
+matrix:
+  - [0, 10, 20]
+  - [10, 0, 30]
+"#;
+        let result = TspGraspDemo::from_yaml(bad_yaml);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_from_instance_method_grasp() {
+        let yaml = r#"
+meta:
+  id: "TEST"
+  description: "Test"
+cities:
+  - id: 0
+    name: "A"
+    alias: "A"
+    coords: { lat: 0.0, lon: 0.0 }
+  - id: 1
+    name: "B"
+    alias: "B"
+    coords: { lat: 1.0, lon: 1.0 }
+matrix:
+  - [0, 10]
+  - [10, 0]
+algorithm:
+  method: "grasp"
+  params:
+    rcl_size: 2
+    restarts: 5
+    two_opt: true
+    seed: 123
+"#;
+        let instance = TspInstanceYaml::from_yaml(yaml).expect("parse");
+        let demo = TspGraspDemo::from_instance(&instance);
+
+        assert_eq!(demo.construction_method, ConstructionMethod::RandomizedGreedy);
+        assert_eq!(demo.rcl_size, 2);
+        assert_eq!(demo.seed, 123);
+    }
+
+    #[test]
+    fn test_from_instance_method_nearest_neighbor() {
+        let yaml = r#"
+meta:
+  id: "TEST"
+  description: "Test"
+cities:
+  - id: 0
+    name: "A"
+    alias: "A"
+    coords: { lat: 0.0, lon: 0.0 }
+  - id: 1
+    name: "B"
+    alias: "B"
+    coords: { lat: 1.0, lon: 1.0 }
+matrix:
+  - [0, 10]
+  - [10, 0]
+algorithm:
+  method: "nearest_neighbor"
+  params:
+    seed: 42
+"#;
+        let instance = TspInstanceYaml::from_yaml(yaml).expect("parse");
+        let demo = TspGraspDemo::from_instance(&instance);
+
+        assert_eq!(demo.construction_method, ConstructionMethod::NearestNeighbor);
+    }
+
+    #[test]
+    fn test_from_instance_method_random() {
+        let yaml = r#"
+meta:
+  id: "TEST"
+  description: "Test"
+cities:
+  - id: 0
+    name: "A"
+    alias: "A"
+    coords: { lat: 0.0, lon: 0.0 }
+  - id: 1
+    name: "B"
+    alias: "B"
+    coords: { lat: 1.0, lon: 1.0 }
+matrix:
+  - [0, 10]
+  - [10, 0]
+algorithm:
+  method: "random"
+  params:
+    seed: 42
+"#;
+        let instance = TspInstanceYaml::from_yaml(yaml).expect("parse");
+        let demo = TspGraspDemo::from_instance(&instance);
+
+        assert_eq!(demo.construction_method, ConstructionMethod::Random);
+    }
+
+    #[test]
+    fn test_from_yaml_file_success() {
+        let result = TspGraspDemo::from_yaml_file("examples/experiments/bay_area_tsp.yaml");
+        assert!(result.is_ok());
+        let demo = result.unwrap();
+        assert_eq!(demo.n, 6);
+    }
+
+    #[test]
+    fn test_from_yaml_file_not_found() {
+        let result = TspGraspDemo::from_yaml_file("/nonexistent/path.yaml");
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_from_yaml_deterministic() {
+        // Two demos from same YAML should produce identical results
+        let mut demo1 = TspGraspDemo::from_yaml(BAY_AREA_YAML).expect("parse");
+        let mut demo2 = TspGraspDemo::from_yaml(BAY_AREA_YAML).expect("parse");
+
+        demo1.run_grasp(5);
+        demo2.run_grasp(5);
+
+        assert_eq!(
+            demo1.best_tour_length, demo2.best_tour_length,
+            "Same seed should produce same result"
+        );
+        assert_eq!(demo1.best_tour, demo2.best_tour);
     }
 }
