@@ -2,10 +2,23 @@
 //!
 //! This module contains the testable state and logic for the TSP GRASP TUI demo.
 //! Terminal I/O is handled by the binary, but all state management lives here.
+//!
+//! # YAML-First Architecture
+//!
+//! The TUI supports loading TSP instances from YAML files:
+//!
+//! ```bash
+//! # Load Bay Area TSP instance
+//! cargo run --bin tsp_tui -- examples/experiments/bay_area_tsp.yaml
+//! ```
+//!
+//! Or use the 'L' key to trigger file loading (handled by binary).
 
 use crate::demos::tsp_grasp::{ConstructionMethod, TspGraspDemo};
+use crate::demos::tsp_instance::{TspInstanceError, TspInstanceYaml};
 use crate::demos::EddDemo;
 use crossterm::event::KeyCode;
+use std::path::Path;
 
 /// Application state for the TSP GRASP TUI demo.
 pub struct TspApp {
@@ -23,6 +36,10 @@ pub struct TspApp {
     pub convergence_history: Vec<u64>,
     /// Maximum history length.
     pub max_history: usize,
+    /// Loaded YAML instance (if any).
+    pub loaded_instance: Option<TspInstanceYaml>,
+    /// Path to loaded file (if any).
+    pub loaded_path: Option<String>,
 }
 
 impl TspApp {
@@ -51,7 +68,103 @@ impl TspApp {
             should_quit: false,
             convergence_history,
             max_history: 50,
+            loaded_instance: None,
+            loaded_path: None,
         }
+    }
+
+    /// Create application from YAML string.
+    ///
+    /// # Errors
+    ///
+    /// Returns error if YAML parsing or validation fails.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use simular::tui::tsp_app::TspApp;
+    ///
+    /// let yaml = include_str!("../../examples/experiments/bay_area_tsp.yaml");
+    /// let app = TspApp::from_yaml(yaml).expect("YAML should parse");
+    /// assert_eq!(app.demo.n, 6);
+    /// ```
+    pub fn from_yaml(yaml: &str) -> Result<Self, TspInstanceError> {
+        let instance = TspInstanceYaml::from_yaml(yaml)?;
+        instance.validate()?;
+
+        let mut demo = TspGraspDemo::from_instance(&instance);
+        demo.grasp_iteration();
+
+        let mut convergence_history = Vec::new();
+        #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+        let tour_len = (demo.best_tour_length * 1000.0).max(0.0) as u64;
+        convergence_history.push(tour_len);
+
+        Ok(Self {
+            demo,
+            paused: false,
+            auto_run: true,
+            frame_count: 0,
+            should_quit: false,
+            convergence_history,
+            max_history: 50,
+            loaded_instance: Some(instance),
+            loaded_path: None,
+        })
+    }
+
+    /// Create application from YAML file.
+    ///
+    /// # Errors
+    ///
+    /// Returns error if file cannot be read or YAML is invalid.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use simular::tui::tsp_app::TspApp;
+    ///
+    /// let app = TspApp::from_yaml_file("examples/experiments/bay_area_tsp.yaml")
+    ///     .expect("File should load");
+    /// assert_eq!(app.demo.n, 6);
+    /// assert!(app.loaded_path.is_some());
+    /// ```
+    pub fn from_yaml_file<P: AsRef<Path>>(path: P) -> Result<Self, TspInstanceError> {
+        let path_str = path.as_ref().to_string_lossy().to_string();
+        let instance = TspInstanceYaml::from_yaml_file(&path)?;
+        instance.validate()?;
+
+        let mut demo = TspGraspDemo::from_instance(&instance);
+        demo.grasp_iteration();
+
+        let mut convergence_history = Vec::new();
+        #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+        let tour_len = (demo.best_tour_length * 1000.0).max(0.0) as u64;
+        convergence_history.push(tour_len);
+
+        Ok(Self {
+            demo,
+            paused: false,
+            auto_run: true,
+            frame_count: 0,
+            should_quit: false,
+            convergence_history,
+            max_history: 50,
+            loaded_instance: Some(instance),
+            loaded_path: Some(path_str),
+        })
+    }
+
+    /// Get the instance ID if loaded from YAML.
+    #[must_use]
+    pub fn instance_id(&self) -> Option<&str> {
+        self.loaded_instance.as_ref().map(|i| i.meta.id.as_str())
+    }
+
+    /// Get the optimal known value if loaded from YAML.
+    #[must_use]
+    pub fn optimal_known(&self) -> Option<u32> {
+        self.loaded_instance.as_ref().and_then(|i| i.meta.optimal_known)
     }
 
     /// Reset the simulation.
@@ -379,5 +492,101 @@ mod tests {
         let app = TspApp::new(10, 42);
         // Should have initial entry from constructor
         assert!(!app.convergence_history.is_empty());
+    }
+
+    // =========================================================================
+    // YAML Loading Tests (OR-001-08)
+    // =========================================================================
+
+    const BAY_AREA_YAML: &str = include_str!("../../examples/experiments/bay_area_tsp.yaml");
+
+    #[test]
+    fn test_from_yaml_bay_area() {
+        let app = TspApp::from_yaml(BAY_AREA_YAML).expect("YAML should parse");
+        assert_eq!(app.demo.n, 6);
+        assert!(app.loaded_instance.is_some());
+        assert!(app.loaded_path.is_none()); // Not from file
+    }
+
+    #[test]
+    fn test_from_yaml_instance_id() {
+        let app = TspApp::from_yaml(BAY_AREA_YAML).expect("YAML should parse");
+        assert_eq!(app.instance_id(), Some("TSP-BAY-006"));
+    }
+
+    #[test]
+    fn test_from_yaml_optimal_known() {
+        let app = TspApp::from_yaml(BAY_AREA_YAML).expect("YAML should parse");
+        assert_eq!(app.optimal_known(), Some(115));
+    }
+
+    #[test]
+    fn test_from_yaml_no_optimal_known() {
+        let yaml = r#"
+meta:
+  id: "TEST"
+  description: "Test"
+cities:
+  - id: 0
+    name: "A"
+    alias: "A"
+    coords: { lat: 0.0, lon: 0.0 }
+  - id: 1
+    name: "B"
+    alias: "B"
+    coords: { lat: 1.0, lon: 1.0 }
+matrix:
+  - [0, 10]
+  - [10, 0]
+"#;
+        let app = TspApp::from_yaml(yaml).expect("YAML should parse");
+        assert_eq!(app.optimal_known(), None);
+    }
+
+    #[test]
+    fn test_from_yaml_file_success() {
+        let app = TspApp::from_yaml_file("examples/experiments/bay_area_tsp.yaml")
+            .expect("File should load");
+        assert_eq!(app.demo.n, 6);
+        assert!(app.loaded_path.is_some());
+        assert!(app.loaded_path.as_ref().unwrap().contains("bay_area"));
+    }
+
+    #[test]
+    fn test_from_yaml_file_not_found() {
+        let result = TspApp::from_yaml_file("/nonexistent/path.yaml");
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_from_yaml_invalid() {
+        let result = TspApp::from_yaml("invalid yaml: [[[");
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_from_yaml_has_convergence_history() {
+        let app = TspApp::from_yaml(BAY_AREA_YAML).expect("YAML should parse");
+        assert!(!app.convergence_history.is_empty());
+    }
+
+    #[test]
+    fn test_from_yaml_can_step() {
+        let mut app = TspApp::from_yaml(BAY_AREA_YAML).expect("YAML should parse");
+        let initial_restarts = app.demo.restarts;
+        app.step();
+        assert!(app.demo.restarts > initial_restarts);
+    }
+
+    #[test]
+    fn test_instance_id_none_when_not_loaded() {
+        let app = TspApp::new(10, 42);
+        assert!(app.instance_id().is_none());
+    }
+
+    #[test]
+    fn test_optimal_known_none_when_not_loaded() {
+        let app = TspApp::new(10, 42);
+        assert!(app.optimal_known().is_none());
     }
 }
