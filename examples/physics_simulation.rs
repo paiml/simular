@@ -11,7 +11,7 @@
 //! ```
 
 use simular::domains::physics::{
-    CentralForceField, GravityField, PhysicsEngine, VerletIntegrator, EulerIntegrator,
+    CentralForceField, EulerIntegrator, GravityField, PhysicsEngine, VerletIntegrator,
 };
 use simular::engine::state::{SimState, Vec3};
 
@@ -23,9 +23,9 @@ fn main() {
 
     let mut state = SimState::new();
     state.add_body(
-        1.0,                              // mass
-        Vec3::new(0.0, 0.0, 100.0),       // position: 100m height
-        Vec3::new(10.0, 0.0, 20.0),       // velocity: launch upward
+        1.0,                        // mass
+        Vec3::new(0.0, 0.0, 100.0), // position: 100m height
+        Vec3::new(10.0, 0.0, 20.0), // velocity: launch upward
     );
 
     let gravity = GravityField::default(); // g = -9.81 m/s² in z
@@ -57,7 +57,10 @@ fn main() {
     println!("   Final velocity:   {:?}", state.velocities()[0]);
     println!("   Steps taken:      {}", steps);
     println!("   Energy drift:     {:.2e}", energy_drift);
-    println!("   Symplectic:       {} (Verlet preserves energy)\n", energy_drift < 0.01);
+    println!(
+        "   Symplectic:       {} (Verlet preserves energy)\n",
+        energy_drift < 0.01
+    );
 
     // 2. Compare integrators
     println!("2. Integrator Comparison:");
@@ -75,21 +78,32 @@ fn main() {
         // Analytical: z = z0 - 0.5*g*t² = 100 - 0.5*9.81*100 = -390.5
         let expected_z = 100.0 - 0.5 * 9.81 * 100.0;
         let error = (state.positions()[0].z - expected_z).abs();
-        println!("   {}: final z = {:.2}, error = {:.4}", name, state.positions()[0].z, error);
+        println!(
+            "   {}: final z = {:.2}, error = {:.4}",
+            name,
+            state.positions()[0].z,
+            error
+        );
     }
 
     let gravity = GravityField::default();
-    run_free_fall(&PhysicsEngine::new(gravity.clone(), VerletIntegrator), "Verlet  ");
-    run_free_fall(&PhysicsEngine::new(gravity.clone(), EulerIntegrator), "Euler   ");
+    run_free_fall(
+        &PhysicsEngine::new(gravity.clone(), VerletIntegrator),
+        "Verlet  ",
+    );
+    run_free_fall(
+        &PhysicsEngine::new(gravity.clone(), EulerIntegrator),
+        "Euler   ",
+    );
 
     // 3. Central force field (orbital mechanics)
     println!("\n3. Central Force Field (Orbital Mechanics):");
 
     let mut state = SimState::new();
     state.add_body(
-        1.0,                         // mass
-        Vec3::new(1.0, 0.0, 0.0),    // Start on x-axis
-        Vec3::new(0.0, 1.0, 0.0),    // Circular orbit velocity
+        1.0,                      // mass
+        Vec3::new(1.0, 0.0, 0.0), // Start on x-axis
+        Vec3::new(0.0, 1.0, 0.0), // Circular orbit velocity
     );
 
     // mu = 1.0 for unit circular orbit at r=1 with v=1
@@ -141,8 +155,14 @@ fn main() {
     let result1 = simulate_and_get_pos();
     let result2 = simulate_and_get_pos();
 
-    println!("   Run 1 position: ({:.10}, {:.10}, {:.10})", result1.x, result1.y, result1.z);
-    println!("   Run 2 position: ({:.10}, {:.10}, {:.10})", result2.x, result2.y, result2.z);
+    println!(
+        "   Run 1 position: ({:.10}, {:.10}, {:.10})",
+        result1.x, result1.y, result1.z
+    );
+    println!(
+        "   Run 2 position: ({:.10}, {:.10}, {:.10})",
+        result2.x, result2.y, result2.z
+    );
     println!("   Bitwise identical: {}", result1 == result2);
 
     println!("\n=== Simulation Complete ===");

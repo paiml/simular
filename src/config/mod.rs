@@ -6,11 +6,11 @@
 //! - Runtime semantic validation
 
 use serde::{Deserialize, Serialize};
-use validator::Validate;
 use std::path::Path;
+use validator::Validate;
 
-use crate::error::{SimError, SimResult};
 use crate::engine::jidoka::JidokaConfig;
+use crate::error::{SimError, SimResult};
 
 /// Top-level simulation configuration.
 ///
@@ -165,7 +165,7 @@ impl SimConfigBuilder {
 
     /// Set Jidoka configuration.
     #[must_use]
-    #[allow(clippy::missing_const_for_fn)]  // JidokaConfig doesn't impl Copy
+    #[allow(clippy::missing_const_for_fn)] // JidokaConfig doesn't impl Copy
     pub fn jidoka(mut self, config: JidokaConfig) -> Self {
         self.jidoka = Some(config);
         self
@@ -750,7 +750,7 @@ fn parse_length(s: &str) -> Option<Length> {
         "mm" | "millimeters" => value / 1000.0,
         "ft" | "feet" => value * 0.3048,
         "mi" | "miles" => value * 1609.344,
-        "nm" | "nmi" => value * 1852.0, // Nautical miles
+        "nm" | "nmi" => value * 1852.0,    // Nautical miles
         "au" => value * 149_597_870_700.0, // Astronomical units
         _ => return None,
     };
@@ -1003,10 +1003,7 @@ mod tests {
 
     #[test]
     fn test_config_builder() {
-        let config = SimConfig::builder()
-            .seed(12345)
-            .timestep(0.01)
-            .build();
+        let config = SimConfig::builder().seed(12345).timestep(0.01).build();
 
         assert_eq!(config.reproducibility.seed, 12345);
         assert!((config.domains.physics.timestep.dt - 0.01).abs() < f64::EPSILON);
@@ -1256,9 +1253,7 @@ velocity: "100 parsecs"
     #[test]
     fn test_config_builder_with_jidoka() {
         let jidoka = JidokaConfig::default();
-        let config = SimConfig::builder()
-            .jidoka(jidoka)
-            .build();
+        let config = SimConfig::builder().jidoka(jidoka).build();
         // JidokaConfig has energy_tolerance field
         assert!(config.jidoka.energy_tolerance > 0.0);
     }

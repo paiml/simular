@@ -6,9 +6,9 @@
 //! - SEIRS (with waning immunity)
 //! - Stochastic variants for Monte Carlo analysis
 
-use serde::{Deserialize, Serialize};
 use crate::engine::rng::SimRng;
 use crate::error::{SimError, SimResult};
+use serde::{Deserialize, Serialize};
 
 /// Configuration for SIR model.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -45,7 +45,7 @@ impl SIRConfig {
             population: 1_000_000.0,
             initial_infected: 10.0,
             initial_recovered: 0.0,
-            beta: 0.2,  // R0 ≈ 1.3
+            beta: 0.2, // R0 ≈ 1.3
             gamma: 0.15,
         }
     }
@@ -57,7 +57,7 @@ impl SIRConfig {
             population: 1_000_000.0,
             initial_infected: 1.0,
             initial_recovered: 0.0,
-            beta: 1.8,  // R0 ≈ 15 (one of the most contagious)
+            beta: 1.8, // R0 ≈ 15 (one of the most contagious)
             gamma: 0.12,
         }
     }
@@ -221,20 +221,20 @@ impl SIRScenario {
             s + 0.5 * dt * k1_s,
             i + 0.5 * dt * k1_i,
             r + 0.5 * dt * k1_r,
-            n, beta, gamma,
+            n,
+            beta,
+            gamma,
         );
         let (k3_s, k3_i, k3_r) = self.derivatives(
             s + 0.5 * dt * k2_s,
             i + 0.5 * dt * k2_i,
             r + 0.5 * dt * k2_r,
-            n, beta, gamma,
+            n,
+            beta,
+            gamma,
         );
-        let (k4_s, k4_i, k4_r) = self.derivatives(
-            s + dt * k3_s,
-            i + dt * k3_i,
-            r + dt * k3_r,
-            n, beta, gamma,
-        );
+        let (k4_s, k4_i, k4_r) =
+            self.derivatives(s + dt * k3_s, i + dt * k3_i, r + dt * k3_r, n, beta, gamma);
 
         let new_s = s + dt / 6.0 * (k1_s + 2.0 * k2_s + 2.0 * k3_s + k4_s);
         let new_i = i + dt / 6.0 * (k1_i + 2.0 * k2_i + 2.0 * k3_i + k4_i);
@@ -268,7 +268,15 @@ impl SIRScenario {
     #[inline]
     #[allow(clippy::unused_self)]
     #[allow(clippy::many_single_char_names)]
-    fn derivatives(&self, s: f64, i: f64, _r: f64, n: f64, beta: f64, gamma: f64) -> (f64, f64, f64) {
+    fn derivatives(
+        &self,
+        s: f64,
+        i: f64,
+        _r: f64,
+        n: f64,
+        beta: f64,
+        gamma: f64,
+    ) -> (f64, f64, f64) {
         let infection = beta * s * i / n;
         let recovery = gamma * i;
 
@@ -398,21 +406,30 @@ impl SEIRScenario {
             e + 0.5 * dt * k1_e,
             i + 0.5 * dt * k1_i,
             r + 0.5 * dt * k1_r,
-            n, beta, gamma, sigma,
+            n,
+            beta,
+            gamma,
+            sigma,
         );
         let (k3_s, k3_e, k3_i, k3_r) = self.derivatives(
             s + 0.5 * dt * k2_s,
             e + 0.5 * dt * k2_e,
             i + 0.5 * dt * k2_i,
             r + 0.5 * dt * k2_r,
-            n, beta, gamma, sigma,
+            n,
+            beta,
+            gamma,
+            sigma,
         );
         let (k4_s, k4_e, k4_i, k4_r) = self.derivatives(
             s + dt * k3_s,
             e + dt * k3_e,
             i + dt * k3_i,
             r + dt * k3_r,
-            n, beta, gamma, sigma,
+            n,
+            beta,
+            gamma,
+            sigma,
         );
 
         let new_s = s + dt / 6.0 * (k1_s + 2.0 * k2_s + 2.0 * k3_s + k4_s);
@@ -443,8 +460,15 @@ impl SEIRScenario {
     #[allow(clippy::unused_self)]
     #[allow(clippy::many_single_char_names)]
     fn derivatives(
-        &self, s: f64, e: f64, i: f64, _r: f64,
-        n: f64, beta: f64, gamma: f64, sigma: f64,
+        &self,
+        s: f64,
+        e: f64,
+        i: f64,
+        _r: f64,
+        n: f64,
+        beta: f64,
+        gamma: f64,
+        sigma: f64,
     ) -> (f64, f64, f64, f64) {
         let infection = beta * s * i / n;
         let incubation = sigma * e;
@@ -674,9 +698,7 @@ mod tests {
         // Run simulation to find actual peak
         let mut sim = SIRScenario::new(config);
         let trajectory = sim.run(0.1, 200.0).unwrap();
-        let numerical_peak = trajectory.iter()
-            .map(|s| s.infected)
-            .fold(0.0, f64::max);
+        let numerical_peak = trajectory.iter().map(|s| s.infected).fold(0.0, f64::max);
 
         // Analytical and numerical should be close
         let relative_error = (analytical_peak - numerical_peak).abs() / numerical_peak;
@@ -742,12 +764,14 @@ mod tests {
         let seir_trajectory = seir.run(0.1, 200.0).unwrap();
 
         // Find peak times
-        let sir_peak_time = sir_trajectory.iter()
+        let sir_peak_time = sir_trajectory
+            .iter()
             .max_by(|a, b| a.infected.partial_cmp(&b.infected).unwrap())
             .map(|s| s.time)
             .unwrap();
 
-        let seir_peak_time = seir_trajectory.iter()
+        let seir_peak_time = seir_trajectory
+            .iter()
             .max_by(|a, b| a.sir.infected.partial_cmp(&b.sir.infected).unwrap())
             .map(|s| s.sir.time)
             .unwrap();

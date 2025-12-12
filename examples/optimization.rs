@@ -10,9 +10,7 @@
 //! cargo run --example optimization
 //! ```
 
-use simular::domains::optimization::{
-    AcquisitionFunction, BayesianOptimizer, OptimizerConfig,
-};
+use simular::domains::optimization::{AcquisitionFunction, BayesianOptimizer, OptimizerConfig};
 
 fn main() {
     println!("=== Simular Bayesian Optimization ===\n");
@@ -31,13 +29,13 @@ fn main() {
     println!("   Using Expected Improvement acquisition\n");
 
     let config = OptimizerConfig {
-        bounds: vec![(-2.0, 2.0), (-2.0, 2.0)],  // 2D bounds
+        bounds: vec![(-2.0, 2.0), (-2.0, 2.0)], // 2D bounds
         acquisition: AcquisitionFunction::ExpectedImprovement,
         length_scale: 0.5,
         signal_variance: 1.0,
         noise_variance: 1e-6,
         n_candidates: 100,
-        seed: 42,  // Deterministic!
+        seed: 42, // Deterministic!
     };
 
     let mut optimizer = BayesianOptimizer::new(config);
@@ -52,30 +50,45 @@ fn main() {
         let _ = optimizer.observe(x.clone(), y);
 
         if i < 5 || i >= n_iterations - 3 {
-            println!("   {:>9} | ({:>6.3}, {:>6.3})     | {:.6}", i + 1, x[0], x[1], y);
+            println!(
+                "   {:>9} | ({:>6.3}, {:>6.3})     | {:.6}",
+                i + 1,
+                x[0],
+                x[1],
+                y
+            );
         } else if i == 5 {
             println!("        ... | ...                  | ...");
         }
     }
 
     let (best_x, best_y) = optimizer.best().unwrap_or((&[0.0, 0.0], f64::INFINITY));
-    println!("\n   Best found: ({:.4}, {:.4}) with f(x) = {:.6}", best_x[0], best_x[1], best_y);
+    println!(
+        "\n   Best found: ({:.4}, {:.4}) with f(x) = {:.6}",
+        best_x[0], best_x[1], best_y
+    );
     println!("   True optimum: (1.0, 1.0) with f(x) = 0");
 
     // 2. Compare acquisition functions
     println!("\n2. Acquisition Function Comparison:");
 
     let acquisition_fns = [
-        ("Expected Improvement", AcquisitionFunction::ExpectedImprovement),
+        (
+            "Expected Improvement",
+            AcquisitionFunction::ExpectedImprovement,
+        ),
         ("UCB (kappa=2.0)", AcquisitionFunction::UCB { kappa: 2.0 }),
-        ("Probability of Improvement", AcquisitionFunction::ProbabilityOfImprovement),
+        (
+            "Probability of Improvement",
+            AcquisitionFunction::ProbabilityOfImprovement,
+        ),
     ];
 
     for (name, acq) in &acquisition_fns {
         let config = OptimizerConfig {
             bounds: vec![(-2.0, 2.0), (-2.0, 2.0)],
             acquisition: acq.clone(),
-            seed: 42,  // Same seed for fair comparison
+            seed: 42, // Same seed for fair comparison
             ..Default::default()
         };
 
@@ -106,9 +119,8 @@ fn main() {
         };
 
         let mut optimizer = BayesianOptimizer::new(config);
-        let rosenbrock = |x: &[f64]| -> f64 {
-            (1.0 - x[0]).powi(2) + 100.0 * (x[1] - x[0].powi(2)).powi(2)
-        };
+        let rosenbrock =
+            |x: &[f64]| -> f64 { (1.0 - x[0]).powi(2) + 100.0 * (x[1] - x[0].powi(2)).powi(2) };
 
         for _ in 0..10 {
             let x = optimizer.suggest();
@@ -125,7 +137,10 @@ fn main() {
 
     println!("   Run 1: ({:.10}, {:.10}), f = {:.10}", x1_0, x1_1, y1);
     println!("   Run 2: ({:.10}, {:.10}), f = {:.10}", x2_0, x2_1, y2);
-    println!("   Bitwise identical: {}", x1_0 == x2_0 && x1_1 == x2_1 && y1 == y2);
+    println!(
+        "   Bitwise identical: {}",
+        x1_0 == x2_0 && x1_1 == x2_1 && y1 == y2
+    );
 
     // 4. 1D optimization example
     println!("\n4. 1D Optimization Example:");
@@ -154,7 +169,10 @@ fn main() {
     // Analytical minimum is around x ≈ -0.88
     let analytical_x = -0.88;
     let analytical_y = f(&[analytical_x]);
-    println!("   Analytical minimum: x ≈ {:.2}, f(x) ≈ {:.6}", analytical_x, analytical_y);
+    println!(
+        "   Analytical minimum: x ≈ {:.2}, f(x) ≈ {:.6}",
+        analytical_x, analytical_y
+    );
 
     println!("\n=== Optimization Complete ===");
 }

@@ -5,12 +5,12 @@
 //! - Ties are broken by insertion order (sequence number)
 //! - Reproducible across runs
 
+use serde::{Deserialize, Serialize};
 use std::cmp::Reverse;
 use std::collections::BinaryHeap;
-use serde::{Deserialize, Serialize};
 
-use crate::engine::SimTime;
 use crate::engine::state::SimEvent;
+use crate::engine::SimTime;
 
 /// A scheduled event with time and sequence number.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -27,7 +27,11 @@ impl ScheduledEvent {
     /// Create a new scheduled event.
     #[must_use]
     pub const fn new(time: SimTime, sequence: u64, event: SimEvent) -> Self {
-        Self { time, sequence, event }
+        Self {
+            time,
+            sequence,
+            event,
+        }
     }
 }
 
@@ -100,7 +104,8 @@ impl EventScheduler {
         let seq = self.sequence;
         self.sequence += 1;
 
-        self.queue.push(Reverse(ScheduledEvent::new(time, seq, event)));
+        self.queue
+            .push(Reverse(ScheduledEvent::new(time, seq, event)));
     }
 
     /// Schedule multiple events at the same time.
@@ -114,7 +119,7 @@ impl EventScheduler {
 
     /// Get the next event (removes from queue).
     #[must_use]
-    #[allow(clippy::should_implement_trait)]  // Not an Iterator, different semantics
+    #[allow(clippy::should_implement_trait)] // Not an Iterator, different semantics
     pub fn next(&mut self) -> Option<ScheduledEvent> {
         self.queue.pop().map(|Reverse(e)| e)
     }
@@ -197,13 +202,19 @@ mod tests {
         // Should come out in time order
         let e1 = scheduler.next();
         assert!(e1.is_some());
-        assert!((e1.as_ref().map(|e| e.time.as_secs_f64()).unwrap_or(0.0) - 1.0).abs() < f64::EPSILON);
+        assert!(
+            (e1.as_ref().map(|e| e.time.as_secs_f64()).unwrap_or(0.0) - 1.0).abs() < f64::EPSILON
+        );
 
         let e2 = scheduler.next();
-        assert!((e2.as_ref().map(|e| e.time.as_secs_f64()).unwrap_or(0.0) - 2.0).abs() < f64::EPSILON);
+        assert!(
+            (e2.as_ref().map(|e| e.time.as_secs_f64()).unwrap_or(0.0) - 2.0).abs() < f64::EPSILON
+        );
 
         let e3 = scheduler.next();
-        assert!((e3.as_ref().map(|e| e.time.as_secs_f64()).unwrap_or(0.0) - 3.0).abs() < f64::EPSILON);
+        assert!(
+            (e3.as_ref().map(|e| e.time.as_secs_f64()).unwrap_or(0.0) - 3.0).abs() < f64::EPSILON
+        );
 
         assert!(scheduler.is_empty());
     }
@@ -346,11 +357,7 @@ mod tests {
 
     #[test]
     fn test_scheduled_event_new() {
-        let event = ScheduledEvent::new(
-            SimTime::from_secs(1.0),
-            42,
-            make_add_body_event(5.0),
-        );
+        let event = ScheduledEvent::new(SimTime::from_secs(1.0), 42, make_add_body_event(5.0));
 
         assert!((event.time.as_secs_f64() - 1.0).abs() < f64::EPSILON);
         assert_eq!(event.sequence, 42);
@@ -375,8 +382,10 @@ mod tests {
     fn test_scheduled_event_ord() {
         let earlier = ScheduledEvent::new(SimTime::from_secs(1.0), 1, make_add_body_event(1.0));
         let later = ScheduledEvent::new(SimTime::from_secs(2.0), 1, make_add_body_event(1.0));
-        let same_time_seq1 = ScheduledEvent::new(SimTime::from_secs(1.0), 1, make_add_body_event(1.0));
-        let same_time_seq2 = ScheduledEvent::new(SimTime::from_secs(1.0), 2, make_add_body_event(1.0));
+        let same_time_seq1 =
+            ScheduledEvent::new(SimTime::from_secs(1.0), 1, make_add_body_event(1.0));
+        let same_time_seq2 =
+            ScheduledEvent::new(SimTime::from_secs(1.0), 2, make_add_body_event(1.0));
 
         assert!(earlier < later);
         assert!(same_time_seq1 < same_time_seq2);

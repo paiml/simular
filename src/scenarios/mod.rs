@@ -8,16 +8,16 @@
 //! - Portfolio risk (Monte Carlo `VaR`)
 //! - Epidemic models (SIR/SEIR)
 
+pub mod climate;
+pub mod epidemic;
+pub mod pendulum;
+pub mod portfolio;
 pub mod rocket;
 pub mod satellite;
-pub mod pendulum;
-pub mod climate;
-pub mod portfolio;
-pub mod epidemic;
 
-pub use rocket::{RocketScenario, RocketConfig, StageSeparation};
-pub use satellite::{SatelliteScenario, OrbitalElements};
-pub use pendulum::{PendulumScenario, PendulumConfig};
-pub use climate::{ClimateScenario, ClimateConfig};
-pub use portfolio::{PortfolioScenario, PortfolioConfig, VaRResult};
-pub use epidemic::{SIRScenario, SIRConfig, SEIRScenario, SEIRConfig};
+pub use climate::{ClimateConfig, ClimateScenario};
+pub use epidemic::{SEIRConfig, SEIRScenario, SIRConfig, SIRScenario};
+pub use pendulum::{PendulumConfig, PendulumScenario};
+pub use portfolio::{PortfolioConfig, PortfolioScenario, VaRResult};
+pub use rocket::{RocketConfig, RocketScenario, StageSeparation};
+pub use satellite::{OrbitalElements, SatelliteScenario};

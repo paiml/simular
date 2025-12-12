@@ -17,10 +17,10 @@
 //! // Training simulation would run here
 //! ```
 
-use std::collections::HashMap;
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 
-use crate::engine::rng::{SimRng, RngState};
+use crate::engine::rng::{RngState, SimRng};
 use crate::engine::SimTime;
 use crate::error::{SimError, SimResult};
 use crate::replay::EventJournal;
@@ -195,16 +195,28 @@ impl std::fmt::Display for TrainingAnomaly {
         match self {
             Self::NonFiniteLoss => write!(f, "Non-finite loss detected (NaN/Inf)"),
             Self::GradientExplosion { norm, threshold } => {
-                write!(f, "Gradient explosion: norm={norm:.2e} > threshold={threshold:.2e}")
+                write!(
+                    f,
+                    "Gradient explosion: norm={norm:.2e} > threshold={threshold:.2e}"
+                )
             }
             Self::GradientVanishing { norm, threshold } => {
-                write!(f, "Gradient vanishing: norm={norm:.2e} < threshold={threshold:.2e}")
+                write!(
+                    f,
+                    "Gradient vanishing: norm={norm:.2e} < threshold={threshold:.2e}"
+                )
             }
             Self::LossSpike { z_score, loss } => {
                 write!(f, "Loss spike: z-score={z_score:.2}, loss={loss:.4}")
             }
-            Self::LowConfidence { confidence, threshold } => {
-                write!(f, "Low confidence: {confidence:.4} < threshold={threshold:.4}")
+            Self::LowConfidence {
+                confidence,
+                threshold,
+            } => {
+                write!(
+                    f,
+                    "Low confidence: {confidence:.4} < threshold={threshold:.4}"
+                )
             }
         }
     }
@@ -601,7 +613,8 @@ impl TrainingSimulation {
     ///
     /// Returns error if RNG state restoration fails.
     pub fn replay_from(&mut self, checkpoint: &TrainingState) -> SimResult<()> {
-        self.rng.restore_state(&checkpoint.rng_state)
+        self.rng
+            .restore_state(&checkpoint.rng_state)
             .map_err(|e| SimError::config(format!("Failed to restore RNG state: {e}")))?;
         self.current_epoch = checkpoint.epoch;
         Ok(())
@@ -766,7 +779,11 @@ impl PredictionSimulation {
     /// # Errors
     ///
     /// Returns error if any prediction fails.
-    pub fn predict_batch<F>(&mut self, inputs: &[Vec<f64>], model_fn: F) -> SimResult<Vec<PredictionState>>
+    pub fn predict_batch<F>(
+        &mut self,
+        inputs: &[Vec<f64>],
+        model_fn: F,
+    ) -> SimResult<Vec<PredictionState>>
     where
         F: Fn(&[f64]) -> Vec<f64>,
     {
@@ -967,7 +984,12 @@ impl MultiTurnSimulation {
     /// # Errors
     ///
     /// Returns error if turn execution fails.
-    pub fn turn<F>(&mut self, input: &str, expected: Option<&str>, generate_fn: F) -> SimResult<Turn>
+    pub fn turn<F>(
+        &mut self,
+        input: &str,
+        expected: Option<&str>,
+        generate_fn: F,
+    ) -> SimResult<Turn>
     where
         F: FnOnce(&str, &[Turn]) -> String,
     {
@@ -989,7 +1011,11 @@ impl MultiTurnSimulation {
         // Compute accuracy if expected is provided
         let accuracy = expected.map(|exp| self.compute_accuracy(&output, exp));
 
-        let context_tokens = self.history.iter().map(|t| t.metrics.input_tokens + t.metrics.output_tokens).sum::<usize>()
+        let context_tokens = self
+            .history
+            .iter()
+            .map(|t| t.metrics.input_tokens + t.metrics.output_tokens)
+            .sum::<usize>()
             + input_tokens;
 
         let turn = Turn {
@@ -1135,10 +1161,7 @@ impl MultiTurnSimulation {
 
         // Compute value scores
         let baseline_accuracy = points.iter().map(|p| p.accuracy).fold(0.0_f64, f64::max);
-        let baseline_cost = points
-            .iter()
-            .map(|p| p.cost)
-            .fold(f64::INFINITY, f64::min);
+        let baseline_cost = points.iter().map(|p| p.cost).fold(f64::INFINITY, f64::min);
         let baseline_latency = points
             .iter()
             .map(|p| p.latency)
@@ -1301,7 +1324,10 @@ impl JidokaMLFeedback {
         self.anomaly_rate.update(1.0);
 
         // Check if we've seen this pattern before
-        let existing_idx = self.patterns.iter().position(|p| p.pattern_type == pattern_type);
+        let existing_idx = self
+            .patterns
+            .iter()
+            .position(|p| p.pattern_type == pattern_type);
 
         if let Some(idx) = existing_idx {
             self.patterns[idx].frequency += 1;
@@ -1498,18 +1524,22 @@ mod tests {
 
     #[test]
     fn test_anomaly_detector_gradient_explosion() {
-        let mut detector = AnomalyDetector::new(3.0)
-            .with_gradient_explosion_threshold(1e6);
+        let mut detector = AnomalyDetector::new(3.0).with_gradient_explosion_threshold(1e6);
         let result = detector.check(1.0, 1e7);
-        assert!(matches!(result, Some(TrainingAnomaly::GradientExplosion { .. })));
+        assert!(matches!(
+            result,
+            Some(TrainingAnomaly::GradientExplosion { .. })
+        ));
     }
 
     #[test]
     fn test_anomaly_detector_gradient_vanishing() {
-        let mut detector = AnomalyDetector::new(3.0)
-            .with_gradient_vanishing_threshold(1e-10);
+        let mut detector = AnomalyDetector::new(3.0).with_gradient_vanishing_threshold(1e-10);
         let result = detector.check(1.0, 1e-12);
-        assert!(matches!(result, Some(TrainingAnomaly::GradientVanishing { .. })));
+        assert!(matches!(
+            result,
+            Some(TrainingAnomaly::GradientVanishing { .. })
+        ));
     }
 
     #[test]
@@ -1754,11 +1784,7 @@ mod tests {
     #[test]
     fn test_multi_turn_simulation_with_expected() {
         let mut sim = MultiTurnSimulation::new(42);
-        let result = sim.turn(
-            "What is 2+2?",
-            Some("4"),
-            |_, _| "4".to_string(),
-        );
+        let result = sim.turn("What is 2+2?", Some("4"), |_, _| "4".to_string());
         assert!(result.is_ok());
         let turn = result.unwrap();
         assert!(turn.metrics.accuracy.is_some());
@@ -1768,10 +1794,12 @@ mod tests {
     #[test]
     fn test_multi_turn_simulation_history() {
         let mut sim = MultiTurnSimulation::new(42);
-        sim.turn("First", None, |_, _| "Response 1".to_string()).unwrap();
+        sim.turn("First", None, |_, _| "Response 1".to_string())
+            .unwrap();
         sim.turn("Second", None, |_, history| {
             format!("Response 2 (after {} turns)", history.len())
-        }).unwrap();
+        })
+        .unwrap();
         assert_eq!(sim.history().len(), 2);
     }
 
@@ -1800,20 +1828,26 @@ mod tests {
     #[test]
     fn test_pareto_analysis_dominance() {
         let evals = vec![
-            ("model_a".to_string(), MultiTurnEvaluation {
-                mean_accuracy: Some(0.9),
-                mean_latency: Some(100.0),
-                total_cost: 1.0,
-                confidence_interval: 0.95,
-                n_runs: 5,
-            }),
-            ("model_b".to_string(), MultiTurnEvaluation {
-                mean_accuracy: Some(0.8),
-                mean_latency: Some(200.0),
-                total_cost: 2.0,
-                confidence_interval: 0.95,
-                n_runs: 5,
-            }),
+            (
+                "model_a".to_string(),
+                MultiTurnEvaluation {
+                    mean_accuracy: Some(0.9),
+                    mean_latency: Some(100.0),
+                    total_cost: 1.0,
+                    confidence_interval: 0.95,
+                    n_runs: 5,
+                },
+            ),
+            (
+                "model_b".to_string(),
+                MultiTurnEvaluation {
+                    mean_accuracy: Some(0.8),
+                    mean_latency: Some(200.0),
+                    total_cost: 2.0,
+                    confidence_interval: 0.95,
+                    n_runs: 5,
+                },
+            ),
         ];
 
         let analysis = MultiTurnSimulation::pareto_analysis(&evals);
@@ -1825,20 +1859,26 @@ mod tests {
     #[test]
     fn test_pareto_analysis_no_dominance() {
         let evals = vec![
-            ("model_a".to_string(), MultiTurnEvaluation {
-                mean_accuracy: Some(0.9),
-                mean_latency: Some(200.0), // Worse latency
-                total_cost: 1.0,
-                confidence_interval: 0.95,
-                n_runs: 5,
-            }),
-            ("model_b".to_string(), MultiTurnEvaluation {
-                mean_accuracy: Some(0.8),
-                mean_latency: Some(100.0), // Better latency
-                total_cost: 2.0,
-                confidence_interval: 0.95,
-                n_runs: 5,
-            }),
+            (
+                "model_a".to_string(),
+                MultiTurnEvaluation {
+                    mean_accuracy: Some(0.9),
+                    mean_latency: Some(200.0), // Worse latency
+                    total_cost: 1.0,
+                    confidence_interval: 0.95,
+                    n_runs: 5,
+                },
+            ),
+            (
+                "model_b".to_string(),
+                MultiTurnEvaluation {
+                    mean_accuracy: Some(0.8),
+                    mean_latency: Some(100.0), // Better latency
+                    total_cost: 2.0,
+                    confidence_interval: 0.95,
+                    n_runs: 5,
+                },
+            ),
         ];
 
         let analysis = MultiTurnSimulation::pareto_analysis(&evals);
@@ -1935,19 +1975,31 @@ mod tests {
         let display = format!("{}", anomaly);
         assert!(display.contains("NaN/Inf"));
 
-        let anomaly = TrainingAnomaly::GradientExplosion { norm: 1e7, threshold: 1e6 };
+        let anomaly = TrainingAnomaly::GradientExplosion {
+            norm: 1e7,
+            threshold: 1e6,
+        };
         let display = format!("{}", anomaly);
         assert!(display.contains("explosion"));
 
-        let anomaly = TrainingAnomaly::GradientVanishing { norm: 1e-12, threshold: 1e-10 };
+        let anomaly = TrainingAnomaly::GradientVanishing {
+            norm: 1e-12,
+            threshold: 1e-10,
+        };
         let display = format!("{}", anomaly);
         assert!(display.contains("vanishing"));
 
-        let anomaly = TrainingAnomaly::LossSpike { z_score: 5.0, loss: 100.0 };
+        let anomaly = TrainingAnomaly::LossSpike {
+            z_score: 5.0,
+            loss: 100.0,
+        };
         let display = format!("{}", anomaly);
         assert!(display.contains("spike"));
 
-        let anomaly = TrainingAnomaly::LowConfidence { confidence: 0.3, threshold: 0.5 };
+        let anomaly = TrainingAnomaly::LowConfidence {
+            confidence: 0.3,
+            threshold: 0.5,
+        };
         let display = format!("{}", anomaly);
         assert!(display.contains("confidence"));
     }

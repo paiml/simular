@@ -5,8 +5,8 @@
 //! - Adaptive timestep mode (future)
 //! - Time bounds and limits
 
-use serde::{Deserialize, Serialize};
 use crate::engine::SimTime;
+use serde::{Deserialize, Serialize};
 
 /// Simulation clock.
 ///
@@ -87,7 +87,7 @@ impl SimClock {
     }
 
     /// Set maximum simulation time.
-    #[allow(clippy::missing_const_for_fn)]  // Mutable const not stable
+    #[allow(clippy::missing_const_for_fn)] // Mutable const not stable
     pub fn set_max_time(&mut self, max: SimTime) {
         self.max_time = Some(max);
     }
@@ -101,7 +101,7 @@ impl SimClock {
     /// Advance clock by one timestep.
     ///
     /// Returns the new time.
-    #[allow(clippy::missing_const_for_fn)]  // Mutable const not stable
+    #[allow(clippy::missing_const_for_fn)] // Mutable const not stable
     pub fn tick(&mut self) -> SimTime {
         self.current = self.current.add_nanos(self.timestep_nanos);
         self.step_count += 1;
@@ -119,13 +119,13 @@ impl SimClock {
     }
 
     /// Set current time (for replay/restore).
-    #[allow(clippy::missing_const_for_fn)]  // Mutable const not stable
+    #[allow(clippy::missing_const_for_fn)] // Mutable const not stable
     pub fn set_time(&mut self, time: SimTime) {
         self.current = time;
     }
 
     /// Reset clock to initial state.
-    #[allow(clippy::missing_const_for_fn)]  // Mutable const not stable
+    #[allow(clippy::missing_const_for_fn)] // Mutable const not stable
     pub fn reset(&mut self) {
         self.current = SimTime::ZERO;
         self.step_count = 0;

@@ -6,9 +6,9 @@
 //! - Correlated multi-asset portfolios
 //! - Greeks and sensitivity analysis
 
-use serde::{Deserialize, Serialize};
 use crate::engine::rng::SimRng;
 use crate::error::{SimError, SimResult};
+use serde::{Deserialize, Serialize};
 
 /// Configuration for a single asset.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -95,11 +95,7 @@ impl PortfolioConfig {
                 AssetConfig::stock("QQQ", 380.0, 50.0),
                 AssetConfig::stock("IWM", 200.0, 75.0),
             ],
-            correlations: vec![
-                1.0, 0.85, 0.80,
-                0.85, 1.0, 0.75,
-                0.80, 0.75, 1.0,
-            ],
+            correlations: vec![1.0, 0.85, 0.80, 0.85, 1.0, 0.75, 0.80, 0.75, 1.0],
             risk_free_rate: 0.04,
             time_horizon: 1.0 / 252.0,
         }
@@ -268,7 +264,10 @@ impl PortfolioScenario {
         let z = self.generate_correlated_normals(rng);
 
         // Simulate each asset using GBM
-        let final_prices: Vec<f64> = self.config.assets.iter()
+        let final_prices: Vec<f64> = self
+            .config
+            .assets
+            .iter()
             .zip(z.iter())
             .map(|(asset, &shock)| {
                 // GBM: S(t+dt) = S(t) * exp((μ - σ²/2)*dt + σ*√dt*Z)
@@ -279,7 +278,10 @@ impl PortfolioScenario {
             .collect();
 
         // Calculate final portfolio value
-        let final_value: f64 = self.config.assets.iter()
+        let final_value: f64 = self
+            .config
+            .assets
+            .iter()
             .zip(final_prices.iter())
             .map(|(asset, &price)| price * asset.position)
             .sum();
@@ -322,9 +324,11 @@ impl PortfolioScenario {
 
         // Calculate statistics
         let mean_return = returns.iter().sum::<f64>() / n_simulations as f64;
-        let variance = returns.iter()
+        let variance = returns
+            .iter()
             .map(|r| (r - mean_return).powi(2))
-            .sum::<f64>() / n_simulations as f64;
+            .sum::<f64>()
+            / n_simulations as f64;
         let std_return = variance.sqrt();
 
         // VaR: loss at (1 - confidence) percentile
@@ -332,8 +336,7 @@ impl PortfolioScenario {
         let var = -returns[var_index] * self.config.total_value();
 
         // CVaR (Expected Shortfall): average of losses worse than VaR
-        let cvar = -returns[..=var_index].iter().sum::<f64>()
-            / (var_index + 1) as f64
+        let cvar = -returns[..=var_index].iter().sum::<f64>() / (var_index + 1) as f64
             * self.config.total_value();
 
         Ok(VaRResult {
@@ -357,7 +360,9 @@ impl PortfolioScenario {
     /// Calculate portfolio delta (sensitivity to price changes).
     #[must_use]
     pub fn portfolio_delta(&self) -> Vec<f64> {
-        self.config.assets.iter()
+        self.config
+            .assets
+            .iter()
             .map(|asset| asset.position)
             .collect()
     }
@@ -373,7 +378,9 @@ impl PortfolioScenario {
         let market_vol = self.config.assets[0].volatility;
         let total_value = self.config.total_value();
 
-        self.config.assets.iter()
+        self.config
+            .assets
+            .iter()
             .enumerate()
             .map(|(i, asset)| {
                 let weight = asset.value() / total_value;
@@ -455,8 +462,12 @@ mod tests {
         assert!(var_result.var >= 0.0, "VaR = {}", var_result.var);
 
         // CVaR should be >= VaR
-        assert!(var_result.cvar >= var_result.var,
-            "CVaR ({}) should be >= VaR ({})", var_result.cvar, var_result.var);
+        assert!(
+            var_result.cvar >= var_result.var,
+            "CVaR ({}) should be >= VaR ({})",
+            var_result.cvar,
+            var_result.var
+        );
 
         // Statistics should be reasonable
         assert!(var_result.max_return > var_result.min_return);
@@ -588,9 +599,11 @@ mod tests {
         );
 
         // Std of log returns should be σ * √T = 0.20
-        let variance = log_returns.iter()
+        let variance = log_returns
+            .iter()
             .map(|r| (r - mean_log_return).powi(2))
-            .sum::<f64>() / n as f64;
+            .sum::<f64>()
+            / n as f64;
         let std = variance.sqrt();
         assert!(
             (std - 0.20).abs() < 0.02,

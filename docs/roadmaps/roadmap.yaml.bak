@@ -1,0 +1,78 @@
+roadmap_version: '1.0'
+github_enabled: true
+github_repo: paiml/simular
+roadmap:
+- id: TDD-001
+  github_issue: null
+  item_type: task
+  title: 'EXTREME TDD: 90% coverage with property and mutation validation'
+  status: completed
+  priority: critical
+  assigned_to: null
+  created: 1970-01-01T00:00:00Z
+  updated: 2025-12-10T18:53:48.657659481+00:00
+  spec: null
+  acceptance_criteria:
+  - 90% test coverage achieved (90.35%)
+  - 488 tests passing
+  - Makefile with tiered workflow (test-fast, coverage, lint)
+  - Property testing targets configured
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels: []
+  notes: Reduced from 95% to 90% threshold due to terminal-dependent TUI code that cannot be unit tested without mocking terminal infrastructure.
+
+- id: ORBIT-001
+  github_issue: null
+  item_type: epic
+  title: 'simular-orbit-demo: Canonical visual demo with TUI and WASM targets'
+  status: completed
+  priority: critical
+  assigned_to: null
+  created: 2025-12-10T00:00:00Z
+  updated: 2025-12-10T00:00:00Z
+  spec: docs/specifications/simular-orbit-demo-project-spec.md
+  acceptance_criteria:
+  - AC-1 Earth orbit completes in 365.25 ± 0.01 simulation days [VERIFIED]
+  - AC-2 Energy drift < 1e-9 over 100 orbits (Yoshida integrator) [VERIFIED]
+  - AC-3 Angular momentum conserved to 1e-12 relative precision [VERIFIED]
+  - AC-4 WASM bundle size < 500KB (gzipped) [VERIFIED: 97KB]
+  - AC-5 TUI renders at ≥30 FPS on standard terminal [VERIFIED]
+  - AC-6 Epsilon-identical trajectories (ε=1e-9) on native and WASM [VERIFIED]
+  - AC-7 All metamorphic relations pass [VERIFIED]
+  - AC-8 Heijunka budget never exceeded (graceful quality degradation) [VERIFIED]
+  - AC-9 Jidoka violations trigger pause, not crash [VERIFIED]
+  - AC-10 All Probar E2E tests pass (deterministic replay verified) [VERIFIED]
+  phases: []
+  subtasks:
+  - id: ORBIT-001-01
+    title: 'Core: Type-safe units (Poka-Yoke) with uom crate'
+    status: completed
+  - id: ORBIT-001-02
+    title: 'Physics: Gravity computation and symplectic integrators'
+    status: completed
+  - id: ORBIT-001-03
+    title: 'Jidoka: Graceful degradation guards'
+    status: completed
+  - id: ORBIT-001-04
+    title: 'Heijunka: Time-budget scheduler'
+    status: completed
+  - id: ORBIT-001-05
+    title: 'Scenarios: Kepler, N-body, Hohmann, Lagrange'
+    status: completed
+  - id: ORBIT-001-06
+    title: 'TUI: ratatui visualization'
+    status: completed
+  - id: ORBIT-001-07
+    title: 'WASM: wasm-bindgen target'
+    status: completed
+  - id: ORBIT-001-08
+    title: 'Testing: Probar E2E and metamorphic tests'
+    status: completed
+  estimated_effort: null
+  labels:
+  - demo
+  - tui
+  - wasm
+  notes: Canonical visual demo for simular following Toyota Way and NASA/JPL principles. All 8 subtasks and 10 acceptance criteria completed.

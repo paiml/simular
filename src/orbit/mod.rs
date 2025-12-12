@@ -45,46 +45,36 @@
 //! }
 //! ```
 
-pub mod units;
-pub mod physics;
-pub mod jidoka;
 pub mod heijunka;
-pub mod scenarios;
-pub mod render;
+pub mod jidoka;
 pub mod metamorphic;
+pub mod physics;
+pub mod render;
+pub mod scenarios;
+pub mod units;
 
 #[cfg(feature = "wasm")]
 pub mod wasm;
 
 /// Prelude for convenient imports.
 pub mod prelude {
-    pub use super::units::{
-        Position3D, Velocity3D, Acceleration3D,
-        OrbitMass, OrbitTime,
-        G, AU, SOLAR_MASS, EARTH_MASS,
-    };
-    pub use super::physics::{
-        OrbitBody, NBodyState,
-        YoshidaIntegrator, AdaptiveIntegrator,
+    pub use super::heijunka::{
+        FrameResult, HeijunkaConfig, HeijunkaScheduler, HeijunkaStatus, QualityLevel,
     };
     pub use super::jidoka::{
-        JidokaResponse, OrbitJidokaViolation,
-        OrbitJidokaConfig, OrbitJidokaGuard, JidokaStatus,
-    };
-    pub use super::heijunka::{
-        QualityLevel, HeijunkaConfig, HeijunkaScheduler,
-        HeijunkaStatus, FrameResult,
-    };
-    pub use super::scenarios::{
-        ScenarioType,
-        KeplerConfig, NBodyConfig, BodyConfig,
-        HohmannConfig, LagrangeConfig, LagrangePoint,
+        JidokaResponse, JidokaStatus, OrbitJidokaConfig, OrbitJidokaGuard, OrbitJidokaViolation,
     };
     pub use super::metamorphic::{
-        MetamorphicResult, run_all_metamorphic_tests,
-        test_rotation_invariance, test_time_reversal,
-        test_energy_conservation, test_angular_momentum_conservation,
-        test_deterministic_replay,
+        run_all_metamorphic_tests, test_angular_momentum_conservation, test_deterministic_replay,
+        test_energy_conservation, test_rotation_invariance, test_time_reversal, MetamorphicResult,
+    };
+    pub use super::physics::{AdaptiveIntegrator, NBodyState, OrbitBody, YoshidaIntegrator};
+    pub use super::scenarios::{
+        BodyConfig, HohmannConfig, KeplerConfig, LagrangeConfig, LagrangePoint, NBodyConfig,
+        ScenarioType,
+    };
+    pub use super::units::{
+        Acceleration3D, OrbitMass, OrbitTime, Position3D, Velocity3D, AU, EARTH_MASS, G, SOLAR_MASS,
     };
 }
 
@@ -120,8 +110,8 @@ pub fn run_simulation(
     dt_seconds: f64,
     softening: f64,
 ) -> SimulationResult {
+    use jidoka::{JidokaResponse, OrbitJidokaConfig, OrbitJidokaGuard};
     use physics::YoshidaIntegrator;
-    use jidoka::{OrbitJidokaGuard, OrbitJidokaConfig, JidokaResponse};
     use units::OrbitTime;
 
     // Build initial state
@@ -176,8 +166,8 @@ pub fn run_simulation(
     let final_energy = state.total_energy();
     let final_angular_momentum = state.angular_momentum_magnitude();
     let energy_error = (final_energy - initial_energy).abs() / initial_energy.abs();
-    let angular_momentum_error = (final_angular_momentum - initial_angular_momentum).abs()
-        / initial_angular_momentum.abs();
+    let angular_momentum_error =
+        (final_angular_momentum - initial_angular_momentum).abs() / initial_angular_momentum.abs();
 
     SimulationResult {
         final_state: state,
@@ -212,29 +202,33 @@ pub struct SimulationResult {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use scenarios::{ScenarioType, KeplerConfig};
+    use scenarios::{KeplerConfig, ScenarioType};
 
     #[test]
     fn test_run_simulation_kepler() {
         let result = run_simulation(
             &ScenarioType::Kepler(KeplerConfig::earth_sun()),
-            86400.0 * 10.0,  // 10 days
-            3600.0,          // 1 hour steps
+            86400.0 * 10.0, // 10 days
+            3600.0,         // 1 hour steps
             1e6,
         );
 
         assert!(result.steps > 0);
         assert!(!result.paused);
-        assert!(result.energy_error < 1e-6, "Energy error: {}", result.energy_error);
+        assert!(
+            result.energy_error < 1e-6,
+            "Energy error: {}",
+            result.energy_error
+        );
     }
 
     #[test]
     fn test_run_simulation_nbody() {
         let result = run_simulation(
             &ScenarioType::NBody(scenarios::NBodyConfig::inner_solar_system()),
-            86400.0,  // 1 day
-            3600.0,   // 1 hour steps
-            1e9,      // Larger softening for N-body
+            86400.0, // 1 day
+            3600.0,  // 1 hour steps
+            1e9,     // Larger softening for N-body
         );
 
         assert!(result.steps > 0);
@@ -258,8 +252,8 @@ mod tests {
     fn test_run_simulation_hohmann() {
         let result = run_simulation(
             &ScenarioType::Hohmann(scenarios::HohmannConfig::earth_to_mars()),
-            86400.0 * 10.0,  // 10 days
-            3600.0,          // 1 hour steps
+            86400.0 * 10.0, // 10 days
+            3600.0,         // 1 hour steps
             1e6,
         );
 
@@ -271,8 +265,8 @@ mod tests {
     fn test_run_simulation_lagrange() {
         let result = run_simulation(
             &ScenarioType::Lagrange(scenarios::LagrangeConfig::sun_earth_l2()),
-            86400.0,  // 1 day
-            3600.0,   // 1 hour steps
+            86400.0, // 1 day
+            3600.0,  // 1 hour steps
             1e9,
         );
 
@@ -283,8 +277,8 @@ mod tests {
     fn test_simulation_result_fields() {
         let result = run_simulation(
             &ScenarioType::Kepler(KeplerConfig::earth_sun()),
-            3600.0,  // 1 hour
-            3600.0,  // 1 step
+            3600.0, // 1 hour
+            3600.0, // 1 step
             1e6,
         );
 

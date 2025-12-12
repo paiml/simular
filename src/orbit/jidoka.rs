@@ -14,8 +14,8 @@
 //!
 //! [27] Avizienis et al., "Dependable and Secure Computing," IEEE TDSC, 2004.
 
-use serde::{Deserialize, Serialize};
 use crate::orbit::physics::NBodyState;
+use serde::{Deserialize, Serialize};
 
 /// Jidoka response types with graceful degradation.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -40,9 +40,7 @@ pub enum JidokaResponse {
     },
 
     /// Fatal unrecoverable error, halt with state snapshot.
-    Halt {
-        violation: OrbitJidokaViolation,
-    },
+    Halt { violation: OrbitJidokaViolation },
 }
 
 impl JidokaResponse {
@@ -116,19 +114,46 @@ pub enum OrbitJidokaViolation {
 impl std::fmt::Display for OrbitJidokaViolation {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::NonFinite { body_index, field, value } => {
+            Self::NonFinite {
+                body_index,
+                field,
+                value,
+            } => {
                 write!(f, "Non-finite {field} at body {body_index}: {value}")
             }
-            Self::EnergyDrift { relative_error, tolerance, .. } => {
-                write!(f, "Energy drift {relative_error:.2e} exceeds tolerance {tolerance:.2e}")
+            Self::EnergyDrift {
+                relative_error,
+                tolerance,
+                ..
+            } => {
+                write!(
+                    f,
+                    "Energy drift {relative_error:.2e} exceeds tolerance {tolerance:.2e}"
+                )
             }
-            Self::AngularMomentumDrift { relative_error, tolerance, .. } => {
-                write!(f, "Angular momentum drift {relative_error:.2e} exceeds tolerance {tolerance:.2e}")
+            Self::AngularMomentumDrift {
+                relative_error,
+                tolerance,
+                ..
+            } => {
+                write!(
+                    f,
+                    "Angular momentum drift {relative_error:.2e} exceeds tolerance {tolerance:.2e}"
+                )
             }
-            Self::CloseEncounter { body_i, body_j, separation, threshold } => {
+            Self::CloseEncounter {
+                body_i,
+                body_j,
+                separation,
+                threshold,
+            } => {
                 write!(f, "Close encounter: bodies {body_i}-{body_j} at {separation:.2e}m (threshold: {threshold:.2e}m)")
             }
-            Self::EscapeVelocity { body_index, velocity, escape_velocity } => {
+            Self::EscapeVelocity {
+                body_index,
+                velocity,
+                escape_velocity,
+            } => {
                 write!(f, "Body {body_index} at escape velocity: {velocity:.2e} > {escape_velocity:.2e} m/s")
             }
         }
@@ -328,7 +353,8 @@ impl OrbitJidokaGuard {
                         tolerance: self.config.energy_tolerance,
                     },
                     recoverable: true,
-                    suggestion: "Consider reducing time step or using Yoshida integrator".to_string(),
+                    suggestion: "Consider reducing time step or using Yoshida integrator"
+                        .to_string(),
                 });
             }
 
@@ -381,7 +407,9 @@ impl OrbitJidokaGuard {
                         tolerance: self.config.angular_momentum_tolerance,
                     },
                     recoverable: true,
-                    suggestion: "Angular momentum should be conserved - check for numerical instability".to_string(),
+                    suggestion:
+                        "Angular momentum should be conserved - check for numerical instability"
+                            .to_string(),
                 });
             }
         }
@@ -414,7 +442,9 @@ impl OrbitJidokaGuard {
                                     threshold: self.config.close_encounter_threshold,
                                 },
                                 recoverable: true,
-                                suggestion: "Reduce time step or enable softening for close encounters".to_string(),
+                                suggestion:
+                                    "Reduce time step or enable softening for close encounters"
+                                        .to_string(),
                             });
                         }
 
@@ -438,7 +468,7 @@ impl OrbitJidokaGuard {
 mod tests {
     use super::*;
     use crate::orbit::physics::{NBodyState, OrbitBody};
-    use crate::orbit::units::{OrbitMass, Position3D, Velocity3D, AU, SOLAR_MASS, EARTH_MASS, G};
+    use crate::orbit::units::{OrbitMass, Position3D, Velocity3D, AU, EARTH_MASS, G, SOLAR_MASS};
 
     fn create_sun_earth_system() -> NBodyState {
         let v_circular = (G * SOLAR_MASS / AU).sqrt();
@@ -466,7 +496,8 @@ mod tests {
             metric: "test".to_string(),
             current: 0.0,
             threshold: 1.0,
-        }.can_continue());
+        }
+        .can_continue());
 
         assert!(!JidokaResponse::Pause {
             violation: OrbitJidokaViolation::EnergyDrift {
@@ -477,7 +508,8 @@ mod tests {
             },
             recoverable: true,
             suggestion: String::new(),
-        }.can_continue());
+        }
+        .can_continue());
     }
 
     #[test]
@@ -618,7 +650,8 @@ mod tests {
             metric: "test".to_string(),
             current: 0.0,
             threshold: 1.0,
-        }.is_warning());
+        }
+        .is_warning());
     }
 
     #[test]
@@ -633,7 +666,8 @@ mod tests {
             },
             recoverable: true,
             suggestion: String::new(),
-        }.should_pause());
+        }
+        .should_pause());
     }
 
     #[test]
@@ -645,7 +679,8 @@ mod tests {
                 field: "position".to_string(),
                 value: f64::NAN,
             },
-        }.should_halt());
+        }
+        .should_halt());
     }
 
     #[test]

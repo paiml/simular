@@ -156,15 +156,18 @@ impl MonteCarloEngine {
         match &self.variance_reduction {
             VarianceReduction::None => self.run_standard(&f, rng),
             VarianceReduction::Antithetic => self.run_antithetic(&f, rng),
-            VarianceReduction::ControlVariate { control_fn, expectation } => {
-                self.run_control_variate(&f, *control_fn, *expectation, rng)
-            }
-            VarianceReduction::ImportanceSampling { sample_fn, likelihood_ratio } => {
-                self.run_importance(&f, *sample_fn, *likelihood_ratio, rng)
-            }
-            VarianceReduction::SelfNormalizingIS { sample_fn, weight_fn } => {
-                self.run_self_normalizing_is(&f, *sample_fn, *weight_fn, rng)
-            }
+            VarianceReduction::ControlVariate {
+                control_fn,
+                expectation,
+            } => self.run_control_variate(&f, *control_fn, *expectation, rng),
+            VarianceReduction::ImportanceSampling {
+                sample_fn,
+                likelihood_ratio,
+            } => self.run_importance(&f, *sample_fn, *likelihood_ratio, rng),
+            VarianceReduction::SelfNormalizingIS {
+                sample_fn,
+                weight_fn,
+            } => self.run_self_normalizing_is(&f, *sample_fn, *weight_fn, rng),
             VarianceReduction::Stratified { num_strata } => {
                 self.run_stratified(&f, *num_strata, rng)
             }
@@ -272,9 +275,8 @@ impl MonteCarloEngine {
         // Estimate variance reduction factor
         let standard_result = self.run_standard(f, &mut rng.clone());
         if standard_result.std_error > f64::EPSILON {
-            result = result.with_variance_reduction(
-                standard_result.std_error / std_error.max(f64::EPSILON)
-            );
+            result = result
+                .with_variance_reduction(standard_result.std_error / std_error.max(f64::EPSILON));
         }
 
         result
@@ -403,10 +405,7 @@ impl MonteCarloEngine {
         }
 
         // Compute weighted mean: Σ(w_i * f_i) / Σ(w_i)
-        let weighted_sum: f64 = weights.iter()
-            .zip(values.iter())
-            .map(|(w, v)| w * v)
-            .sum();
+        let weighted_sum: f64 = weights.iter().zip(values.iter()).map(|(w, v)| w * v).sum();
         let mean = weighted_sum / weight_sum;
 
         // Compute effective sample size: ESS = (Σw)² / Σ(w²)
@@ -416,13 +415,15 @@ impl MonteCarloEngine {
         // Standard error estimation using linearization (delta method)
         // For ratio estimator, var(μ̂) ≈ 1/n * Σ w_i² (f_i - μ̂)² / (mean(w))²
         let mean_weight = weight_sum / self.n_samples as f64;
-        let variance: f64 = weights.iter()
+        let variance: f64 = weights
+            .iter()
             .zip(values.iter())
             .map(|(w, v)| {
                 let normalized_w = w / mean_weight;
                 normalized_w * normalized_w * (v - mean) * (v - mean)
             })
-            .sum::<f64>() / (self.n_samples as f64 * self.n_samples as f64);
+            .sum::<f64>()
+            / (self.n_samples as f64 * self.n_samples as f64);
 
         let std_error = variance.sqrt();
 
@@ -538,9 +539,8 @@ impl WorkStealingMonteCarlo {
         let injector: Injector<SimulationTask> = Injector::new();
 
         // Per-worker local queues
-        let workers: Vec<Worker<SimulationTask>> = (0..self.num_workers)
-            .map(|_| Worker::new_fifo())
-            .collect();
+        let workers: Vec<Worker<SimulationTask>> =
+            (0..self.num_workers).map(|_| Worker::new_fifo()).collect();
 
         // Stealers for cross-worker theft
         let stealers: Vec<Stealer<SimulationTask>> = workers.iter().map(Worker::stealer).collect();
@@ -567,30 +567,35 @@ impl WorkStealingMonteCarlo {
                 s.spawn(move || {
                     loop {
                         // Try local queue first
-                        let task = worker.pop().or_else(|| {
-                            // Try global queue
-                            loop {
-                                match injector.steal() {
-                                    crossbeam_deque::Steal::Success(task) => return Some(task),
-                                    crossbeam_deque::Steal::Empty => break,
-                                    crossbeam_deque::Steal::Retry => {}
-                                }
-                            }
-                            None
-                        }).or_else(|| {
-                            // Steal from other workers (round-robin)
-                            for i in 0..stealers.len() {
-                                let stealer_idx = (worker_id + i + 1) % stealers.len();
+                        let task = worker
+                            .pop()
+                            .or_else(|| {
+                                // Try global queue
                                 loop {
-                                    match stealers[stealer_idx].steal() {
+                                    match injector.steal() {
                                         crossbeam_deque::Steal::Success(task) => return Some(task),
                                         crossbeam_deque::Steal::Empty => break,
                                         crossbeam_deque::Steal::Retry => {}
                                     }
                                 }
-                            }
-                            None
-                        });
+                                None
+                            })
+                            .or_else(|| {
+                                // Steal from other workers (round-robin)
+                                for i in 0..stealers.len() {
+                                    let stealer_idx = (worker_id + i + 1) % stealers.len();
+                                    loop {
+                                        match stealers[stealer_idx].steal() {
+                                            crossbeam_deque::Steal::Success(task) => {
+                                                return Some(task)
+                                            }
+                                            crossbeam_deque::Steal::Empty => break,
+                                            crossbeam_deque::Steal::Retry => {}
+                                        }
+                                    }
+                                }
+                                None
+                            });
 
                         match task {
                             Some(task) => {
@@ -616,7 +621,11 @@ impl WorkStealingMonteCarlo {
     /// Execute with statistics collection.
     ///
     /// Returns results and basic statistics about the simulation.
-    pub fn execute_with_stats<F>(&self, n_samples: usize, simulate: F) -> (Vec<f64>, MonteCarloResult)
+    pub fn execute_with_stats<F>(
+        &self,
+        n_samples: usize,
+        simulate: F,
+    ) -> (Vec<f64>, MonteCarloResult)
     where
         F: Fn(SimulationTask) -> f64 + Sync,
     {
@@ -709,7 +718,8 @@ mod tests {
 
     #[test]
     fn test_stratified_sampling() {
-        let engine = MonteCarloEngine::new(100_000, VarianceReduction::Stratified { num_strata: 10 });
+        let engine =
+            MonteCarloEngine::new(100_000, VarianceReduction::Stratified { num_strata: 10 });
         let mut rng = SimRng::new(42);
 
         let result = engine.run(|x| x * x, &mut rng);
@@ -732,7 +742,11 @@ mod tests {
         }
 
         fn likelihood_ratio(x: f64) -> f64 {
-            if x < f64::EPSILON { 1.0 } else { 1.0 / (2.0 * x) }
+            if x < f64::EPSILON {
+                1.0
+            } else {
+                1.0 / (2.0 * x)
+            }
         }
 
         let engine = MonteCarloEngine::new(
@@ -747,7 +761,11 @@ mod tests {
         let result = engine.run(|x| x.powi(4), &mut rng);
 
         // E[x^4] = 1/5 = 0.2
-        assert!((result.estimate - 0.2).abs() < 0.01, "Expected ~0.2, got {}", result.estimate);
+        assert!(
+            (result.estimate - 0.2).abs() < 0.01,
+            "Expected ~0.2, got {}",
+            result.estimate
+        );
     }
 
     #[test]
@@ -760,7 +778,11 @@ mod tests {
         }
 
         fn likelihood_ratio(x: f64) -> f64 {
-            if x < f64::EPSILON { 1.0 } else { 1.0 / (2.0 * x) }
+            if x < f64::EPSILON {
+                1.0
+            } else {
+                1.0 / (2.0 * x)
+            }
         }
 
         // Function peaked near x=1
@@ -818,11 +840,19 @@ mod tests {
         let result = engine.run(|x| x, &mut rng);
 
         // E[x] = 0.5
-        assert!((result.estimate - 0.5).abs() < 0.01, "Expected ~0.5, got {}", result.estimate);
+        assert!(
+            (result.estimate - 0.5).abs() < 0.01,
+            "Expected ~0.5, got {}",
+            result.estimate
+        );
 
         // With uniform weights, ESS should be close to n
         if let Some(ess_ratio) = result.variance_reduction_factor {
-            assert!(ess_ratio > 0.9, "ESS ratio should be near 1 for uniform weights, got {}", ess_ratio);
+            assert!(
+                ess_ratio > 0.9,
+                "ESS ratio should be near 1 for uniform weights, got {}",
+                ess_ratio
+            );
         }
     }
 
@@ -856,12 +886,18 @@ mod tests {
         let result = engine.run(|x| x, &mut rng);
 
         // Should be approximately 2/3
-        assert!((result.estimate - 2.0 / 3.0).abs() < 0.02,
-            "Expected ~0.667, got {}", result.estimate);
+        assert!(
+            (result.estimate - 2.0 / 3.0).abs() < 0.02,
+            "Expected ~0.667, got {}",
+            result.estimate
+        );
 
         // ESS should be less than n due to weight variation
         if let Some(ess_ratio) = result.variance_reduction_factor {
-            assert!(ess_ratio < 1.0, "ESS ratio should be < 1 for varied weights");
+            assert!(
+                ess_ratio < 1.0,
+                "ESS ratio should be < 1 for varied weights"
+            );
         }
     }
 
@@ -883,13 +919,17 @@ mod tests {
 
         // Estimate pi using quarter circle
         // Area of quarter unit circle = pi/4
-        let result = engine.run_nd(2, |x| {
-            if x[0] * x[0] + x[1] * x[1] <= 1.0 {
-                4.0
-            } else {
-                0.0
-            }
-        }, &mut rng);
+        let result = engine.run_nd(
+            2,
+            |x| {
+                if x[0] * x[0] + x[1] * x[1] <= 1.0 {
+                    4.0
+                } else {
+                    0.0
+                }
+            },
+            &mut rng,
+        );
 
         assert!((result.estimate - std::f64::consts::PI).abs() < 0.05);
     }
@@ -907,8 +947,11 @@ mod tests {
 
         // Error should decrease by ~sqrt(100) = 10
         let ratio = result_small.std_error / result_large.std_error;
-        assert!(ratio > 5.0 && ratio < 20.0,
-            "Expected error ratio ~10, got {}", ratio);
+        assert!(
+            ratio > 5.0 && ratio < 20.0,
+            "Expected error ratio ~10, got {}",
+            ratio
+        );
     }
 
     // === Work-Stealing Monte Carlo Tests (Section 4.3.5) ===
@@ -934,12 +977,19 @@ mod tests {
             let mut rng = SimRng::new(task.seed);
             let x = rng.gen_f64();
             let y = rng.gen_f64();
-            if x * x + y * y <= 1.0 { 4.0 } else { 0.0 }
+            if x * x + y * y <= 1.0 {
+                4.0
+            } else {
+                0.0
+            }
         });
 
         assert_eq!(results.len(), 100_000);
-        assert!((stats.estimate - std::f64::consts::PI).abs() < 0.1,
-            "Pi estimate {} too far from actual", stats.estimate);
+        assert!(
+            (stats.estimate - std::f64::consts::PI).abs() < 0.1,
+            "Pi estimate {} too far from actual",
+            stats.estimate
+        );
     }
 
     #[test]
@@ -989,8 +1039,7 @@ mod tests {
 
     #[test]
     fn test_mc_result_with_variance_reduction() {
-        let result = MonteCarloResult::new(0.5, 0.01, 10000)
-            .with_variance_reduction(2.0);
+        let result = MonteCarloResult::new(0.5, 0.01, 10000).with_variance_reduction(2.0);
         assert!(result.variance_reduction_factor.is_some());
         assert!((result.variance_reduction_factor.unwrap() - 2.0).abs() < f64::EPSILON);
     }
@@ -1054,7 +1103,9 @@ mod tests {
         // Estimate E[x^2] using x as control variate
         // E[x] = 0.5, E[x^2] = 1/3
 
-        fn control_fn(x: f64) -> f64 { x }
+        fn control_fn(x: f64) -> f64 {
+            x
+        }
         let control_expectation = 0.5;
 
         let engine = MonteCarloEngine::new(
@@ -1068,7 +1119,11 @@ mod tests {
 
         let result = engine.run(|x| x * x, &mut rng);
         // E[x^2] = 1/3
-        assert!((result.estimate - 1.0/3.0).abs() < 0.01, "Expected ~0.333, got {}", result.estimate);
+        assert!(
+            (result.estimate - 1.0 / 3.0).abs() < 0.01,
+            "Expected ~0.333, got {}",
+            result.estimate
+        );
     }
 
     #[test]

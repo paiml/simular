@@ -25,8 +25,8 @@
 
 use wasm_bindgen::prelude::*;
 
+use crate::orbit::jidoka::{JidokaResponse, OrbitJidokaConfig, OrbitJidokaGuard};
 use crate::orbit::physics::{NBodyState, YoshidaIntegrator};
-use crate::orbit::jidoka::{OrbitJidokaGuard, OrbitJidokaConfig, JidokaResponse};
 use crate::orbit::scenarios::KeplerConfig;
 use crate::orbit::units::{OrbitTime, AU};
 
@@ -68,11 +68,7 @@ impl OrbitSimulation {
 
     /// Create a circular orbit with custom parameters.
     #[wasm_bindgen]
-    pub fn circular_orbit(
-        central_mass_kg: f64,
-        orbiter_mass_kg: f64,
-        radius_m: f64,
-    ) -> Self {
+    pub fn circular_orbit(central_mass_kg: f64, orbiter_mass_kg: f64, radius_m: f64) -> Self {
         let config = KeplerConfig::circular(central_mass_kg, orbiter_mass_kg, radius_m);
         let state = config.build(radius_m * 1e-6);
 
@@ -478,7 +474,7 @@ mod tests {
         // Earth has velocity in y direction
         let vy = sim.body_vy(1);
         assert!(vy.abs() > 20000.0); // Should be ~30 km/s
-        // Invalid index
+                                     // Invalid index
         assert!(sim.body_vy(999).is_nan());
     }
 
@@ -525,7 +521,7 @@ mod tests {
         let velocities = sim.velocities_flat();
 
         assert_eq!(velocities.len(), 6); // 2 bodies * 3 coords
-        // Sun should have near-zero velocity
+                                         // Sun should have near-zero velocity
         assert!(velocities[0].abs() < 1e-10);
         assert!(velocities[1].abs() < 1e-10);
         assert!(velocities[2].abs() < 1e-10);
@@ -537,7 +533,7 @@ mod tests {
         let positions = sim.positions_au_flat();
 
         assert_eq!(positions.len(), 6); // 2 bodies * 3 coords
-        // Sun at origin
+                                        // Sun at origin
         assert!(positions[0].abs() < 1e-15);
         assert!(positions[1].abs() < 1e-15);
         assert!(positions[2].abs() < 1e-15);

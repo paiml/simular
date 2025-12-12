@@ -6,30 +6,35 @@
 //! - Jidoka guards for stop-on-error
 //! - State management
 
-pub mod rng;
+pub mod clock;
 pub mod jidoka;
+pub mod rng;
 pub mod scheduler;
 pub mod state;
-pub mod clock;
 
 use serde::{Deserialize, Serialize};
 
-pub use rng::SimRng;
+pub use clock::SimClock;
 pub use jidoka::{JidokaGuard, JidokaViolation};
+pub use rng::SimRng;
 pub use scheduler::{EventScheduler, ScheduledEvent};
 pub use state::SimState;
-pub use clock::SimClock;
 
-use crate::error::SimResult;
-use crate::config::{SimConfig, PhysicsEngine as ConfigPhysicsEngine, IntegratorType};
-use crate::domains::physics::{PhysicsEngine, GravityField, CentralForceField, VerletIntegrator, RK4Integrator, EulerIntegrator, ForceField, Integrator};
+use crate::config::{IntegratorType, PhysicsEngine as ConfigPhysicsEngine, SimConfig};
+use crate::domains::physics::{
+    CentralForceField, EulerIntegrator, ForceField, GravityField, Integrator, PhysicsEngine,
+    RK4Integrator, VerletIntegrator,
+};
 use crate::engine::state::Vec3;
+use crate::error::SimResult;
 
 /// Simulation time representation.
 ///
 /// Uses a fixed-point representation for reproducibility across platforms.
 /// Internal representation is in nanoseconds to avoid floating-point issues.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize, Default)]
+#[derive(
+    Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize, Default,
+)]
 pub struct SimTime {
     /// Time in nanoseconds from simulation start.
     nanos: u64,
@@ -114,7 +119,6 @@ impl std::fmt::Display for SimTime {
     }
 }
 
-
 /// Main simulation engine.
 ///
 /// Coordinates all subsystems:
@@ -155,14 +159,16 @@ impl SimEngine {
 
         // Initialize Physics Engine based on config
         let physics = if config.domains.physics.enabled {
-            let integrator: Box<dyn Integrator + Send + Sync> = match config.domains.physics.integrator.integrator_type {
-                IntegratorType::Euler => Box::new(EulerIntegrator::new()),
-                IntegratorType::Rk4 => Box::new(RK4Integrator::new()),
-                // Default to Verlet for Verlet, Rk78, SymplecticEuler, etc.
-                _ => Box::new(VerletIntegrator::new()),
-            };
+            let integrator: Box<dyn Integrator + Send + Sync> =
+                match config.domains.physics.integrator.integrator_type {
+                    IntegratorType::Euler => Box::new(EulerIntegrator::new()),
+                    IntegratorType::Rk4 => Box::new(RK4Integrator::new()),
+                    // Default to Verlet for Verlet, Rk78, SymplecticEuler, etc.
+                    _ => Box::new(VerletIntegrator::new()),
+                };
 
-            let force_field: Box<dyn ForceField + Send + Sync> = match config.domains.physics.engine {
+            let force_field: Box<dyn ForceField + Send + Sync> = match config.domains.physics.engine
+            {
                 ConfigPhysicsEngine::Orbital => Box::new(CentralForceField::new(1.0, Vec3::zero())), // Default mu=1.0 for now
                 // Default to GravityField for RigidBody, Fluid, Discrete, etc.
                 _ => Box::new(GravityField::default()),
@@ -186,7 +192,7 @@ impl SimEngine {
 
     /// Get current simulation time.
     #[must_use]
-    #[allow(clippy::missing_const_for_fn)]  // Delegating to non-const method
+    #[allow(clippy::missing_const_for_fn)] // Delegating to non-const method
     pub fn current_time(&self) -> SimTime {
         self.clock.current_time()
     }
@@ -241,7 +247,6 @@ impl SimEngine {
 
         Ok(())
     }
-
 
     /// Run simulation for specified duration.
     ///
@@ -461,7 +466,9 @@ mod tests {
         let mut engine = SimEngine::new(config).unwrap();
 
         // Add a body so we have something to check
-        engine.state_mut().add_body(1.0, state::Vec3::zero(), state::Vec3::zero());
+        engine
+            .state_mut()
+            .add_body(1.0, state::Vec3::zero(), state::Vec3::zero());
 
         // run_until checks predicate based on state
         // Stop when bodies exist (immediate)

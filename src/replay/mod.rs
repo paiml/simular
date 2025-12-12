@@ -11,11 +11,11 @@
 //! - **Split Event Journal** (4.3.4): Header/payload separation for fast scrubbing [50][54]
 //! - **Schema Evolution** (4.3.7): Version headers with migration support [50]
 
-use std::collections::BTreeMap;
 use serde::{Deserialize, Serialize};
+use std::collections::BTreeMap;
 
-use crate::engine::{SimTime, SimState};
 use crate::engine::rng::RngState;
+use crate::engine::{SimState, SimTime};
 use crate::error::{SimError, SimResult};
 
 /// Checkpoint with compressed state.
@@ -47,8 +47,8 @@ impl Checkpoint {
         compression_level: i32,
     ) -> SimResult<Self> {
         // Serialize state
-        let serialized = bincode::serialize(state)
-            .map_err(|e| SimError::serialization(e.to_string()))?;
+        let serialized =
+            bincode::serialize(state).map_err(|e| SimError::serialization(e.to_string()))?;
 
         // Compress
         let compressed = zstd::encode_all(&serialized[..], compression_level)?;
@@ -81,8 +81,7 @@ impl Checkpoint {
         let decompressed = zstd::decode_all(&self.data[..])?;
 
         // Deserialize
-        bincode::deserialize(&decompressed)
-            .map_err(|e| SimError::serialization(e.to_string()))
+        bincode::deserialize(&decompressed).map_err(|e| SimError::serialization(e.to_string()))
     }
 
     /// Get compressed size in bytes.
@@ -138,13 +137,7 @@ impl CheckpointManager {
         state: &SimState,
         rng_state: RngState,
     ) -> SimResult<()> {
-        let checkpoint = Checkpoint::create(
-            time,
-            step,
-            state,
-            rng_state,
-            self.compression_level,
-        )?;
+        let checkpoint = Checkpoint::create(time, step, state, rng_state, self.compression_level)?;
 
         let size = checkpoint.compressed_size();
 
@@ -262,8 +255,8 @@ impl EventJournal {
         event: &T,
         rng_state: Option<&RngState>,
     ) -> SimResult<()> {
-        let event_data = bincode::serialize(event)
-            .map_err(|e| SimError::serialization(e.to_string()))?;
+        let event_data =
+            bincode::serialize(event).map_err(|e| SimError::serialization(e.to_string()))?;
 
         let rng_state = if self.record_rng_state {
             rng_state.cloned()
@@ -347,7 +340,11 @@ impl TimeScrubber {
         record_rng_state: bool,
     ) -> Self {
         Self {
-            checkpoints: CheckpointManager::new(checkpoint_interval, max_storage, compression_level),
+            checkpoints: CheckpointManager::new(
+                checkpoint_interval,
+                max_storage,
+                compression_level,
+            ),
             journal: EventJournal::new(record_rng_state),
             current_time: SimTime::ZERO,
             current_state: SimState::default(),
@@ -503,7 +500,8 @@ impl StreamingCheckpointManager {
         bincode::serialize_into(&mut encoder, state)
             .map_err(|e| SimError::serialization(format!("State serialize: {e}")))?;
 
-        let file = encoder.finish()
+        let file = encoder
+            .finish()
             .map_err(|e| SimError::serialization(format!("Zstd finish: {e}")))?;
 
         // Get compressed size
@@ -615,8 +613,8 @@ impl SplitEventJournal {
         event_type: u32,
         event: &T,
     ) -> SimResult<()> {
-        let payload = bincode::serialize(event)
-            .map_err(|e| SimError::serialization(e.to_string()))?;
+        let payload =
+            bincode::serialize(event).map_err(|e| SimError::serialization(e.to_string()))?;
 
         let header = EventHeader {
             time,
@@ -666,8 +664,14 @@ impl SplitEventJournal {
     }
 
     /// Iterate headers in time range (fast, no payload deserialization).
-    pub fn headers_in_range(&self, start: SimTime, end: SimTime) -> impl Iterator<Item = &EventHeader> {
-        self.headers.iter().filter(move |h| h.time >= start && h.time <= end)
+    pub fn headers_in_range(
+        &self,
+        start: SimTime,
+        end: SimTime,
+    ) -> impl Iterator<Item = &EventHeader> {
+        self.headers
+            .iter()
+            .filter(move |h| h.time >= start && h.time <= end)
     }
 
     /// Get all headers.
@@ -722,8 +726,8 @@ impl VersionedEntry {
         entry_type: impl Into<String>,
         data: &T,
     ) -> SimResult<Self> {
-        let payload = bincode::serialize(data)
-            .map_err(|e| SimError::serialization(e.to_string()))?;
+        let payload =
+            bincode::serialize(data).map_err(|e| SimError::serialization(e.to_string()))?;
 
         Ok(Self {
             version,
@@ -738,8 +742,7 @@ impl VersionedEntry {
     ///
     /// Returns error if deserialization fails.
     pub fn deserialize<T: serde::de::DeserializeOwned>(&self) -> SimResult<T> {
-        bincode::deserialize(&self.payload)
-            .map_err(|e| SimError::serialization(e.to_string()))
+        bincode::deserialize(&self.payload).map_err(|e| SimError::serialization(e.to_string()))
     }
 }
 
@@ -814,7 +817,9 @@ impl SchemaMigrator {
         // In production, you'd want Dijkstra or BFS for optimal path
         for (&(from, intermediate), first_step) in &self.migrations {
             if from == entry.version {
-                if let Some(second_step) = self.migrations.get(&(intermediate, self.current_version)) {
+                if let Some(second_step) =
+                    self.migrations.get(&(intermediate, self.current_version))
+                {
                     let intermediate_payload = first_step(&entry.payload)?;
                     return second_step(&intermediate_payload);
                 }
@@ -843,8 +848,8 @@ impl SchemaMigrator {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::engine::state::Vec3;
     use crate::engine::rng::SimRng;
+    use crate::engine::state::Vec3;
 
     #[test]
     fn test_checkpoint_create_restore() {
@@ -854,13 +859,7 @@ mod tests {
         let rng = SimRng::new(42);
         let rng_state = rng.save_state();
 
-        let checkpoint = Checkpoint::create(
-            SimTime::from_secs(1.0),
-            100,
-            &state,
-            rng_state,
-            3,
-        );
+        let checkpoint = Checkpoint::create(SimTime::from_secs(1.0), 100, &state, rng_state, 3);
 
         assert!(checkpoint.is_ok());
         let checkpoint = checkpoint.ok().unwrap();
@@ -878,13 +877,10 @@ mod tests {
         let state = SimState::new();
         let rng = SimRng::new(42);
 
-        let mut checkpoint = Checkpoint::create(
-            SimTime::from_secs(1.0),
-            100,
-            &state,
-            rng.save_state(),
-            3,
-        ).ok().unwrap();
+        let mut checkpoint =
+            Checkpoint::create(SimTime::from_secs(1.0), 100, &state, rng.save_state(), 3)
+                .ok()
+                .unwrap();
 
         // Corrupt the data
         if !checkpoint.data.is_empty() {
@@ -905,7 +901,9 @@ mod tests {
         // Create checkpoints
         for step in (0..100).step_by(10) {
             let time = SimTime::from_secs(step as f64 * 0.1);
-            manager.checkpoint(time, step as u64, &state, rng.save_state()).ok();
+            manager
+                .checkpoint(time, step as u64, &state, rng.save_state())
+                .ok();
         }
 
         assert_eq!(manager.num_checkpoints(), 10);
@@ -927,7 +925,9 @@ mod tests {
         // Create many checkpoints
         for step in 0..100 {
             let time = SimTime::from_secs(step as f64 * 0.01);
-            manager.checkpoint(time, step, &state, rng.save_state()).ok();
+            manager
+                .checkpoint(time, step, &state, rng.save_state())
+                .ok();
         }
 
         // Should have garbage collected old ones
@@ -941,8 +941,12 @@ mod tests {
         let event1 = "event1";
         let event2 = "event2";
 
-        journal.append(SimTime::from_secs(1.0), 100, &event1, None).ok();
-        journal.append(SimTime::from_secs(2.0), 200, &event2, None).ok();
+        journal
+            .append(SimTime::from_secs(1.0), 100, &event1, None)
+            .ok();
+        journal
+            .append(SimTime::from_secs(2.0), 200, &event2, None)
+            .ok();
 
         assert_eq!(journal.len(), 2);
         assert!(!journal.is_empty());
@@ -961,12 +965,10 @@ mod tests {
         let state = SimState::new();
         let rng = SimRng::new(42);
 
-        scrubber.checkpoints_mut().checkpoint(
-            SimTime::from_secs(1.0),
-            100,
-            &state,
-            rng.save_state(),
-        ).ok();
+        scrubber
+            .checkpoints_mut()
+            .checkpoint(SimTime::from_secs(1.0), 100, &state, rng.save_state())
+            .ok();
 
         // Seek to checkpoint time
         let result = scrubber.seek_to(SimTime::from_secs(1.0));
@@ -1004,7 +1006,9 @@ mod tests {
         let mut journal = SplitEventJournal::new();
 
         for i in 0..10 {
-            journal.append(SimTime::from_secs(i as f64), i as u32, &format!("event{i}")).ok();
+            journal
+                .append(SimTime::from_secs(i as f64), i as u32, &format!("event{i}"))
+                .ok();
         }
 
         // Exact match
@@ -1025,7 +1029,9 @@ mod tests {
         let mut journal = SplitEventJournal::new();
 
         for i in 0..10 {
-            journal.append(SimTime::from_secs(i as f64), i as u32, &i).ok();
+            journal
+                .append(SimTime::from_secs(i as f64), i as u32, &i)
+                .ok();
         }
 
         let headers: Vec<_> = journal
@@ -1066,7 +1072,9 @@ mod tests {
     #[test]
     fn test_versioned_entry_deserialize() {
         let data = vec![1u32, 2, 3, 4, 5];
-        let entry = VersionedEntry::new((1, 0, 0), "vec_u32", &data).ok().unwrap();
+        let entry = VersionedEntry::new((1, 0, 0), "vec_u32", &data)
+            .ok()
+            .unwrap();
 
         let restored: Vec<u32> = entry.deserialize().ok().unwrap();
         assert_eq!(restored, data);
@@ -1075,7 +1083,9 @@ mod tests {
     #[test]
     fn test_schema_migrator_no_migration_needed() {
         let migrator = SchemaMigrator::new((1, 0, 0));
-        let entry = VersionedEntry::new((1, 0, 0), "test", &"data").ok().unwrap();
+        let entry = VersionedEntry::new((1, 0, 0), "test", &"data")
+            .ok()
+            .unwrap();
 
         assert!(!migrator.needs_migration(&entry));
 
@@ -1162,11 +1172,9 @@ mod tests {
     #[test]
     fn test_streaming_checkpoint_roundtrip() {
         let temp_dir = tempfile::tempdir().ok().unwrap();
-        let mut manager = StreamingCheckpointManager::new(
-            temp_dir.path(),
-            10,
-            3,
-        ).ok().unwrap();
+        let mut manager = StreamingCheckpointManager::new(temp_dir.path(), 10, 3)
+            .ok()
+            .unwrap();
 
         let mut state = SimState::new();
         state.add_body(1.0, Vec3::new(1.0, 2.0, 3.0), Vec3::new(4.0, 5.0, 6.0));
@@ -1175,12 +1183,10 @@ mod tests {
         let rng_state = rng.save_state();
 
         // Create checkpoint
-        let path = manager.checkpoint_streaming(
-            SimTime::from_secs(1.0),
-            100,
-            &state,
-            &rng_state,
-        ).ok().unwrap();
+        let path = manager
+            .checkpoint_streaming(SimTime::from_secs(1.0), 100, &state, &rng_state)
+            .ok()
+            .unwrap();
 
         assert!(path.exists());
         assert_eq!(manager.checkpoint_count(), 1);
@@ -1198,11 +1204,9 @@ mod tests {
     #[test]
     fn test_streaming_checkpoint_should_checkpoint() {
         let temp_dir = tempfile::tempdir().ok().unwrap();
-        let manager = StreamingCheckpointManager::new(
-            temp_dir.path(),
-            10,
-            3,
-        ).ok().unwrap();
+        let manager = StreamingCheckpointManager::new(temp_dir.path(), 10, 3)
+            .ok()
+            .unwrap();
 
         assert!(manager.should_checkpoint(0));
         assert!(!manager.should_checkpoint(5));
@@ -1218,12 +1222,9 @@ mod tests {
         let state = SimState::new();
         let rng = SimRng::new(42);
 
-        manager.checkpoint(
-            SimTime::from_secs(1.0),
-            10,
-            &state,
-            rng.save_state(),
-        ).ok();
+        manager
+            .checkpoint(SimTime::from_secs(1.0), 10, &state, rng.save_state())
+            .ok();
 
         assert_eq!(manager.num_checkpoints(), 1);
         assert!(manager.storage_used() > 0);
@@ -1245,8 +1246,12 @@ mod tests {
     fn test_event_journal_entries() {
         let mut journal = EventJournal::new(false);
 
-        journal.append(SimTime::from_secs(1.0), 100, &"event1", None).ok();
-        journal.append(SimTime::from_secs(2.0), 200, &"event2", None).ok();
+        journal
+            .append(SimTime::from_secs(1.0), 100, &"event1", None)
+            .ok();
+        journal
+            .append(SimTime::from_secs(2.0), 200, &"event2", None)
+            .ok();
 
         let entries = journal.entries();
         assert_eq!(entries.len(), 2);
@@ -1258,7 +1263,9 @@ mod tests {
     fn test_event_journal_clear() {
         let mut journal = EventJournal::new(false);
 
-        journal.append(SimTime::from_secs(1.0), 100, &"event", None).ok();
+        journal
+            .append(SimTime::from_secs(1.0), 100, &"event", None)
+            .ok();
         assert!(!journal.is_empty());
 
         journal.clear();
@@ -1272,7 +1279,9 @@ mod tests {
         let rng = SimRng::new(42);
         let rng_state = rng.save_state();
 
-        journal.append(SimTime::from_secs(1.0), 100, &"event", Some(&rng_state)).ok();
+        journal
+            .append(SimTime::from_secs(1.0), 100, &"event", Some(&rng_state))
+            .ok();
 
         let entries = journal.entries();
         assert!(entries[0].rng_state.is_some());
@@ -1284,12 +1293,10 @@ mod tests {
         let state = SimState::new();
         let rng = SimRng::new(42);
 
-        scrubber.checkpoints_mut().checkpoint(
-            SimTime::ZERO,
-            0,
-            &state,
-            rng.save_state(),
-        ).ok();
+        scrubber
+            .checkpoints_mut()
+            .checkpoint(SimTime::ZERO, 0, &state, rng.save_state())
+            .ok();
 
         // First seek
         let _ = scrubber.seek_to(SimTime::ZERO);
@@ -1313,12 +1320,10 @@ mod tests {
         assert!(scrubber.journal().is_empty());
 
         // Mutable journal
-        scrubber.journal_mut().append(
-            SimTime::from_secs(1.0),
-            100,
-            &"event",
-            None,
-        ).ok();
+        scrubber
+            .journal_mut()
+            .append(SimTime::from_secs(1.0), 100, &"event", None)
+            .ok();
 
         assert!(!scrubber.journal().is_empty());
     }
@@ -1326,23 +1331,18 @@ mod tests {
     #[test]
     fn test_streaming_checkpoint_total_bytes() {
         let temp_dir = tempfile::tempdir().ok().unwrap();
-        let mut manager = StreamingCheckpointManager::new(
-            temp_dir.path(),
-            10,
-            3,
-        ).ok().unwrap();
+        let mut manager = StreamingCheckpointManager::new(temp_dir.path(), 10, 3)
+            .ok()
+            .unwrap();
 
         assert_eq!(manager.total_bytes_written(), 0);
 
         let state = SimState::new();
         let rng = SimRng::new(42);
 
-        manager.checkpoint_streaming(
-            SimTime::from_secs(1.0),
-            10,
-            &state,
-            &rng.save_state(),
-        ).ok();
+        manager
+            .checkpoint_streaming(SimTime::from_secs(1.0), 10, &state, &rng.save_state())
+            .ok();
 
         assert!(manager.total_bytes_written() > 0);
     }
@@ -1352,13 +1352,10 @@ mod tests {
         let state = SimState::new();
         let rng = SimRng::new(42);
 
-        let checkpoint = Checkpoint::create(
-            SimTime::from_secs(1.0),
-            100,
-            &state,
-            rng.save_state(),
-            3,
-        ).ok().unwrap();
+        let checkpoint =
+            Checkpoint::create(SimTime::from_secs(1.0), 100, &state, rng.save_state(), 3)
+                .ok()
+                .unwrap();
 
         assert!(checkpoint.compressed_size() > 0);
     }
@@ -1368,13 +1365,10 @@ mod tests {
         let state = SimState::new();
         let rng = SimRng::new(42);
 
-        let checkpoint = Checkpoint::create(
-            SimTime::from_secs(1.0),
-            100,
-            &state,
-            rng.save_state(),
-            3,
-        ).ok().unwrap();
+        let checkpoint =
+            Checkpoint::create(SimTime::from_secs(1.0), 100, &state, rng.save_state(), 3)
+                .ok()
+                .unwrap();
 
         let cloned = checkpoint.clone();
         assert_eq!(cloned.step, checkpoint.step);
@@ -1384,7 +1378,9 @@ mod tests {
     #[test]
     fn test_journal_entry_clone() {
         let mut journal = EventJournal::new(false);
-        journal.append(SimTime::from_secs(1.0), 100, &"event", None).ok();
+        journal
+            .append(SimTime::from_secs(1.0), 100, &"event", None)
+            .ok();
 
         let entry = &journal.entries()[0];
         let cloned = entry.clone();
@@ -1393,7 +1389,9 @@ mod tests {
 
     #[test]
     fn test_versioned_entry_debug() {
-        let entry = VersionedEntry::new((1, 0, 0), "test", &"data").ok().unwrap();
+        let entry = VersionedEntry::new((1, 0, 0), "test", &"data")
+            .ok()
+            .unwrap();
         let debug = format!("{:?}", entry);
         assert!(debug.contains("VersionedEntry"));
     }
@@ -1438,7 +1436,9 @@ mod tests {
         let mut journal = SplitEventJournal::new();
 
         for i in 1..10 {
-            journal.append(SimTime::from_secs(i as f64), i as u32, &i).ok();
+            journal
+                .append(SimTime::from_secs(i as f64), i as u32, &i)
+                .ok();
         }
 
         // Seek before any events
@@ -1451,7 +1451,9 @@ mod tests {
         let mut journal = SplitEventJournal::new();
 
         for i in 0..5 {
-            journal.append(SimTime::from_secs(i as f64), i as u32, &i).ok();
+            journal
+                .append(SimTime::from_secs(i as f64), i as u32, &i)
+                .ok();
         }
 
         // Seek way after all events
@@ -1470,8 +1472,8 @@ mod tests {
 #[cfg(test)]
 mod proptests {
     use super::*;
-    use crate::engine::state::Vec3;
     use crate::engine::rng::SimRng;
+    use crate::engine::state::Vec3;
     use proptest::prelude::*;
 
     proptest! {

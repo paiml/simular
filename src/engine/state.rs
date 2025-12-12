@@ -6,8 +6,8 @@
 //! - Energy computation
 //! - Constraint tracking
 
-use serde::{Deserialize, Serialize};
 use crate::error::SimResult;
+use serde::{Deserialize, Serialize};
 
 /// 3D vector for positions and velocities.
 #[derive(Debug, Clone, Copy, PartialEq, Default, Serialize, Deserialize)]
@@ -30,7 +30,11 @@ impl Vec3 {
     /// Zero vector.
     #[must_use]
     pub const fn zero() -> Self {
-        Self { x: 0.0, y: 0.0, z: 0.0 }
+        Self {
+            x: 0.0,
+            y: 0.0,
+            z: 0.0,
+        }
     }
 
     /// Magnitude squared.
@@ -88,7 +92,7 @@ impl Vec3 {
 
     /// Check if all components are finite.
     #[must_use]
-    #[allow(clippy::missing_const_for_fn)]  // is_finite not const
+    #[allow(clippy::missing_const_for_fn)] // is_finite not const
     pub fn is_finite(&self) -> bool {
         self.x.is_finite() && self.y.is_finite() && self.z.is_finite()
     }
@@ -208,7 +212,7 @@ impl SimState {
 
     /// Get number of bodies.
     #[must_use]
-    #[allow(clippy::missing_const_for_fn)]  // Vec::len not const in older Rust
+    #[allow(clippy::missing_const_for_fn)] // Vec::len not const in older Rust
     pub fn num_bodies(&self) -> usize {
         self.masses.len()
     }
@@ -298,7 +302,7 @@ impl SimState {
     }
 
     /// Set potential energy (called by domain engine).
-    #[allow(clippy::missing_const_for_fn)]  // Mutable const not stable
+    #[allow(clippy::missing_const_for_fn)] // Mutable const not stable
     pub fn set_potential_energy(&mut self, energy: f64) {
         self.potential_energy = energy;
     }
@@ -355,7 +359,11 @@ impl SimState {
     /// Returns error if event cannot be applied.
     pub fn apply_event(&mut self, event: &SimEvent) -> SimResult<()> {
         match event {
-            SimEvent::AddBody { mass, position, velocity } => {
+            SimEvent::AddBody {
+                mass,
+                position,
+                velocity,
+            } => {
                 self.add_body(*mass, *position, *velocity);
             }
             SimEvent::ApplyForce { body_index, force } => {
@@ -363,12 +371,18 @@ impl SimState {
                     self.apply_force(*body_index, *force);
                 }
             }
-            SimEvent::SetPosition { body_index, position } => {
+            SimEvent::SetPosition {
+                body_index,
+                position,
+            } => {
                 if *body_index < self.num_bodies() {
                     self.set_position(*body_index, *position);
                 }
             }
-            SimEvent::SetVelocity { body_index, velocity } => {
+            SimEvent::SetVelocity {
+                body_index,
+                velocity,
+            } => {
                 if *body_index < self.num_bodies() {
                     self.set_velocity(*body_index, *velocity);
                 }

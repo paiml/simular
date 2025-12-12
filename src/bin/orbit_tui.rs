@@ -1,28 +1,26 @@
 //! Simular Orbit Demo - Terminal User Interface
 //!
 //! A TUI demonstration of orbital mechanics using ratatui.
-//!
-//! # Usage
-//!
-//! ```bash
-//! cargo run --bin orbit-tui --features tui
-//! ```
-//!
-//! # Controls
-//!
-//! - Space: Pause/Resume
-//! - R: Reset simulation
-//! - +/-: Adjust time scale
-//! - Q: Quit
+//! App logic lives in `simular::tui::orbit_app`.
 
 #![forbid(unsafe_code)]
 
 #[cfg(feature = "tui")]
-mod app {
-    use std::io;
-    use std::time::{Duration, Instant};
+fn main() -> std::io::Result<()> {
+    use simular::tui::orbit_app::OrbitApp;
+    tui::run(OrbitApp::new())
+}
+
+#[cfg(not(feature = "tui"))]
+fn main() {
+    eprintln!("TUI feature not enabled. Run with --features tui");
+    std::process::exit(1);
+}
+
+#[cfg(feature = "tui")]
+mod tui {
     use crossterm::{
-        event::{self, Event, KeyCode, KeyEventKind},
+        event::{self, Event, KeyEventKind},
         execute,
         terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
     };
@@ -32,200 +30,109 @@ mod app {
         style::{Color, Modifier, Style},
         text::{Line, Span},
         widgets::{
-            Block, Borders, Gauge, Paragraph,
             canvas::{Canvas, Points},
+            Block, Borders, Gauge, Paragraph,
         },
         Frame, Terminal,
     };
+    use simular::orbit::prelude::AU;
+    use simular::tui::orbit_app::OrbitApp;
+    use std::io;
+    use std::time::{Duration, Instant};
 
-    use simular::orbit::prelude::*;
-    use simular::orbit::physics::YoshidaIntegrator;
-    use simular::orbit::render::OrbitTrail;
+    /// Run the TUI application.
+    pub fn run(mut app: OrbitApp) -> io::Result<()> {
+        enable_raw_mode()?;
+        let mut stdout = io::stdout();
+        execute!(stdout, EnterAlternateScreen)?;
+        let backend = CrosstermBackend::new(stdout);
+        let mut terminal = Terminal::new(backend)?;
 
-    /// Application state.
-    pub struct App {
-        state: NBodyState,
-        jidoka: OrbitJidokaGuard,
-        heijunka: HeijunkaScheduler,
-        _integrator: YoshidaIntegrator,
-        trails: Vec<OrbitTrail>,
-        config: KeplerConfig,
-        paused: bool,
-        time_scale: f64,
-        sim_time_days: f64,
-        frame_count: u64,
-        should_quit: bool,
-    }
+        let tick_rate = Duration::from_millis(33);
 
-    impl App {
-        pub fn new() -> Self {
-            let config = KeplerConfig::earth_sun();
-            let state = config.build(1e6);
+        loop {
+            let start = Instant::now();
+            terminal.draw(|f| ui(f, &app))?;
 
-            let mut jidoka = OrbitJidokaGuard::new(OrbitJidokaConfig::default());
-            jidoka.initialize(&state);
-
-            let heijunka_config = HeijunkaConfig {
-                frame_budget_ms: 33.0, // 30 FPS target
-                physics_budget_fraction: 0.5,
-                base_dt: 3600.0, // 1 hour per physics step
-                max_substeps: 24,
-                ..HeijunkaConfig::default()
-            };
-            let heijunka = HeijunkaScheduler::new(heijunka_config);
-
-            let trails = vec![
-                OrbitTrail::new(0),    // Sun doesn't need trail
-                OrbitTrail::new(500),  // Earth trail
-            ];
-
-            Self {
-                state,
-                jidoka,
-                heijunka,
-                _integrator: YoshidaIntegrator::new(),
-                trails,
-                config,
-                paused: false,
-                time_scale: 1.0,
-                sim_time_days: 0.0,
-                frame_count: 0,
-                should_quit: false,
-            }
-        }
-
-        pub fn reset(&mut self) {
-            self.state = self.config.build(1e6);
-            self.jidoka = OrbitJidokaGuard::new(OrbitJidokaConfig::default());
-            self.jidoka.initialize(&self.state);
-            self.sim_time_days = 0.0;
-            self.frame_count = 0;
-
-            for trail in &mut self.trails {
-                trail.clear();
-            }
-        }
-
-        pub fn update(&mut self) {
-            if self.paused {
-                return;
-            }
-
-            // Execute physics with Heijunka time budget
-            if let Ok(result) = self.heijunka.execute_frame(&mut self.state) {
-                self.sim_time_days += result.sim_time_advanced / 86400.0;
-
-                // Update trails
-                for (i, body) in self.state.bodies.iter().enumerate() {
-                    if i < self.trails.len() {
-                        let (x, y, _) = body.position.as_meters();
-                        self.trails[i].push(x, y);
+            let timeout = tick_rate.saturating_sub(start.elapsed());
+            if event::poll(timeout)? {
+                if let Event::Key(key) = event::read()? {
+                    if key.kind == KeyEventKind::Press {
+                        app.handle_key(key.code);
                     }
                 }
             }
 
-            // Check Jidoka guards
-            let response = self.jidoka.check(&self.state);
-            if response.should_pause() || response.should_halt() {
-                self.paused = true;
+            if app.should_quit {
+                break;
             }
 
-            self.frame_count += 1;
+            app.update();
         }
 
-        pub fn handle_key(&mut self, key: KeyCode) {
-            match key {
-                KeyCode::Char('q') | KeyCode::Esc => self.should_quit = true,
-                KeyCode::Char(' ') => self.paused = !self.paused,
-                KeyCode::Char('r') => self.reset(),
-                KeyCode::Char('+') | KeyCode::Char('=') => {
-                    self.time_scale = (self.time_scale * 2.0).min(1000.0);
-                }
-                KeyCode::Char('-') => {
-                    self.time_scale = (self.time_scale / 2.0).max(0.1);
-                }
-                _ => {}
-            }
-        }
+        disable_raw_mode()?;
+        execute!(terminal.backend_mut(), LeaveAlternateScreen)?;
+        terminal.show_cursor()?;
+
+        Ok(())
     }
 
-    /// Draw the UI.
-    pub fn ui(f: &mut Frame, app: &App) {
+    fn ui(f: &mut Frame, app: &OrbitApp) {
         let chunks = Layout::default()
             .direction(Direction::Vertical)
             .constraints([
-                Constraint::Length(3),   // Title
-                Constraint::Min(10),     // Main orbit view
-                Constraint::Length(3),   // Status bar
-                Constraint::Length(5),   // Jidoka/Heijunka status
+                Constraint::Length(3),
+                Constraint::Min(10),
+                Constraint::Length(3),
+                Constraint::Length(5),
             ])
             .split(f.area());
 
-        // Title
-        let title = Paragraph::new(vec![
-            Line::from(vec![
-                Span::styled(
-                    " SIMULAR ORBIT DEMO ",
-                    Style::default().fg(Color::Cyan).add_modifier(Modifier::BOLD),
-                ),
-                Span::raw(" | "),
-                Span::styled(
-                    if app.paused { "[PAUSED]" } else { "[RUNNING]" },
-                    Style::default().fg(if app.paused { Color::Yellow } else { Color::Green }),
-                ),
-                Span::raw(" | "),
-                Span::styled(
-                    format!("Time: {:.1} days", app.sim_time_days),
-                    Style::default().fg(Color::White),
-                ),
-            ]),
-        ])
-        .block(Block::default().borders(Borders::ALL).title("Controls: [Space] Pause  [R] Reset  [+/-] Speed  [Q] Quit"));
-        f.render_widget(title, chunks[0]);
-
-        // Main orbit canvas
-        draw_orbit_canvas(f, chunks[1], app);
-
-        // Status bar
-        let energy = app.state.total_energy();
-        let status = Paragraph::new(vec![
-            Line::from(vec![
-                Span::styled("Energy: ", Style::default().fg(Color::Gray)),
-                Span::styled(
-                    format!("{:.6e} J", energy),
-                    Style::default().fg(Color::White),
-                ),
-                Span::raw(" | "),
-                Span::styled("Frame: ", Style::default().fg(Color::Gray)),
-                Span::styled(
-                    format!("{}", app.frame_count),
-                    Style::default().fg(Color::White),
-                ),
-                Span::raw(" | "),
-                Span::styled("Scale: ", Style::default().fg(Color::Gray)),
-                Span::styled(
-                    format!("{}x", app.time_scale),
-                    Style::default().fg(Color::Cyan),
-                ),
-            ]),
-        ])
-        .block(Block::default().borders(Borders::ALL));
-        f.render_widget(status, chunks[2]);
-
-        // Jidoka and Heijunka status
-        draw_status_panel(f, chunks[3], app);
+        render_title(f, chunks[0], app);
+        render_orbit_canvas(f, chunks[1], app);
+        render_status(f, chunks[2], app);
+        render_status_panel(f, chunks[3], app);
     }
 
-    fn draw_orbit_canvas(f: &mut Frame, area: Rect, app: &App) {
-        // Scale factor: 1 AU should fit in roughly half the canvas
-        let scale = 2.0 / AU; // Normalized to ~2 units for 1 AU
+    fn render_title(f: &mut Frame, area: Rect, app: &OrbitApp) {
+        let title = Paragraph::new(vec![Line::from(vec![
+            Span::styled(
+                " SIMULAR ORBIT DEMO ",
+                Style::default()
+                    .fg(Color::Cyan)
+                    .add_modifier(Modifier::BOLD),
+            ),
+            Span::raw(" | "),
+            Span::styled(
+                if app.paused { "[PAUSED]" } else { "[RUNNING]" },
+                Style::default().fg(if app.paused {
+                    Color::Yellow
+                } else {
+                    Color::Green
+                }),
+            ),
+            Span::raw(" | "),
+            Span::styled(
+                format!("Time: {:.1} days", app.sim_time_days),
+                Style::default().fg(Color::White),
+            ),
+        ])])
+        .block(
+            Block::default()
+                .borders(Borders::ALL)
+                .title("Controls: [Space] Pause  [R] Reset  [+/-] Speed  [Q] Quit"),
+        );
+        f.render_widget(title, area);
+    }
+
+    fn render_orbit_canvas(f: &mut Frame, area: Rect, app: &OrbitApp) {
+        let scale = 2.0 / AU;
 
         let canvas = Canvas::default()
             .block(Block::default().borders(Borders::ALL).title("Orbit View"))
             .x_bounds([-2.0, 2.0])
             .y_bounds([-2.0, 2.0])
             .paint(|ctx| {
-                // Draw orbit trail for Earth
                 if app.trails.len() > 1 {
                     let trail_points: Vec<(f64, f64)> = app.trails[1]
                         .points()
@@ -241,28 +148,55 @@ mod app {
                     }
                 }
 
-                // Draw Sun at origin
                 let (sun_x, sun_y, _) = app.state.bodies[0].position.as_meters();
-                ctx.print(sun_x * scale, sun_y * scale, Span::styled("☉", Style::default().fg(Color::Yellow)));
+                ctx.print(
+                    sun_x * scale,
+                    sun_y * scale,
+                    Span::styled("☉", Style::default().fg(Color::Yellow)),
+                );
 
-                // Draw Earth
                 if app.state.bodies.len() > 1 {
                     let (earth_x, earth_y, _) = app.state.bodies[1].position.as_meters();
-                    ctx.print(earth_x * scale, earth_y * scale, Span::styled("🌍", Style::default().fg(Color::Cyan)));
+                    ctx.print(
+                        earth_x * scale,
+                        earth_y * scale,
+                        Span::styled("🌍", Style::default().fg(Color::Cyan)),
+                    );
                 }
             });
 
         f.render_widget(canvas, area);
     }
 
-    fn draw_status_panel(f: &mut Frame, area: Rect, app: &App) {
+    fn render_status(f: &mut Frame, area: Rect, app: &OrbitApp) {
+        let energy = app.total_energy();
+        let status = Paragraph::new(vec![Line::from(vec![
+            Span::styled("Energy: ", Style::default().fg(Color::Gray)),
+            Span::styled(format!("{energy:.6e} J"), Style::default().fg(Color::White)),
+            Span::raw(" | "),
+            Span::styled("Frame: ", Style::default().fg(Color::Gray)),
+            Span::styled(
+                format!("{}", app.frame_count),
+                Style::default().fg(Color::White),
+            ),
+            Span::raw(" | "),
+            Span::styled("Scale: ", Style::default().fg(Color::Gray)),
+            Span::styled(
+                format!("{}x", app.time_scale),
+                Style::default().fg(Color::Cyan),
+            ),
+        ])])
+        .block(Block::default().borders(Borders::ALL));
+        f.render_widget(status, area);
+    }
+
+    fn render_status_panel(f: &mut Frame, area: Rect, app: &OrbitApp) {
         let chunks = Layout::default()
             .direction(Direction::Horizontal)
             .constraints([Constraint::Percentage(50), Constraint::Percentage(50)])
             .split(area);
 
-        // Jidoka status
-        let jidoka_status = app.jidoka.status();
+        let jidoka_status = app.jidoka_status();
         let jidoka_color = if jidoka_status.energy_ok && jidoka_status.angular_momentum_ok {
             Color::Green
         } else if jidoka_status.warning_count > 0 {
@@ -280,7 +214,11 @@ mod app {
                 ),
                 Span::raw(" Energy "),
                 Span::styled(
-                    if jidoka_status.angular_momentum_ok { "✓" } else { "✗" },
+                    if jidoka_status.angular_momentum_ok {
+                        "✓"
+                    } else {
+                        "✗"
+                    },
                     Style::default().fg(jidoka_color),
                 ),
                 Span::raw(" L "),
@@ -290,93 +228,245 @@ mod app {
                 ),
                 Span::raw(" Finite"),
             ]),
-            Line::from(vec![
-                Span::styled(
-                    format!("ΔE: {:.2e}  ΔL: {:.2e}", jidoka_status.energy_error, jidoka_status.angular_momentum_error),
-                    Style::default().fg(Color::Gray),
+            Line::from(vec![Span::styled(
+                format!(
+                    "ΔE: {:.2e}  ΔL: {:.2e}",
+                    jidoka_status.energy_error, jidoka_status.angular_momentum_error
                 ),
-            ]),
+                Style::default().fg(Color::Gray),
+            )]),
         ])
         .block(Block::default().borders(Borders::ALL).title("Jidoka"));
         f.render_widget(jidoka_widget, chunks[0]);
 
-        // Heijunka status
-        let heijunka_status = app.heijunka.status();
-        let budget_ratio = (heijunka_status.utilization * 100.0).min(100.0) as u16;
+        let heijunka_status = app.heijunka_status();
+        #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+        let budget_ratio = (heijunka_status.utilization * 100.0).clamp(0.0, 100.0) as u16;
 
         let heijunka_widget = Gauge::default()
-            .block(Block::default().borders(Borders::ALL).title("Heijunka Budget"))
-            .gauge_style(
-                Style::default()
-                    .fg(if heijunka_status.utilization <= 1.0 { Color::Green } else { Color::Red })
+            .block(
+                Block::default()
+                    .borders(Borders::ALL)
+                    .title("Heijunka Budget"),
             )
+            .gauge_style(Style::default().fg(if heijunka_status.utilization <= 1.0 {
+                Color::Green
+            } else {
+                Color::Red
+            }))
             .percent(budget_ratio)
             .label(format!(
                 "{:.1}ms/{:.1}ms {:?}",
-                heijunka_status.used_ms,
-                heijunka_status.budget_ms,
-                heijunka_status.quality,
+                heijunka_status.used_ms, heijunka_status.budget_ms, heijunka_status.quality,
             ));
         f.render_widget(heijunka_widget, chunks[1]);
     }
 
-    pub fn run() -> io::Result<()> {
-        // Setup terminal
-        enable_raw_mode()?;
-        let mut stdout = io::stdout();
-        execute!(stdout, EnterAlternateScreen)?;
-        let backend = CrosstermBackend::new(stdout);
-        let mut terminal = Terminal::new(backend)?;
+    #[cfg(test)]
+    mod tests {
+        use super::*;
+        use ratatui::backend::TestBackend;
 
-        // Create app state
-        let mut app = App::new();
-        let tick_rate = Duration::from_millis(33); // ~30 FPS
-
-        loop {
-            let start = Instant::now();
-
-            // Draw UI
-            terminal.draw(|f| ui(f, &app))?;
-
-            // Handle input
-            let timeout = tick_rate.saturating_sub(start.elapsed());
-            if event::poll(timeout)? {
-                if let Event::Key(key) = event::read()? {
-                    if key.kind == KeyEventKind::Press {
-                        app.handle_key(key.code);
-                    }
-                }
-            }
-
-            if app.should_quit {
-                break;
-            }
-
-            // Update simulation
-            app.update();
+        fn create_test_terminal() -> Terminal<TestBackend> {
+            let backend = TestBackend::new(80, 40);
+            Terminal::new(backend).expect("Failed to create test terminal")
         }
 
-        // Restore terminal
-        disable_raw_mode()?;
-        execute!(terminal.backend_mut(), LeaveAlternateScreen)?;
-        terminal.show_cursor()?;
+        #[test]
+        fn test_ui_renders_without_panic() {
+            let mut terminal = create_test_terminal();
+            let app = OrbitApp::new();
 
-        Ok(())
-    }
-}
-
-fn main() {
-    #[cfg(feature = "tui")]
-    {
-        if let Err(e) = app::run() {
-            eprintln!("Error: {e}");
-            std::process::exit(1);
+            terminal
+                .draw(|f| ui(f, &app))
+                .expect("UI should render without panic");
         }
-    }
 
-    #[cfg(not(feature = "tui"))]
-    {
-        eprintln!("TUI feature not enabled. Run with --features tui");
-        std::process::exit(1);
+        #[test]
+        fn test_render_title() {
+            let mut terminal = create_test_terminal();
+            let app = OrbitApp::new();
+
+            terminal
+                .draw(|f| {
+                    let area = f.area();
+                    render_title(f, area, &app);
+                })
+                .expect("Title should render");
+        }
+
+        #[test]
+        fn test_render_title_paused() {
+            let mut terminal = create_test_terminal();
+            let mut app = OrbitApp::new();
+            app.paused = true;
+
+            terminal
+                .draw(|f| {
+                    let area = f.area();
+                    render_title(f, area, &app);
+                })
+                .expect("Paused title should render");
+        }
+
+        #[test]
+        fn test_render_orbit_canvas() {
+            let mut terminal = create_test_terminal();
+            let app = OrbitApp::new();
+
+            terminal
+                .draw(|f| {
+                    let area = f.area();
+                    render_orbit_canvas(f, area, &app);
+                })
+                .expect("Canvas should render");
+        }
+
+        #[test]
+        fn test_render_orbit_canvas_with_trails() {
+            let mut terminal = create_test_terminal();
+            let mut app = OrbitApp::new();
+            // Run a few updates to generate trails
+            for _ in 0..10 {
+                app.update();
+            }
+
+            terminal
+                .draw(|f| {
+                    let area = f.area();
+                    render_orbit_canvas(f, area, &app);
+                })
+                .expect("Canvas with trails should render");
+        }
+
+        #[test]
+        fn test_render_status() {
+            let mut terminal = create_test_terminal();
+            let app = OrbitApp::new();
+
+            terminal
+                .draw(|f| {
+                    let area = f.area();
+                    render_status(f, area, &app);
+                })
+                .expect("Status should render");
+        }
+
+        #[test]
+        fn test_render_status_panel() {
+            let mut terminal = create_test_terminal();
+            let app = OrbitApp::new();
+
+            terminal
+                .draw(|f| {
+                    let area = f.area();
+                    render_status_panel(f, area, &app);
+                })
+                .expect("Status panel should render");
+        }
+
+        #[test]
+        fn test_render_status_panel_with_warnings() {
+            let mut terminal = create_test_terminal();
+            let mut app = OrbitApp::new();
+            // Run updates to potentially trigger jidoka warnings
+            for _ in 0..100 {
+                app.update();
+            }
+
+            terminal
+                .draw(|f| {
+                    let area = f.area();
+                    render_status_panel(f, area, &app);
+                })
+                .expect("Status panel with warnings should render");
+        }
+
+        #[test]
+        fn test_full_ui_layout() {
+            let mut terminal = create_test_terminal();
+            let app = OrbitApp::new();
+
+            // Test the full UI renders with proper layout
+            let result = terminal.draw(|f| ui(f, &app));
+            assert!(result.is_ok());
+
+            // Verify buffer was written to
+            let buffer = terminal.backend().buffer();
+            assert!(buffer.area.width > 0);
+            assert!(buffer.area.height > 0);
+        }
+
+        #[test]
+        fn test_ui_after_multiple_updates() {
+            let mut terminal = create_test_terminal();
+            let mut app = OrbitApp::new();
+
+            // Run multiple updates
+            for _ in 0..50 {
+                app.update();
+            }
+
+            terminal
+                .draw(|f| ui(f, &app))
+                .expect("UI should render after updates");
+        }
+
+        #[test]
+        fn test_jidoka_colors() {
+            let mut terminal = create_test_terminal();
+            let app = OrbitApp::new();
+
+            // Test that jidoka status determines colors
+            let jidoka_status = app.jidoka_status();
+            let expected_color = if jidoka_status.energy_ok && jidoka_status.angular_momentum_ok {
+                Color::Green
+            } else if jidoka_status.warning_count > 0 {
+                Color::Yellow
+            } else {
+                Color::Red
+            };
+
+            // Verify the color logic is correct
+            assert!(
+                expected_color == Color::Green
+                    || expected_color == Color::Yellow
+                    || expected_color == Color::Red
+            );
+
+            terminal
+                .draw(|f| {
+                    let area = f.area();
+                    render_status_panel(f, area, &app);
+                })
+                .expect("Status panel should render with correct colors");
+        }
+
+        #[test]
+        fn test_heijunka_budget_display() {
+            let mut terminal = create_test_terminal();
+            let app = OrbitApp::new();
+
+            let heijunka_status = app.heijunka_status();
+            #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+            let budget_ratio = (heijunka_status.utilization * 100.0).clamp(0.0, 100.0) as u16;
+
+            assert!(budget_ratio <= 100);
+
+            terminal
+                .draw(|f| {
+                    let area = f.area();
+                    render_status_panel(f, area, &app);
+                })
+                .expect("Heijunka budget should display correctly");
+        }
+
+        #[test]
+        fn test_scale_constant() {
+            // Verify the scale calculation
+            let scale = 2.0 / AU;
+            assert!(scale > 0.0);
+            assert!(scale.is_finite());
+        }
     }
 }

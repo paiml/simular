@@ -30,7 +30,8 @@ impl Version {
         let s = s.trim();
 
         // Handle version requirements like "^1.0", ">=1.2", "~1.0"
-        let s = s.trim_start_matches('^')
+        let s = s
+            .trim_start_matches('^')
             .trim_start_matches('~')
             .trim_start_matches(">=")
             .trim_start_matches("<=")
@@ -244,11 +245,10 @@ impl StackDiscovery {
             // Simple version string: dependency = "1.0"
             toml::Value::String(s) => Version::parse(s),
             // Table format: dependency = { version = "1.0", ... }
-            toml::Value::Table(t) => {
-                t.get("version")
-                    .and_then(|v| v.as_str())
-                    .and_then(Version::parse)
-            }
+            toml::Value::Table(t) => t
+                .get("version")
+                .and_then(|v| v.as_str())
+                .and_then(Version::parse),
             _ => None,
         }
     }

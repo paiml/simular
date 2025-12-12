@@ -13,14 +13,14 @@
 //!
 //! [28] A. J. Kennedy, "Dimension Types," ESOP '94, LNCS vol. 788, pp. 348-362, 1994.
 
-use uom::si::f64::{Acceleration, Length, Mass, Time, Velocity};
+use serde::{Deserialize, Serialize};
+use std::ops::{Add, Div, Mul, Neg, Sub};
 use uom::si::acceleration::meter_per_second_squared;
+use uom::si::f64::{Acceleration, Length, Mass, Time, Velocity};
 use uom::si::length::meter;
 use uom::si::mass::kilogram;
 use uom::si::time::second;
 use uom::si::velocity::meter_per_second;
-use std::ops::{Add, Sub, Mul, Div, Neg};
-use serde::{Deserialize, Serialize};
 
 /// Gravitational constant (m³ kg⁻¹ s⁻²).
 pub const G: f64 = 6.674_30e-11;
@@ -115,11 +115,7 @@ impl Position3D {
         let by = other.y.get::<meter>();
         let bz = other.z.get::<meter>();
 
-        Self::from_meters(
-            ay * bz - az * by,
-            az * bx - ax * bz,
-            ax * by - ay * bx,
-        )
+        Self::from_meters(ay * bz - az * by, az * bx - ax * bz, ax * by - ay * bx)
     }
 
     /// Scale by a dimensionless factor.

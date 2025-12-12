@@ -6,18 +6,17 @@
 //! - Optimization: Bayesian, evolutionary, gradient-based
 //! - ML: Training simulation, prediction, multi-turn evaluation
 
-pub mod physics;
+pub mod ml;
 pub mod monte_carlo;
 pub mod optimization;
-pub mod ml;
+pub mod physics;
 
-pub use physics::{PhysicsEngine, Integrator, VerletIntegrator, RK4Integrator, EulerIntegrator};
-pub use monte_carlo::{MonteCarloEngine, MonteCarloResult, VarianceReduction};
-pub use optimization::{BayesianOptimizer, OptimizerConfig, AcquisitionFunction, GaussianProcess};
 pub use ml::{
-    TrainingSimulation, TrainingConfig, TrainingState, TrainingMetrics, TrainingTrajectory,
-    PredictionSimulation, PredictionState, InferenceConfig,
-    MultiTurnSimulation, Turn, TurnMetrics, MultiTurnEvaluation, ParetoPoint, ParetoAnalysis,
-    AnomalyDetector, TrainingAnomaly, RollingStats,
-    JidokaMLFeedback, RulePatch, RuleType, AnomalyPattern, AnomalyType,
+    AnomalyDetector, AnomalyPattern, AnomalyType, InferenceConfig, JidokaMLFeedback,
+    MultiTurnEvaluation, MultiTurnSimulation, ParetoAnalysis, ParetoPoint, PredictionSimulation,
+    PredictionState, RollingStats, RulePatch, RuleType, TrainingAnomaly, TrainingConfig,
+    TrainingMetrics, TrainingSimulation, TrainingState, TrainingTrajectory, Turn, TurnMetrics,
 };
+pub use monte_carlo::{MonteCarloEngine, MonteCarloResult, VarianceReduction};
+pub use optimization::{AcquisitionFunction, BayesianOptimizer, GaussianProcess, OptimizerConfig};
+pub use physics::{EulerIntegrator, Integrator, PhysicsEngine, RK4Integrator, VerletIntegrator};

@@ -51,6 +51,7 @@ wasm-bindgen = { version = "0.2", optional = true }
 js-sys = { version = "0.3", optional = true }
 web-sys = { version = "0.3", features = ["console", "Window", "Performance"], optional = true }
 getrandom = { version = "0.2", features = ["js"], optional = true }
+serde-wasm-bindgen = { version = "0.6", optional = true }
 
 # Numeric
 num-traits = "0.2"
@@ -67,20 +68,30 @@ bitflags = "2.6"
 # Work stealing for Heijunka
 crossbeam-deque = "0.8"
 
+# Z3 SMT Solver for formal equation verification (MANDATORY for EDD)
+# Microsoft Research theorem prover - 2019 Herbrand Award, 2015 ACM SIGPLAN Award
+z3 = { version = "0.12", optional = true }
+
 [dev-dependencies]
 # Property-based testing (Popperian falsification)
 proptest = "1.5"
 criterion = { version = "0.5", features = ["html_reports"] }
 tempfile = "3.14"
 # Probar WASM testing framework
-jugar-probar = { path = "../jugar/crates/jugar-probar" }
+probar = { path = "../probar/crates/probar" }
 
 [features]
 default = []
 tui = ["dep:ratatui", "dep:crossterm"]
 web = ["dep:tokio", "dep:axum"]
-wasm = ["dep:wasm-bindgen", "dep:js-sys", "dep:web-sys", "dep:getrandom"]
+wasm = ["dep:wasm-bindgen", "dep:js-sys", "dep:web-sys", "dep:getrandom", "dep:serde-wasm-bindgen"]
 full = ["tui", "web"]
+# EDD verification feature - enables extended verification tests
+verification = []
+# Property-based testing feature
+proptest = []
+# Z3 equation proofs - MANDATORY for EDD compliance (quality gate EDD-11, EDD-12)
+z3-proofs = ["dep:z3"]
 
 [lib]
 name = "simular"
@@ -115,15 +126,27 @@ path = "examples/jidoka_guards.rs"
 name = "orbit_demo"
 path = "examples/orbit_demo.rs"
 
+[[example]]
+name = "tsp_grasp_demo"
+path = "examples/tsp_grasp_demo.rs"
+
 [[bin]]
 name = "orbit-tui"
 path = "src/bin/orbit_tui.rs"
+required-features = ["tui"]
+
+[[bin]]
+name = "tsp-tui"
+path = "src/bin/tsp_tui.rs"
 required-features = ["tui"]
 
 [profile.release]
 lto = true
 codegen-units = 1
 opt-level = 3
+
+[package.metadata.wasm-pack.profile.release]
+wasm-opt = false
 
 [lints.rust]
 unsafe_code = "deny"

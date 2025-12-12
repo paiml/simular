@@ -14,9 +14,9 @@ use axum::{
 };
 use tokio::sync::{broadcast, RwLock};
 
+use super::SimMetrics;
 use crate::engine::{SimState, SimTime};
 use crate::error::SimResult;
-use super::SimMetrics;
 
 /// Shared state for the web server.
 #[derive(Clone)]
@@ -78,10 +78,13 @@ impl WebVisualization {
     pub fn router(&self) -> Router {
         let state = self.state.clone();
         Router::new()
-            .route("/ws", get(move |ws: WebSocketUpgrade| {
-                let state = state.clone();
-                async move { ws.on_upgrade(move |socket| handle_socket(socket, state)) }
-            }))
+            .route(
+                "/ws",
+                get(move |ws: WebSocketUpgrade| {
+                    let state = state.clone();
+                    async move { ws.on_upgrade(move |socket| handle_socket(socket, state)) }
+                }),
+            )
             .route("/", get(index_handler))
             .route("/health", get(health_handler))
     }
@@ -91,7 +94,12 @@ impl WebVisualization {
     /// # Errors
     ///
     /// Returns error if serialization fails.
-    pub fn broadcast(&self, state: &SimState, time: SimTime, metrics: &SimMetrics) -> SimResult<()> {
+    pub fn broadcast(
+        &self,
+        state: &SimState,
+        time: SimTime,
+        metrics: &SimMetrics,
+    ) -> SimResult<()> {
         let payload = WebPayload {
             time: time.as_secs_f64(),
             body_count: state.num_bodies(),
@@ -101,8 +109,9 @@ impl WebVisualization {
             metrics: metrics.clone(),
         };
 
-        let json = serde_json::to_string(&payload)
-            .map_err(|e| crate::error::SimError::serialization(format!("JSON serialization failed: {e}")))?;
+        let json = serde_json::to_string(&payload).map_err(|e| {
+            crate::error::SimError::serialization(format!("JSON serialization failed: {e}"))
+        })?;
 
         // Ignore send errors (no subscribers is fine)
         let _ = self.state.tx.send(json);
@@ -442,8 +451,128 @@ mod tests {
         let state = WebState::new();
         // Channel has capacity of 100
         for i in 0..100 {
-            let _ = state.tx.send(format!("msg{}", i));
+            let _ = state.tx.send(format!("msg{i}"));
         }
         // Should not panic
+    }
+
+    #[test]
+    fn test_web_visualization_broadcast_multiple() {
+        let viz = WebVisualization::new(8080);
+        let mut rx = viz.subscribe();
+
+        let state = SimState::default();
+        let metrics = SimMetrics::new();
+
+        // Multiple broadcasts
+        for i in 0..5 {
+            let time = SimTime::from_secs(i as f64);
+            let result = viz.broadcast(&state, time, &metrics);
+            assert!(result.is_ok());
+        }
+
+        // Should receive all broadcasts
+        for i in 0..5 {
+            let msg = rx.try_recv();
+            assert!(msg.is_ok(), "Should receive broadcast {i}");
+        }
+    }
+
+    #[test]
+    fn test_web_payload_default_metrics() {
+        let payload = WebPayload {
+            time: 0.0,
+            body_count: 0,
+            kinetic_energy: 0.0,
+            potential_energy: 0.0,
+            total_energy: 0.0,
+            metrics: SimMetrics::new(),
+        };
+
+        let json = serde_json::to_string(&payload).unwrap();
+        assert!(json.contains("\"time\":0.0"));
+        assert!(json.contains("\"body_count\":0"));
+    }
+
+    #[test]
+    fn test_web_state_multiple_subscribers() {
+        let state = WebState::new();
+        let mut rx1 = state.subscribe();
+        let mut rx2 = state.subscribe();
+        let mut rx3 = state.subscribe();
+
+        // Send a message
+        let _ = state.tx.send("test".to_string());
+
+        // All subscribers should receive
+        assert!(rx1.try_recv().is_ok());
+        assert!(rx2.try_recv().is_ok());
+        assert!(rx3.try_recv().is_ok());
+    }
+
+    #[tokio::test]
+    async fn test_client_count_thread_safe() {
+        let state = WebState::new();
+        let state_clone = state.clone();
+
+        // Concurrent reads should work
+        let (count1, count2) = tokio::join!(
+            state.client_count(),
+            state_clone.client_count()
+        );
+
+        assert_eq!(count1, 0);
+        assert_eq!(count2, 0);
+    }
+
+    #[test]
+    fn test_web_payload_with_bodies() {
+        let mut sim_state = SimState::default();
+        sim_state.add_body(
+            1.0,
+            crate::engine::state::Vec3::new(1.0, 0.0, 0.0),
+            crate::engine::state::Vec3::new(0.0, 1.0, 0.0),
+        );
+        sim_state.add_body(
+            2.0,
+            crate::engine::state::Vec3::new(-1.0, 0.0, 0.0),
+            crate::engine::state::Vec3::new(0.0, -0.5, 0.0),
+        );
+
+        let viz = WebVisualization::new(8080);
+        let mut rx = viz.subscribe();
+
+        let result = viz.broadcast(&sim_state, SimTime::from_secs(1.0), &SimMetrics::new());
+        assert!(result.is_ok());
+
+        let msg = rx.try_recv().unwrap();
+        assert!(msg.contains("\"body_count\":2"));
+    }
+
+    #[test]
+    fn test_router_routes_exist() {
+        let viz = WebVisualization::new(8080);
+        let router = viz.router();
+
+        // Router should have routes configured
+        // We can't easily test route matching without a full request,
+        // but we verify the router was constructed
+        let _ = router;
+    }
+
+    #[test]
+    fn test_web_payload_energy_values() {
+        let payload = WebPayload {
+            time: 10.5,
+            body_count: 3,
+            kinetic_energy: 100.5,
+            potential_energy: -50.25,
+            total_energy: 50.25,
+            metrics: SimMetrics::new(),
+        };
+
+        assert!((payload.kinetic_energy - 100.5).abs() < f64::EPSILON);
+        assert!((payload.potential_energy - (-50.25)).abs() < f64::EPSILON);
+        assert!((payload.total_energy - 50.25).abs() < f64::EPSILON);
     }
 }

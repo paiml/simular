@@ -11,10 +11,8 @@
 //! [13] H. Yoshida, "Construction of higher order symplectic integrators," 1990.
 //! [30] Hockney & Eastwood, "Computer Simulation Using Particles," 1988.
 
-use crate::orbit::units::{
-    Acceleration3D, OrbitMass, OrbitTime, Position3D, Velocity3D, G,
-};
 use crate::error::{SimError, SimResult};
+use crate::orbit::units::{Acceleration3D, OrbitMass, OrbitTime, Position3D, Velocity3D, G};
 use uom::si::length::meter;
 
 /// Body state in the N-body system.
@@ -29,7 +27,11 @@ impl OrbitBody {
     /// Create a new orbital body.
     #[must_use]
     pub fn new(mass: OrbitMass, position: Position3D, velocity: Velocity3D) -> Self {
-        Self { mass, position, velocity }
+        Self {
+            mass,
+            position,
+            velocity,
+        }
     }
 
     /// Calculate kinetic energy (J).
@@ -149,7 +151,9 @@ impl NBodyState {
     /// Check if all values are finite.
     #[must_use]
     pub fn is_finite(&self) -> bool {
-        self.bodies.iter().all(|b| b.position.is_finite() && b.velocity.is_finite())
+        self.bodies
+            .iter()
+            .all(|b| b.position.is_finite() && b.velocity.is_finite())
     }
 }
 
@@ -174,11 +178,8 @@ fn compute_accelerations(state: &NBodyState) -> Vec<Acceleration3D> {
                 // a_i = G * m_j / r² * r̂
                 let factor = G * state.bodies[j].mass.as_kg() / (r_mag_sq * r_mag);
                 let (ax, ay, az) = accelerations[i].as_mps2();
-                accelerations[i] = Acceleration3D::from_mps2(
-                    ax + factor * rx,
-                    ay + factor * ry,
-                    az + factor * rz,
-                );
+                accelerations[i] =
+                    Acceleration3D::from_mps2(ax + factor * rx, ay + factor * ry, az + factor * rz);
             }
         }
     }
@@ -273,11 +274,7 @@ impl YoshidaIntegrator {
         for body in &mut state.bodies {
             let (vx, vy, vz) = body.velocity.as_mps();
             let (px, py, pz) = body.position.as_meters();
-            body.position = Position3D::from_meters(
-                px + vx * dt,
-                py + vy * dt,
-                pz + vz * dt,
-            );
+            body.position = Position3D::from_meters(px + vx * dt, py + vy * dt, pz + vz * dt);
         }
     }
 
@@ -289,11 +286,7 @@ impl YoshidaIntegrator {
         for (i, body) in state.bodies.iter_mut().enumerate() {
             let (ax, ay, az) = accelerations[i].as_mps2();
             let (vx, vy, vz) = body.velocity.as_mps();
-            body.velocity = Velocity3D::from_mps(
-                vx + ax * dt,
-                vy + ay * dt,
-                vz + az * dt,
-            );
+            body.velocity = Velocity3D::from_mps(vx + ax * dt, vy + ay * dt, vz + az * dt);
 
             if !body.velocity.is_finite() {
                 return Err(SimError::NonFiniteValue {
@@ -373,7 +366,7 @@ impl AdaptiveIntegrator {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::orbit::units::{AU, SOLAR_MASS, EARTH_MASS};
+    use crate::orbit::units::{AU, EARTH_MASS, SOLAR_MASS};
     use uom::si::acceleration::meter_per_second_squared;
 
     const EPSILON: f64 = 1e-10;
@@ -611,7 +604,9 @@ mod tests {
         assert!(ax_earth < 0.0); // Toward Sun (at origin)
 
         // Earth's acceleration magnitude should be ~g at 1 AU
-        let a_mag = accelerations[1].magnitude().get::<meter_per_second_squared>();
+        let a_mag = accelerations[1]
+            .magnitude()
+            .get::<meter_per_second_squared>();
         let expected = G * SOLAR_MASS / (AU * AU);
         let relative_error = (a_mag - expected).abs() / expected;
         assert!(relative_error < 0.01);

@@ -22,7 +22,6 @@ roadmap:
   estimated_effort: null
   labels: []
   notes: Reduced from 95% to 90% threshold due to terminal-dependent TUI code that cannot be unit tested without mocking terminal infrastructure.
-
 - id: ORBIT-001
   github_issue: null
   item_type: epic
@@ -34,12 +33,12 @@ roadmap:
   updated: 2025-12-10T00:00:00Z
   spec: docs/specifications/simular-orbit-demo-project-spec.md
   acceptance_criteria:
-  - AC-1 Earth orbit completes in 365.25 ± 0.01 simulation days [VERIFIED]
+  - AC-1 Earth orbit completes in 365.25 +/- 0.01 simulation days [VERIFIED]
   - AC-2 Energy drift < 1e-9 over 100 orbits (Yoshida integrator) [VERIFIED]
   - AC-3 Angular momentum conserved to 1e-12 relative precision [VERIFIED]
-  - AC-4 WASM bundle size < 500KB (gzipped) [VERIFIED: 97KB]
-  - AC-5 TUI renders at ≥30 FPS on standard terminal [VERIFIED]
-  - AC-6 Epsilon-identical trajectories (ε=1e-9) on native and WASM [VERIFIED]
+  - AC-4 WASM bundle size < 500KB (gzipped) [VERIFIED 97KB]
+  - AC-5 TUI renders at >=30 FPS on standard terminal [VERIFIED]
+  - AC-6 Epsilon-identical trajectories (eps=1e-9) on native and WASM [VERIFIED]
   - AC-7 All metamorphic relations pass [VERIFIED]
   - AC-8 Heijunka budget never exceeded (graceful quality degradation) [VERIFIED]
   - AC-9 Jidoka violations trigger pause, not crash [VERIFIED]
@@ -47,32 +46,99 @@ roadmap:
   phases: []
   subtasks:
   - id: ORBIT-001-01
+    github_issue: null
     title: 'Core: Type-safe units (Poka-Yoke) with uom crate'
     status: completed
+    completion: 0
   - id: ORBIT-001-02
+    github_issue: null
     title: 'Physics: Gravity computation and symplectic integrators'
     status: completed
+    completion: 0
   - id: ORBIT-001-03
+    github_issue: null
     title: 'Jidoka: Graceful degradation guards'
     status: completed
+    completion: 0
   - id: ORBIT-001-04
+    github_issue: null
     title: 'Heijunka: Time-budget scheduler'
     status: completed
+    completion: 0
   - id: ORBIT-001-05
+    github_issue: null
     title: 'Scenarios: Kepler, N-body, Hohmann, Lagrange'
     status: completed
+    completion: 0
   - id: ORBIT-001-06
+    github_issue: null
     title: 'TUI: ratatui visualization'
     status: completed
+    completion: 0
   - id: ORBIT-001-07
+    github_issue: null
     title: 'WASM: wasm-bindgen target'
     status: completed
+    completion: 0
   - id: ORBIT-001-08
+    github_issue: null
     title: 'Testing: Probar E2E and metamorphic tests'
     status: completed
+    completion: 0
   estimated_effort: null
   labels:
   - demo
   - tui
   - wasm
   notes: Canonical visual demo for simular following Toyota Way and NASA/JPL principles. All 8 subtasks and 10 acceptance criteria completed.
+- id: COV-001
+  github_issue: null
+  item_type: epic
+  title: "Zero-Tolerance 95% Coverage with Full PMAT Compliance"
+  status: inprogress
+  priority: critical
+  assigned_to: null
+  created: 2025-12-12T12:36:10.197104084+00:00
+  updated: 2025-12-12T12:36:10.197104084+00:00
+  spec: docs/specifications/cov-001-spec.md
+  acceptance_criteria:
+  - "AC-1 Overall test coverage >= 95%"
+  - "AC-2 All demo modules >= 95% coverage"
+  - "AC-3 EDD modules (report, runner, tps) >= 95%"
+  - "AC-4 Visualization modules >= 95%"
+  - "AC-5 CLI commands >= 95%"
+  - "AC-6 Zero exclusions except probar/"
+  - "AC-7 Entry points minimal (<15 lines)"
+  phases: []
+  subtasks:
+  - id: COV-001-01
+    github_issue: null
+    title: "Phase 1 - CLI module extraction"
+    status: completed
+    completion: 100
+  - id: COV-001-02
+    github_issue: null
+    title: "Phase 2 - TUI app extraction"
+    status: completed
+    completion: 100
+  - id: COV-001-03
+    github_issue: null
+    title: "Phase 3 - Demo coverage to 95%"
+    status: completed
+    completion: 100
+  - id: COV-001-04
+    github_issue: null
+    title: "Phase 4 - EDD/Visualization coverage"
+    status: completed
+    completion: 100
+  - id: COV-001-05
+    github_issue: null
+    title: "Phase 5 - CLI commands success paths"
+    status: completed
+    completion: 100
+  estimated_effort: null
+  labels:
+  - coverage
+  - pmat
+  - quality
+  notes: "Current coverage 93.86%. TUI binaries mocked with TestBackend. Gap of 1.14% to 95% target."

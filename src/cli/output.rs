@@ -1,0 +1,284 @@
+//! CLI output formatting.
+//!
+//! This module contains all output formatting functions for the CLI.
+//! Extracted to enable testing of output generation.
+
+use crate::edd::{EmcComplianceReport, ExperimentResult};
+
+/// Print version information.
+pub fn print_version() {
+    println!("simular {}", env!("CARGO_PKG_VERSION"));
+}
+
+/// Print help message.
+pub fn print_help() {
+    println!(
+        r"simular - Unified Simulation Engine for the Sovereign AI Stack
+
+USAGE:
+    simular <COMMAND> [OPTIONS]
+
+COMMANDS:
+    run <experiment.yaml>       Run an experiment
+        --seed <N>              Override the experiment seed
+        -v, --verbose           Enable verbose output
+
+    verify <experiment.yaml>    Verify reproducibility across multiple runs
+        --runs <N>              Number of verification runs (default: 3)
+
+    emc-check <experiment.yaml> Check EMC compliance and generate report
+
+    emc-validate <file.emc.yaml> Validate an EMC file against the schema
+
+    list-emc                    List available EMCs in the library
+
+    help                        Show this help message
+    version                     Show version information
+
+EXAMPLES:
+    simular run experiments/harmonic_oscillator.yaml
+    simular run experiments/harmonic_oscillator.yaml --seed 12345
+    simular verify experiments/harmonic_oscillator.yaml --runs 5
+    simular emc-check experiments/littles_law.yaml
+
+EDD COMPLIANCE:
+    All experiments are validated against the four pillars of EDD:
+    1. Prove It  - Every simulation has an EMC reference
+    2. Fail It   - Verification tests are executed
+    3. Seed It   - Explicit seed is required
+    4. Falsify It - Falsification criteria are checked
+
+For more information, see: https://github.com/paiml/simular
+"
+    );
+}
+
+/// Print experiment result.
+///
+/// # Arguments
+///
+/// * `result` - The experiment result to display
+/// * `verbose` - Whether to show verbose output
+pub fn print_experiment_result(result: &ExperimentResult, verbose: bool) {
+    let status = if result.passed { "PASSED" } else { "FAILED" };
+    let status_symbol = if result.passed { "✓" } else { "✗" };
+
+    println!("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+    println!("Experiment: {}", result.name);
+    println!("ID: {}", result.experiment_id);
+    println!("Seed: {}", result.seed);
+    println!("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n");
+
+    // Verification results
+    println!("Verification Tests:");
+    println!("  Total:  {}", result.verification.total);
+    println!("  Passed: {}", result.verification.passed);
+    println!("  Failed: {}", result.verification.failed);
+
+    if verbose && !result.verification.tests.is_empty() {
+        println!();
+        for test in &result.verification.tests {
+            let sym = if test.passed { "✓" } else { "✗" };
+            println!("  {} {}: {}", sym, test.id, test.name);
+            if !test.passed {
+                if let Some(ref err) = test.error {
+                    println!("      Error: {err}");
+                }
+            }
+        }
+    }
+
+    // Falsification results
+    println!("\nFalsification Criteria:");
+    println!("  Total:     {}", result.falsification.total);
+    println!("  Passed:    {}", result.falsification.passed);
+    println!("  Triggered: {}", result.falsification.triggered);
+
+    if result.falsification.jidoka_triggered {
+        println!("  Jidoka:    TRIGGERED (stop-on-error)");
+    }
+
+    if verbose && !result.falsification.criteria.is_empty() {
+        println!();
+        for crit in &result.falsification.criteria {
+            let sym = if crit.triggered { "✗" } else { "✓" };
+            println!("  {} {}: {}", sym, crit.id, crit.name);
+            if crit.triggered {
+                println!("      Condition: {}", crit.condition);
+            }
+        }
+    }
+
+    // Reproducibility
+    if let Some(ref repro) = result.reproducibility {
+        println!("\nReproducibility:");
+        let sym = if repro.passed { "✓" } else { "✗" };
+        println!(
+            "  {} {} runs, identical: {}",
+            sym, repro.runs, repro.identical
+        );
+        println!("  Reference hash: {}", repro.reference_hash);
+    }
+
+    // Execution metrics
+    println!("\nExecution:");
+    println!("  Duration:     {} ms", result.execution.duration_ms);
+    println!("  Replications: {}", result.execution.replications);
+
+    // Warnings
+    if !result.warnings.is_empty() {
+        println!("\nWarnings:");
+        for warning in &result.warnings {
+            println!("  ! {warning}");
+        }
+    }
+
+    println!("\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+    println!("{status_symbol} Result: {status}");
+    println!("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n");
+}
+
+/// Print EMC compliance report.
+///
+/// # Arguments
+///
+/// * `report` - The EMC compliance report to display
+pub fn print_emc_report(report: &EmcComplianceReport) {
+    let status = if report.passed {
+        "COMPLIANT"
+    } else {
+        "NON-COMPLIANT"
+    };
+    let sym = if report.passed { "✓" } else { "✗" };
+
+    println!("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+    println!("EMC Compliance Report: {}", report.experiment_name);
+    println!("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n");
+
+    // EDD Compliance Checklist
+    println!("EDD Compliance Checklist:");
+    let check = |passed: bool| if passed { "✓" } else { "✗" };
+
+    println!(
+        "  {} EDD-01: EMC Reference",
+        check(report.edd_compliance.edd_01_emc_reference)
+    );
+    println!(
+        "  {} EDD-02: Verification Tests",
+        check(report.edd_compliance.edd_02_verification_tests)
+    );
+    println!(
+        "  {} EDD-03: Seed Specified",
+        check(report.edd_compliance.edd_03_seed_specified)
+    );
+    println!(
+        "  {} EDD-04: Falsification Criteria",
+        check(report.edd_compliance.edd_04_falsification_criteria)
+    );
+    println!(
+        "  {} EDD-05: Hypothesis (Optional)",
+        check(report.edd_compliance.edd_05_hypothesis)
+    );
+
+    // Schema errors
+    if !report.schema_errors.is_empty() {
+        println!("\nSchema Errors:");
+        for err in &report.schema_errors {
+            println!("  ✗ {err}");
+        }
+    }
+
+    // EMC errors
+    if !report.emc_errors.is_empty() {
+        println!("\nEMC Errors:");
+        for err in &report.emc_errors {
+            println!("  ✗ {err}");
+        }
+    }
+
+    // Warnings
+    if !report.warnings.is_empty() {
+        println!("\nWarnings:");
+        for warning in &report.warnings {
+            println!("  ! {warning}");
+        }
+    }
+
+    println!("\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+    println!("{sym} Result: {status}");
+    println!("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n");
+}
+
+/// Print EMC validation results.
+///
+/// # Arguments
+///
+/// * `yaml` - The parsed YAML value
+/// * `errors` - List of validation errors
+/// * `warnings` - List of validation warnings
+pub fn print_emc_validation_results(
+    yaml: &serde_yaml::Value,
+    errors: &[String],
+    warnings: &[String],
+) {
+    println!("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+    if let Some(name) = yaml
+        .get("identity")
+        .and_then(|i| i.get("name"))
+        .and_then(|n| n.as_str())
+    {
+        println!("EMC: {name}");
+    }
+    if let Some(id) = yaml.get("emc_id").and_then(|id| id.as_str()) {
+        println!("ID: {id}");
+    }
+    println!("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n");
+
+    let check = |b: bool| if b { "✓" } else { "✗" };
+    println!("Schema Validation:");
+    println!("  {} emc_version", check(yaml.get("emc_version").is_some()));
+    println!("  {} emc_id", check(yaml.get("emc_id").is_some()));
+    println!("  {} identity", check(yaml.get("identity").is_some()));
+    println!(
+        "  {} governing_equation",
+        check(yaml.get("governing_equation").is_some())
+    );
+    println!(
+        "  {} analytical_derivation",
+        check(yaml.get("analytical_derivation").is_some())
+    );
+    println!(
+        "  {} domain_of_validity",
+        check(yaml.get("domain_of_validity").is_some())
+    );
+    println!(
+        "  {} verification_tests",
+        check(yaml.get("verification_tests").is_some())
+    );
+    println!(
+        "  {} falsification_criteria",
+        check(yaml.get("falsification_criteria").is_some())
+    );
+
+    if !errors.is_empty() {
+        println!("\nErrors:");
+        for err in errors {
+            println!("  ✗ {err}");
+        }
+    }
+    if !warnings.is_empty() {
+        println!("\nWarnings:");
+        for w in warnings {
+            println!("  ! {w}");
+        }
+    }
+
+    let (status, sym) = if errors.is_empty() {
+        ("VALID", "✓")
+    } else {
+        ("INVALID", "✗")
+    };
+    println!("\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+    println!("{sym} Result: {status}");
+    println!("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n");
+}

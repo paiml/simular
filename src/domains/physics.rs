@@ -276,12 +276,12 @@ impl Integrator for RK4Integrator {
 
         for i in 0..n {
             // v_{n+1} = v_n + h/6 * (k1_v + 2*k2_v + 2*k3_v + k4_v)
-            let new_vel = initial_velocities[i] +
-                (k1_v[i] + k2_v[i] * 2.0 + k3_v[i] * 2.0 + k4_v[i]) * sixth_dt;
+            let new_vel = initial_velocities[i]
+                + (k1_v[i] + k2_v[i] * 2.0 + k3_v[i] * 2.0 + k4_v[i]) * sixth_dt;
 
             // q_{n+1} = q_n + h/6 * (k1_q + 2*k2_q + 2*k3_q + k4_q)
-            let new_pos = initial_positions[i] +
-                (k1_q[i] + k2_q[i] * 2.0 + k3_q[i] * 2.0 + k4_q[i]) * sixth_dt;
+            let new_pos = initial_positions[i]
+                + (k1_q[i] + k2_q[i] * 2.0 + k3_q[i] * 2.0 + k4_q[i]) * sixth_dt;
 
             state.set_velocity(i, new_vel);
             state.set_position(i, new_pos);
@@ -504,9 +504,12 @@ mod tests {
         let euler_drift = run_simulation(&EulerIntegrator::new(), 1000, 0.01);
 
         // Verlet should be much better
-        assert!(verlet_drift < euler_drift,
+        assert!(
+            verlet_drift < euler_drift,
             "Verlet drift {} should be less than Euler drift {}",
-            verlet_drift, euler_drift);
+            verlet_drift,
+            euler_drift
+        );
     }
 
     #[test]
@@ -589,9 +592,12 @@ mod tests {
         let rk4_drift = run_simulation(&RK4Integrator::new(), 100, 0.01);
         let euler_drift = run_simulation(&EulerIntegrator::new(), 100, 0.01);
 
-        assert!(rk4_drift < euler_drift,
+        assert!(
+            rk4_drift < euler_drift,
             "RK4 drift {} should be less than Euler drift {}",
-            rk4_drift, euler_drift);
+            rk4_drift,
+            euler_drift
+        );
     }
 
     #[test]
@@ -602,8 +608,12 @@ mod tests {
 
         struct ZeroField;
         impl ForceField for ZeroField {
-            fn acceleration(&self, _: &Vec3, _: f64) -> Vec3 { Vec3::zero() }
-            fn potential(&self, _: &Vec3, _: f64) -> f64 { 0.0 }
+            fn acceleration(&self, _: &Vec3, _: f64) -> Vec3 {
+                Vec3::zero()
+            }
+            fn potential(&self, _: &Vec3, _: f64) -> f64 {
+                0.0
+            }
         }
 
         let rk4 = RK4Integrator::new();

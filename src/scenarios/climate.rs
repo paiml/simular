@@ -5,9 +5,9 @@
 //! - Climate sensitivity analysis
 //! - Radiative forcing scenarios (CO2, aerosols)
 
-use serde::{Deserialize, Serialize};
 use crate::engine::state::SimState;
 use crate::error::{SimError, SimResult};
+use serde::{Deserialize, Serialize};
 
 /// Stefan-Boltzmann constant (W/m²/K⁴).
 pub const STEFAN_BOLTZMANN: f64 = 5.670_374_419e-8;
@@ -46,7 +46,7 @@ impl Default for ClimateConfig {
         Self {
             initial_temperature: 288.0, // ~15°C global mean
             albedo: 0.3,
-            emissivity: 0.612, // Effective emissivity for Earth
+            emissivity: 0.612,    // Effective emissivity for Earth
             heat_capacity: 1.7e8, // Mixed-layer ocean (~50m depth)
             co2_concentration: PREINDUSTRIAL_CO2,
             climate_sensitivity: DEFAULT_CLIMATE_SENSITIVITY,
@@ -180,8 +180,7 @@ impl ClimateScenario {
         let forcing = self.config.total_forcing();
 
         // Outgoing longwave radiation (W/m²)
-        let outgoing = self.config.emissivity * STEFAN_BOLTZMANN
-            * self.state.temperature.powi(4);
+        let outgoing = self.config.emissivity * STEFAN_BOLTZMANN * self.state.temperature.powi(4);
 
         // Net radiative imbalance
         let imbalance = absorbed_solar + forcing - outgoing;

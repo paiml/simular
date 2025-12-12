@@ -14,12 +14,12 @@
 //!
 //! [34] Liker, "The Toyota Way," McGraw-Hill, 2004.
 
-use std::time::{Duration, Instant};
 use serde::{Deserialize, Serialize};
+use std::time::{Duration, Instant};
 
+use crate::error::SimResult;
 use crate::orbit::physics::{NBodyState, YoshidaIntegrator};
 use crate::orbit::units::OrbitTime;
-use crate::error::SimResult;
 
 /// Quality level for adaptive degradation.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Default, Serialize, Deserialize)]
@@ -95,9 +95,9 @@ pub struct HeijunkaConfig {
 impl Default for HeijunkaConfig {
     fn default() -> Self {
         Self {
-            frame_budget_ms: 16.0,         // 60 FPS
-            physics_budget_fraction: 0.5,   // 50% for physics
-            base_dt: 3600.0,               // 1 hour simulation time per step
+            frame_budget_ms: 16.0,        // 60 FPS
+            physics_budget_fraction: 0.5, // 50% for physics
+            base_dt: 3600.0,              // 1 hour simulation time per step
             max_substeps: 100,
             min_substeps: 1,
             auto_adjust_quality: true,
@@ -197,7 +197,9 @@ impl HeijunkaScheduler {
         let budget_ms = self.config.physics_budget_ms();
         let budget_duration = Duration::from_secs_f64(budget_ms / 1000.0);
 
-        let target_substeps = self.quality.substep_multiplier()
+        let target_substeps = self
+            .quality
+            .substep_multiplier()
             .min(self.config.max_substeps)
             .max(self.config.min_substeps);
 
@@ -303,7 +305,7 @@ impl HeijunkaScheduler {
 mod tests {
     use super::*;
     use crate::orbit::physics::OrbitBody;
-    use crate::orbit::units::{OrbitMass, Position3D, Velocity3D, AU, SOLAR_MASS, EARTH_MASS, G};
+    use crate::orbit::units::{OrbitMass, Position3D, Velocity3D, AU, EARTH_MASS, G, SOLAR_MASS};
 
     fn create_test_state() -> NBodyState {
         let v_circular = (G * SOLAR_MASS / AU).sqrt();
