@@ -476,7 +476,7 @@ mod wasm {
         ///
         /// Returns error string if YAML is invalid or fails validation.
         #[wasm_bindgen(js_name = fromYaml)]
-        pub fn from_yaml(yaml: &str) -> Result<TspWasmInstance, String> {
+        pub fn from_yaml(yaml: &str) -> Result<Self, String> {
             let inner = TspInstanceYaml::from_yaml(yaml).map_err(|e| e.to_string())?;
             Ok(Self { inner })
         }
