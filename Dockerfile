@@ -59,8 +59,15 @@ CMD ["--help"]
 # WASM build stage
 FROM rust:${RUST_VERSION}-slim-bookworm AS wasm-builder
 
-# Install wasm-pack
-RUN cargo install wasm-pack
+# Install build dependencies (needed for wasm-pack)
+RUN apt-get update && apt-get install -y \
+    pkg-config \
+    libssl-dev \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install wasm-pack (use pre-built binary for faster builds)
+RUN curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
 
 # Install target
 RUN rustup target add wasm32-unknown-unknown
