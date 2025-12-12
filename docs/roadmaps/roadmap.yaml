@@ -164,28 +164,28 @@ roadmap:
   - id: OR-001-01
     github_issue: null
     title: "TspInstanceYaml struct + serde"
-    status: inprogress
-    completion: 0
+    status: completed
+    completion: 100
   - id: OR-001-02
     github_issue: null
     title: "from_yaml() implementation"
-    status: pending
-    completion: 0
+    status: completed
+    completion: 100
   - id: OR-001-03
     github_issue: null
     title: "bay_area_tsp.yaml ground truth"
-    status: pending
-    completion: 0
+    status: completed
+    completion: 100
   - id: OR-001-04
     github_issue: null
     title: "Jidoka validators"
-    status: pending
-    completion: 0
+    status: completed
+    completion: 100
   - id: OR-001-05
     github_issue: null
     title: "Probar E2E tests"
-    status: pending
-    completion: 0
+    status: completed
+    completion: 100
   - id: OR-001-06
     github_issue: null
     title: "WASM from_yaml() binding"
