@@ -852,8 +852,8 @@ falsification_criteria:
             ctx.fillStyle = '#0f0f23';
             ctx.fillRect(0, 0, w, h);
 
-            const cities = JSON.parse(tsp.getCities());
-            const tour = JSON.parse(tsp.getBestTour());
+            const cities = tsp.getCities();
+            const tour = tsp.getBestTour();
 
             if (tour.length > 0) {
                 ctx.strokeStyle = '#4ecdc4';
@@ -938,7 +938,7 @@ falsification_criteria:
 
         function checkInvariants() {
             if (!tsp) return;
-            const tour = JSON.parse(tsp.getTour());
+            const tour = tsp.getTour();
             const n = tsp.getN();
             const best = tsp.getBestTourLength();
             const lb = tsp.getLowerBound();
@@ -972,7 +972,7 @@ falsification_criteria:
             let passed = 0;
 
             // Test 1: Valid permutation
-            const tour = JSON.parse(tsp.getTour());
+            const tour = tsp.getTour();
             const n = tsp.getN();
             const t1 = tour.length === n && new Set(tour).size === n;
             setTestResult('valid-perm', t1);
@@ -1034,7 +1034,7 @@ falsification_criteria:
                 const fuzz = new WasmTspGrasp(Math.floor(Math.random() * 1000000), n);
                 fuzz.runGrasp(10);
 
-                const tour = JSON.parse(fuzz.getTour());
+                const tour = fuzz.getTour();
                 if (tour.length !== n || new Set(tour).size !== n) {
                     failures++;
                     log('fail', `[fuzz ${i}] Invalid tour at n=${n}`);

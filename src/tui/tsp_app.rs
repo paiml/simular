@@ -86,7 +86,7 @@ impl TspApp {
     ///
     /// let yaml = include_str!("../../examples/experiments/bay_area_tsp.yaml");
     /// let app = TspApp::from_yaml(yaml).expect("YAML should parse");
-    /// assert_eq!(app.demo.n, 6);
+    /// assert_eq!(app.demo.n, 20); // 20-city California instance
     /// ```
     pub fn from_yaml(yaml: &str) -> Result<Self, TspInstanceError> {
         let instance = TspInstanceYaml::from_yaml(yaml)?;
@@ -126,7 +126,7 @@ impl TspApp {
     ///
     /// let app = TspApp::from_yaml_file("examples/experiments/bay_area_tsp.yaml")
     ///     .expect("File should load");
-    /// assert_eq!(app.demo.n, 6);
+    /// assert_eq!(app.demo.n, 20); // 20-city California instance
     /// assert!(app.loaded_path.is_some());
     /// ```
     pub fn from_yaml_file<P: AsRef<Path>>(path: P) -> Result<Self, TspInstanceError> {
@@ -498,25 +498,57 @@ mod tests {
     // YAML Loading Tests (OR-001-08)
     // =========================================================================
 
-    const BAY_AREA_YAML: &str = include_str!("../../examples/experiments/bay_area_tsp.yaml");
+    // Small 6-city instance for unit tests (inline)
+    const SMALL_6_CITY_YAML: &str = r#"
+meta:
+  id: "TSP-TEST-006"
+  version: "1.0.0"
+  description: "6-city test"
+  units: "miles"
+  optimal_known: 115
+cities:
+  - { id: 0, name: "SF", alias: "SF", coords: { lat: 37.77, lon: -122.41 } }
+  - { id: 1, name: "OAK", alias: "OAK", coords: { lat: 37.80, lon: -122.27 } }
+  - { id: 2, name: "SJ", alias: "SJ", coords: { lat: 37.33, lon: -121.88 } }
+  - { id: 3, name: "PA", alias: "PA", coords: { lat: 37.44, lon: -122.14 } }
+  - { id: 4, name: "BRK", alias: "BRK", coords: { lat: 37.87, lon: -122.27 } }
+  - { id: 5, name: "FRE", alias: "FRE", coords: { lat: 37.54, lon: -121.98 } }
+matrix:
+  - [0,12,48,35,14,42]
+  - [12,0,42,30,4,30]
+  - [48,42,0,15,46,17]
+  - [35,30,15,0,32,18]
+  - [14,4,46,32,0,32]
+  - [42,30,17,18,32,0]
+"#;
+
+    // Full 20-city California instance from file
+    const CALIFORNIA_20_YAML: &str = include_str!("../../examples/experiments/bay_area_tsp.yaml");
 
     #[test]
-    fn test_from_yaml_bay_area() {
-        let app = TspApp::from_yaml(BAY_AREA_YAML).expect("YAML should parse");
+    fn test_from_yaml_small_6_city() {
+        let app = TspApp::from_yaml(SMALL_6_CITY_YAML).expect("YAML should parse");
         assert_eq!(app.demo.n, 6);
         assert!(app.loaded_instance.is_some());
         assert!(app.loaded_path.is_none()); // Not from file
     }
 
     #[test]
+    fn test_from_yaml_california_20_city() {
+        let app = TspApp::from_yaml(CALIFORNIA_20_YAML).expect("YAML should parse");
+        assert_eq!(app.demo.n, 20);
+        assert_eq!(app.instance_id(), Some("TSP-CA-020"));
+    }
+
+    #[test]
     fn test_from_yaml_instance_id() {
-        let app = TspApp::from_yaml(BAY_AREA_YAML).expect("YAML should parse");
-        assert_eq!(app.instance_id(), Some("TSP-BAY-006"));
+        let app = TspApp::from_yaml(SMALL_6_CITY_YAML).expect("YAML should parse");
+        assert_eq!(app.instance_id(), Some("TSP-TEST-006"));
     }
 
     #[test]
     fn test_from_yaml_optimal_known() {
-        let app = TspApp::from_yaml(BAY_AREA_YAML).expect("YAML should parse");
+        let app = TspApp::from_yaml(SMALL_6_CITY_YAML).expect("YAML should parse");
         assert_eq!(app.optimal_known(), Some(115));
     }
 
@@ -547,7 +579,7 @@ matrix:
     fn test_from_yaml_file_success() {
         let app = TspApp::from_yaml_file("examples/experiments/bay_area_tsp.yaml")
             .expect("File should load");
-        assert_eq!(app.demo.n, 6);
+        assert_eq!(app.demo.n, 20); // 20-city California instance
         assert!(app.loaded_path.is_some());
         assert!(app.loaded_path.as_ref().unwrap().contains("bay_area"));
     }
@@ -566,13 +598,13 @@ matrix:
 
     #[test]
     fn test_from_yaml_has_convergence_history() {
-        let app = TspApp::from_yaml(BAY_AREA_YAML).expect("YAML should parse");
+        let app = TspApp::from_yaml(SMALL_6_CITY_YAML).expect("YAML should parse");
         assert!(!app.convergence_history.is_empty());
     }
 
     #[test]
     fn test_from_yaml_can_step() {
-        let mut app = TspApp::from_yaml(BAY_AREA_YAML).expect("YAML should parse");
+        let mut app = TspApp::from_yaml(SMALL_6_CITY_YAML).expect("YAML should parse");
         let initial_restarts = app.demo.restarts;
         app.step();
         assert!(app.demo.restarts > initial_restarts);
@@ -588,5 +620,248 @@ matrix:
     fn test_optimal_known_none_when_not_loaded() {
         let app = TspApp::new(10, 42);
         assert!(app.optimal_known().is_none());
+    }
+}
+
+// =============================================================================
+// Property-Based Tests for TUI Visualization (OR-001-14)
+// =============================================================================
+
+#[cfg(test)]
+mod proptests {
+    use super::*;
+    use proptest::prelude::*;
+
+    proptest! {
+        /// Property: Convergence history never exceeds max_history.
+        #[test]
+        fn prop_convergence_history_bounded(seed in 0u64..5000, steps in 0usize..100) {
+            let mut app = TspApp::new(10, seed);
+            for _ in 0..steps {
+                app.step();
+            }
+            prop_assert!(
+                app.convergence_history.len() <= app.max_history,
+                "History {} > max {}",
+                app.convergence_history.len(),
+                app.max_history
+            );
+        }
+
+        /// Property: Frame count increases monotonically.
+        #[test]
+        fn prop_frame_count_monotonic(seed in 0u64..5000, steps in 1usize..50) {
+            let mut app = TspApp::new(10, seed);
+            let mut last_frame = app.frame_count;
+            for _ in 0..steps {
+                app.step();
+                prop_assert!(
+                    app.frame_count >= last_frame,
+                    "Frame count decreased from {} to {}",
+                    last_frame,
+                    app.frame_count
+                );
+                last_frame = app.frame_count;
+            }
+        }
+
+        /// Property: Best tour length is always positive after step.
+        #[test]
+        fn prop_tour_length_positive(seed in 0u64..5000, n in 4usize..20) {
+            let mut app = TspApp::new(n, seed);
+            app.step();
+            prop_assert!(
+                app.demo.best_tour_length > 0.0,
+                "Tour length {} should be positive",
+                app.demo.best_tour_length
+            );
+        }
+
+        /// Property: Best tour visits all cities exactly once.
+        #[test]
+        fn prop_tour_visits_all_cities(seed in 0u64..5000, n in 4usize..15) {
+            let mut app = TspApp::new(n, seed);
+            app.step();
+
+            let mut visited = app.demo.best_tour.clone();
+            visited.sort();
+            let expected: Vec<usize> = (0..n).collect();
+            prop_assert_eq!(
+                visited, expected,
+                "Tour must visit all {} cities exactly once",
+                n
+            );
+        }
+
+        /// Property: RCL size stays within bounds after key presses.
+        #[test]
+        fn prop_rcl_bounded_after_keys(seed in 0u64..1000, increments in 0usize..20, decrements in 0usize..20) {
+            let mut app = TspApp::new(10, seed);
+            for _ in 0..increments {
+                app.handle_key(KeyCode::Char('+'));
+            }
+            for _ in 0..decrements {
+                app.handle_key(KeyCode::Char('-'));
+            }
+            prop_assert!(
+                app.demo.rcl_size >= 1 && app.demo.rcl_size <= 10,
+                "RCL size {} out of bounds [1, 10]",
+                app.demo.rcl_size
+            );
+        }
+
+        /// Property: Method cycling returns to original after 3 presses.
+        #[test]
+        fn prop_method_cycle_returns(seed in 0u64..5000) {
+            let mut app = TspApp::new(10, seed);
+            let original = app.construction_method_name();
+            for _ in 0..3 {
+                app.handle_key(KeyCode::Char('m'));
+            }
+            prop_assert_eq!(
+                app.construction_method_name(),
+                original,
+                "Method should cycle back after 3 presses"
+            );
+        }
+
+        /// Property: Convergence history entries are always positive.
+        #[test]
+        fn prop_convergence_history_positive(seed in 0u64..5000, steps in 0usize..30) {
+            let mut app = TspApp::new(10, seed);
+            for _ in 0..steps {
+                app.step();
+            }
+            for (i, &val) in app.convergence_history.iter().enumerate() {
+                prop_assert!(val > 0, "History[{}] = {} should be positive", i, val);
+            }
+        }
+
+        /// Property: Reset clears convergence history.
+        #[test]
+        fn prop_reset_clears_history(seed in 0u64..5000, steps in 1usize..20) {
+            let mut app = TspApp::new(10, seed);
+            for _ in 0..steps {
+                app.step();
+            }
+            app.reset();
+            prop_assert!(
+                app.convergence_history.is_empty(),
+                "History should be empty after reset, got {}",
+                app.convergence_history.len()
+            );
+        }
+
+        /// Property: Paused state prevents iteration but not frame count.
+        #[test]
+        fn prop_paused_prevents_iteration(seed in 0u64..5000, steps in 1usize..10) {
+            let mut app = TspApp::new(10, seed);
+            app.paused = true;
+            app.auto_run = false;
+            let restarts_before = app.demo.restarts;
+
+            for _ in 0..steps {
+                app.step();
+            }
+
+            prop_assert_eq!(
+                app.demo.restarts,
+                restarts_before,
+                "Paused should prevent GRASP iterations"
+            );
+            prop_assert!(
+                app.frame_count > 0,
+                "Frame count should still increment when paused"
+            );
+        }
+    }
+}
+
+// =============================================================================
+// Mutation-Sensitive Tests for TUI (OR-001-14)
+// =============================================================================
+
+#[cfg(test)]
+mod mutation_tests {
+    use super::*;
+
+    /// Mutation test: Step actually runs GRASP iteration.
+    #[test]
+    fn mutation_step_runs_grasp() {
+        let mut app = TspApp::new(10, 42);
+        let restarts_before = app.demo.restarts;
+        app.step();
+        assert!(
+            app.demo.restarts > restarts_before,
+            "Step must run GRASP iteration (restarts should increase)"
+        );
+    }
+
+    /// Mutation test: Quit key actually sets should_quit.
+    #[test]
+    fn mutation_quit_sets_flag() {
+        let mut app = TspApp::new(10, 42);
+        assert!(!app.should_quit);
+        app.handle_key(KeyCode::Char('q'));
+        assert!(app.should_quit, "Quit key must set should_quit flag");
+    }
+
+    /// Mutation test: Space actually toggles pause.
+    #[test]
+    fn mutation_space_toggles_pause() {
+        let mut app = TspApp::new(10, 42);
+        let auto_before = app.auto_run;
+        app.handle_key(KeyCode::Char(' '));
+        assert_ne!(
+            app.auto_run, auto_before,
+            "Space must toggle auto_run"
+        );
+    }
+
+    /// Mutation test: Plus key actually increases RCL.
+    #[test]
+    fn mutation_plus_increases_rcl() {
+        let mut app = TspApp::new(10, 42);
+        app.demo.set_rcl_size(3);
+        app.handle_key(KeyCode::Char('+'));
+        assert_eq!(app.demo.rcl_size, 4, "Plus must increase RCL size");
+    }
+
+    /// Mutation test: Minus key actually decreases RCL.
+    #[test]
+    fn mutation_minus_decreases_rcl() {
+        let mut app = TspApp::new(10, 42);
+        app.demo.set_rcl_size(5);
+        app.handle_key(KeyCode::Char('-'));
+        assert_eq!(app.demo.rcl_size, 4, "Minus must decrease RCL size");
+    }
+
+    /// Mutation test: Reset actually clears state.
+    #[test]
+    fn mutation_reset_clears_state() {
+        let mut app = TspApp::new(10, 42);
+        app.step();
+        app.step();
+        app.reset();
+        assert_eq!(app.frame_count, 0, "Reset must clear frame count");
+        assert!(
+            app.convergence_history.is_empty(),
+            "Reset must clear convergence history"
+        );
+    }
+
+    /// Mutation test: Convergence history actually tracks tour length.
+    #[test]
+    fn mutation_history_tracks_tour() {
+        let mut app = TspApp::new(10, 42);
+        app.step();
+        let last = *app.convergence_history.last().unwrap();
+        // Value should be tour length * 1000 (as u64)
+        #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+        let expected = (app.demo.best_tour_length * 1000.0).max(0.0) as u64;
+        assert_eq!(
+            last, expected,
+            "History must track tour length * 1000"
+        );
     }
 }

@@ -31,6 +31,9 @@ pub mod monte_carlo_pi;
 pub mod tsp_grasp;
 pub mod tsp_instance;
 
+#[cfg(feature = "wasm")]
+pub mod tsp_wasm_app;
+
 // Re-exports for convenience
 pub use harmonic_oscillator::HarmonicOscillatorDemo;
 pub use kepler_orbit::KeplerOrbitDemo;

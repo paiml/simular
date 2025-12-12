@@ -27,6 +27,7 @@ pub mod audit;
 pub mod equation;
 pub mod experiment;
 pub mod falsifiable;
+pub mod gui_coverage;
 pub mod loader;
 pub mod model_card;
 pub mod operations;
@@ -75,6 +76,7 @@ pub use audit::{
     AuditLogReplayer, Decision, EquationEval, GeneratedTestCase, ReplaySpeed, ReplayState,
     SimulationAuditLog, StepEntry, TspStateSnapshot, TspStepType, hash_state, verify_rng_consistency,
 };
+pub use gui_coverage::GuiCoverage;
 
 #[cfg(test)]
 mod tests {

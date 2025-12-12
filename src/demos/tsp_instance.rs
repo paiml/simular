@@ -1070,12 +1070,12 @@ matrix:
 
     #[test]
     fn test_from_yaml_file_success() {
-        // Use the actual bay_area_tsp.yaml file
+        // Use the actual bay_area_tsp.yaml file (now 20-city California instance)
         let result = TspInstanceYaml::from_yaml_file("examples/experiments/bay_area_tsp.yaml");
         assert!(result.is_ok());
         let instance = result.unwrap();
-        assert_eq!(instance.meta.id, "TSP-BAY-006");
-        assert_eq!(instance.city_count(), 6);
+        assert_eq!(instance.meta.id, "TSP-CA-020");
+        assert_eq!(instance.city_count(), 20);
     }
 
     // =========================================================================
