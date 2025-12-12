@@ -651,8 +651,8 @@ pub fn verify_rng_consistency<S: Clone + Serialize + for<'de> Deserialize<'de>>(
 ///
 /// Returns error if serialization fails.
 pub fn hash_state<S: Serialize>(state: &S) -> SimResult<[u8; 32]> {
-    let bytes =
-        bincode::serialize(state).map_err(|e| SimError::serialization(format!("Hash state: {e}")))?;
+    let bytes = bincode::serialize(state)
+        .map_err(|e| SimError::serialization(format!("Hash state: {e}")))?;
     Ok(*blake3::hash(&bytes).as_bytes())
 }
 
@@ -803,8 +803,11 @@ mod tests {
 
     #[test]
     fn test_decision_with_options() {
-        let decision = Decision::new("rcl_selection", "city_7")
-            .with_options(vec!["city_3".into(), "city_7".into(), "city_12".into()]);
+        let decision = Decision::new("rcl_selection", "city_7").with_options(vec![
+            "city_3".into(),
+            "city_7".into(),
+            "city_12".into(),
+        ]);
 
         assert_eq!(decision.options.len(), 3);
         assert!(decision.options.contains(&"city_7".to_string()));
@@ -847,9 +850,8 @@ mod tests {
         let before = [1u8; 32];
         let after = [2u8; 32];
 
-        let entry: StepEntry<u64> =
-            StepEntry::new(1, SimTime::from_secs(0.1), "test", 0u64, 1u64)
-                .with_rng_states(before, after);
+        let entry: StepEntry<u64> = StepEntry::new(1, SimTime::from_secs(0.1), "test", 0u64, 1u64)
+            .with_rng_states(before, after);
 
         assert_eq!(entry.rng_state_before, before);
         assert_eq!(entry.rng_state_after, after);
@@ -1062,8 +1064,10 @@ mod tests {
     fn test_verify_rng_consistency_valid() {
         let entries: Vec<StepEntry<u64>> = vec![
             StepEntry::new(0, SimTime::ZERO, "s0", 0, 1).with_rng_states([1; 32], [2; 32]),
-            StepEntry::new(1, SimTime::from_secs(0.1), "s1", 1, 2).with_rng_states([2; 32], [3; 32]),
-            StepEntry::new(2, SimTime::from_secs(0.2), "s2", 2, 3).with_rng_states([3; 32], [4; 32]),
+            StepEntry::new(1, SimTime::from_secs(0.1), "s1", 1, 2)
+                .with_rng_states([2; 32], [3; 32]),
+            StepEntry::new(2, SimTime::from_secs(0.2), "s2", 2, 3)
+                .with_rng_states([3; 32], [4; 32]),
         ];
 
         let inconsistencies = verify_rng_consistency(&entries);
@@ -1238,7 +1242,8 @@ mod tests {
 
     #[test]
     fn test_step_entry_serialization() {
-        let entry: StepEntry<u64> = StepEntry::new(1, SimTime::from_secs(0.5), "test", 10u64, 20u64);
+        let entry: StepEntry<u64> =
+            StepEntry::new(1, SimTime::from_secs(0.5), "test", 10u64, 20u64);
 
         let json = serde_json::to_string(&entry).expect("serialize");
         let restored: StepEntry<u64> = serde_json::from_str(&json).expect("deserialize");

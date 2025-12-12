@@ -584,7 +584,8 @@ impl TspGraspDemo {
             edges.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
 
             // Add two smallest edges
-            let one_tree = mst_weight + edges.first().unwrap_or(&0.0) + edges.get(1).unwrap_or(&0.0);
+            let one_tree =
+                mst_weight + edges.first().unwrap_or(&0.0) + edges.get(1).unwrap_or(&0.0);
 
             if one_tree > best_bound {
                 best_bound = one_tree;
@@ -914,17 +915,17 @@ impl TspGraspDemo {
 
         // Log construction + 2-opt as single GRASP iteration
         let equations = vec![
-            EquationEval::new("tour_length", self.tour_length)
-                .with_input("n", self.n as f64),
+            EquationEval::new("tour_length", self.tour_length).with_input("n", self.n as f64),
             EquationEval::new("optimality_gap", self.optimality_gap())
                 .with_input("tour_length", self.tour_length)
                 .with_input("lower_bound", self.lower_bound),
         ];
 
-        let decisions = vec![
-            Decision::new("construction_method", format!("{:?}", self.construction_method))
-                .with_rationale("rcl_size", self.rcl_size as f64),
-        ];
+        let decisions = vec![Decision::new(
+            "construction_method",
+            format!("{:?}", self.construction_method),
+        )
+        .with_rationale("rcl_size", self.rcl_size as f64)];
 
         self.log_audit_step(
             TspStepType::GraspIteration,
@@ -2070,7 +2071,10 @@ mod tests {
     #[test]
     fn test_audit_logging_enabled_by_default() {
         let demo = TspGraspDemo::new(42, 10);
-        assert!(demo.audit_enabled, "Audit logging should be enabled by default");
+        assert!(
+            demo.audit_enabled,
+            "Audit logging should be enabled by default"
+        );
     }
 
     #[test]
@@ -2079,7 +2083,11 @@ mod tests {
         demo.run_grasp(5);
 
         let log = demo.audit_log();
-        assert_eq!(log.len(), 5, "Should have 5 audit entries for 5 GRASP iterations");
+        assert_eq!(
+            log.len(),
+            5,
+            "Should have 5 audit entries for 5 GRASP iterations"
+        );
     }
 
     #[test]
@@ -2185,10 +2193,7 @@ mod tests {
         demo.run_grasp(5);
 
         let log = demo.audit_log();
-        assert!(
-            log.is_empty(),
-            "Audit log should be empty when disabled"
-        );
+        assert!(log.is_empty(), "Audit log should be empty when disabled");
     }
 
     #[test]
@@ -2199,7 +2204,10 @@ mod tests {
         assert_eq!(demo.audit_log().len(), 3);
 
         demo.clear_audit_log();
-        assert!(demo.audit_log().is_empty(), "Audit log should be empty after clear");
+        assert!(
+            demo.audit_log().is_empty(),
+            "Audit log should be empty after clear"
+        );
     }
 
     #[test]
@@ -2207,11 +2215,19 @@ mod tests {
         let mut demo = TspGraspDemo::new(42, 10);
         demo.grasp_iteration();
 
-        let json = demo.export_audit_json().expect("JSON export should succeed");
+        let json = demo
+            .export_audit_json()
+            .expect("JSON export should succeed");
 
         assert!(json.contains("step_id"), "JSON should contain step_id");
-        assert!(json.contains("tour_length"), "JSON should contain tour_length equation");
-        assert!(json.contains("construction_method"), "JSON should contain construction_method");
+        assert!(
+            json.contains("tour_length"),
+            "JSON should contain tour_length equation"
+        );
+        assert!(
+            json.contains("construction_method"),
+            "JSON should contain construction_method"
+        );
     }
 
     #[test]
@@ -2231,7 +2247,10 @@ mod tests {
         // First test case should have correct structure
         if let Some(tc) = test_cases.first() {
             assert!(!tc.name.is_empty(), "Test case should have name");
-            assert!(!tc.equation_id.is_empty(), "Test case should have equation_id");
+            assert!(
+                !tc.equation_id.is_empty(),
+                "Test case should have equation_id"
+            );
         }
     }
 
@@ -2337,7 +2356,10 @@ mod tests {
     fn test_set_construction_method() {
         let mut demo = TspGraspDemo::new(42, 10);
         demo.set_construction_method(ConstructionMethod::NearestNeighbor);
-        assert_eq!(demo.construction_method, ConstructionMethod::NearestNeighbor);
+        assert_eq!(
+            demo.construction_method,
+            ConstructionMethod::NearestNeighbor
+        );
     }
 
     #[test]
@@ -2448,7 +2470,10 @@ mod tests {
         let mut demo = TspGraspDemo::with_cities(42, cities);
         demo.tour = vec![0, 1, 2];
 
-        assert!(demo.is_two_opt_optimal(), "3-city tour is always 2-opt optimal");
+        assert!(
+            demo.is_two_opt_optimal(),
+            "3-city tour is always 2-opt optimal"
+        );
     }
 
     #[test]
@@ -2542,7 +2567,10 @@ mod tests {
         demo.reset();
 
         assert_eq!(demo.n, 25);
-        assert_eq!(demo.construction_method, ConstructionMethod::NearestNeighbor);
+        assert_eq!(
+            demo.construction_method,
+            ConstructionMethod::NearestNeighbor
+        );
         assert_eq!(demo.rcl_size, 7);
         assert_eq!(demo.cities.len(), cities_before.len());
         assert_eq!(demo.restarts, 0);
@@ -2590,10 +2618,7 @@ mod tests {
 
     #[test]
     fn test_compute_mst_excluding_small() {
-        let cities = vec![
-            City::new(0.0, 0.0),
-            City::new(1.0, 0.0),
-        ];
+        let cities = vec![City::new(0.0, 0.0), City::new(1.0, 0.0)];
         let demo = TspGraspDemo::with_cities(42, cities);
 
         // With only 2 cities, MST excluding one is 0
@@ -2603,10 +2628,7 @@ mod tests {
 
     #[test]
     fn test_compute_one_tree_bound_small() {
-        let cities = vec![
-            City::new(0.0, 0.0),
-            City::new(1.0, 0.0),
-        ];
+        let cities = vec![City::new(0.0, 0.0), City::new(1.0, 0.0)];
         let demo = TspGraspDemo::with_cities(42, cities);
 
         let bound = demo.compute_one_tree_bound();
@@ -2969,7 +2991,10 @@ algorithm:
         let instance = TspInstanceYaml::from_yaml(yaml).expect("parse");
         let demo = TspGraspDemo::from_instance(&instance);
 
-        assert_eq!(demo.construction_method, ConstructionMethod::RandomizedGreedy);
+        assert_eq!(
+            demo.construction_method,
+            ConstructionMethod::RandomizedGreedy
+        );
         assert_eq!(demo.rcl_size, 2);
         assert_eq!(demo.seed, 123);
     }
@@ -3000,7 +3025,10 @@ algorithm:
         let instance = TspInstanceYaml::from_yaml(yaml).expect("parse");
         let demo = TspGraspDemo::from_instance(&instance);
 
-        assert_eq!(demo.construction_method, ConstructionMethod::NearestNeighbor);
+        assert_eq!(
+            demo.construction_method,
+            ConstructionMethod::NearestNeighbor
+        );
     }
 
     #[test]
@@ -3238,7 +3266,10 @@ mod mutation_tests {
         let mut demo_rcl1_repeat = TspGraspDemo::new(seed, 8);
         demo_rcl1_repeat.set_rcl_size(1);
         demo_rcl1_repeat.grasp_iteration();
-        assert_eq!(demo_rcl1.best_tour_length, demo_rcl1_repeat.best_tour_length);
+        assert_eq!(
+            demo_rcl1.best_tour_length,
+            demo_rcl1_repeat.best_tour_length
+        );
     }
 
     /// Mutation test: Restarts counter must increment.
@@ -3266,14 +3297,17 @@ mod mutation_tests {
         demo.run_grasp(20);
 
         // best_tour_length should be minimum of all restart_history
-        let min_history = demo.restart_history.iter()
+        let min_history = demo
+            .restart_history
+            .iter()
             .cloned()
             .fold(f64::INFINITY, f64::min);
 
         assert!(
             (demo.best_tour_length - min_history).abs() < 1e-9,
             "best_tour_length {} != min of history {}",
-            demo.best_tour_length, min_history
+            demo.best_tour_length,
+            min_history
         );
     }
 
@@ -3809,7 +3843,8 @@ algorithm:
 
     #[test]
     fn test_wasm_yaml_user_modified_method() {
-        let nn_yaml = SMALL_6_CITY_YAML.replace("method: \"grasp\"", "method: \"nearest_neighbor\"");
+        let nn_yaml =
+            SMALL_6_CITY_YAML.replace("method: \"grasp\"", "method: \"nearest_neighbor\"");
         let demo = WasmTspGrasp::from_yaml(&nn_yaml).expect("parse");
         // NearestNeighbor = 1
         assert_eq!(demo.get_construction_method(), 1);
@@ -4067,13 +4102,21 @@ algorithm:
     #[test]
     fn test_wasm_get_optimal_known_bay_area() {
         let demo = WasmTspGrasp::from_yaml(SMALL_6_CITY_YAML).expect("parse");
-        assert_eq!(demo.get_optimal_known(), Some(115), "Bay Area optimal is 115 miles");
+        assert_eq!(
+            demo.get_optimal_known(),
+            Some(115),
+            "Bay Area optimal is 115 miles"
+        );
     }
 
     #[test]
     fn test_wasm_get_optimal_known_minimal() {
         let demo = WasmTspGrasp::from_yaml(MINIMAL_YAML).expect("parse");
-        assert_eq!(demo.get_optimal_known(), Some(20), "Minimal YAML optimal is 20");
+        assert_eq!(
+            demo.get_optimal_known(),
+            Some(20),
+            "Minimal YAML optimal is 20"
+        );
     }
 
     #[test]
@@ -4086,6 +4129,10 @@ algorithm:
     fn test_wasm_new_defaults_units() {
         let demo = WasmTspGrasp::new(42, 5);
         assert_eq!(demo.get_units(), "units", "New demo uses default 'units'");
-        assert_eq!(demo.get_optimal_known(), None, "New demo has no known optimal");
+        assert_eq!(
+            demo.get_optimal_known(),
+            None,
+            "New demo has no known optimal"
+        );
     }
 }

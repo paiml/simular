@@ -223,10 +223,10 @@ fn probar_tsp_triangle_inequality_passes() {
 #[test]
 fn probar_tsp_user_modified_distance_affects_tour() {
     // User edits: reduce SF->Oakland from 12 to 5 miles
-    let modified_yaml = SMALL_6_CITY_YAML.replace("[ 0, 12, 48, 35, 14, 42]", "[ 0,  5, 48, 35, 14, 42]");
+    let modified_yaml =
+        SMALL_6_CITY_YAML.replace("[ 0, 12, 48, 35, 14, 42]", "[ 0,  5, 48, 35, 14, 42]");
 
-    let instance =
-        TspInstanceYaml::from_yaml(&modified_yaml).expect("Modified YAML should parse");
+    let instance = TspInstanceYaml::from_yaml(&modified_yaml).expect("Modified YAML should parse");
 
     // Original tour length should be different
     let optimal_tour = vec![0, 1, 4, 5, 2, 3];
@@ -251,8 +251,7 @@ fn probar_tsp_user_can_change_algorithm() {
 fn probar_tsp_user_can_change_seed() {
     let modified_yaml = SMALL_6_CITY_YAML.replace("seed: 42", "seed: 12345");
 
-    let instance =
-        TspInstanceYaml::from_yaml(&modified_yaml).expect("Modified seed should parse");
+    let instance = TspInstanceYaml::from_yaml(&modified_yaml).expect("Modified seed should parse");
 
     assert_eq!(instance.algorithm.params.seed, 12345);
 }
@@ -303,7 +302,8 @@ fn probar_tsp_rejects_invalid_yaml() {
 #[test]
 fn probar_tsp_detects_asymmetric_matrix() {
     // Make matrix asymmetric: SF->Oakland = 12, but Oakland->SF = 99
-    let asymmetric_yaml = SMALL_6_CITY_YAML.replace("[12,  0, 42, 30,  4, 30]", "[99,  0, 42, 30,  4, 30]");
+    let asymmetric_yaml =
+        SMALL_6_CITY_YAML.replace("[12,  0, 42, 30,  4, 30]", "[99,  0, 42, 30,  4, 30]");
 
     let instance = TspInstanceYaml::from_yaml(&asymmetric_yaml).expect("Parse");
     let result = instance.check_symmetry();
@@ -736,16 +736,31 @@ fn probar_tui_gui_coverage_basic_run() {
 
     // Panel elements
     coverage.cover_element("title_bar");
-    coverage.log_interaction(InteractionKind::View, "title_bar", Some("TSP GRASP Demo"), 0);
+    coverage.log_interaction(
+        InteractionKind::View,
+        "title_bar",
+        Some("TSP GRASP Demo"),
+        0,
+    );
 
     coverage.cover_element("equations_panel");
-    coverage.log_interaction(InteractionKind::View, "equations_panel", Some("EMC: TSP GRASP"), 1);
+    coverage.log_interaction(
+        InteractionKind::View,
+        "equations_panel",
+        Some("EMC: TSP GRASP"),
+        1,
+    );
 
     coverage.cover_element("city_plot");
     coverage.log_interaction(InteractionKind::View, "city_plot", Some("6 cities"), 2);
 
     coverage.cover_element("convergence_graph");
-    coverage.log_interaction(InteractionKind::View, "convergence_graph", Some("sparkline"), 3);
+    coverage.log_interaction(
+        InteractionKind::View,
+        "convergence_graph",
+        Some("sparkline"),
+        3,
+    );
 
     coverage.cover_element("statistics_panel");
     coverage.log_interaction(InteractionKind::View, "statistics_panel", Some("stats"), 4);
@@ -754,17 +769,37 @@ fn probar_tui_gui_coverage_basic_run() {
     coverage.log_interaction(InteractionKind::View, "controls_panel", Some("controls"), 5);
 
     coverage.cover_element("status_bar");
-    coverage.log_interaction(InteractionKind::View, "status_bar", Some("EDD: verified"), 6);
+    coverage.log_interaction(
+        InteractionKind::View,
+        "status_bar",
+        Some("EDD: verified"),
+        6,
+    );
 
     // Display elements
     coverage.cover_element("tour_length_display");
-    coverage.log_interaction(InteractionKind::View, "tour_length_display", Some("115.0"), 7);
+    coverage.log_interaction(
+        InteractionKind::View,
+        "tour_length_display",
+        Some("115.0"),
+        7,
+    );
 
     coverage.cover_element("best_tour_display");
-    coverage.log_interaction(InteractionKind::View, "best_tour_display", Some("[0,1,4,5,2,3]"), 8);
+    coverage.log_interaction(
+        InteractionKind::View,
+        "best_tour_display",
+        Some("[0,1,4,5,2,3]"),
+        8,
+    );
 
     coverage.cover_element("lower_bound_display");
-    coverage.log_interaction(InteractionKind::View, "lower_bound_display", Some("103.5"), 9);
+    coverage.log_interaction(
+        InteractionKind::View,
+        "lower_bound_display",
+        Some("103.5"),
+        9,
+    );
 
     coverage.cover_element("gap_display");
     coverage.log_interaction(InteractionKind::View, "gap_display", Some("11.1%"), 10);
@@ -988,13 +1023,28 @@ fn probar_wasm_gui_coverage_full_optimization() {
     coverage.log_interaction(InteractionKind::View, "header", Some("TSP GRASP Demo"), 0);
 
     coverage.cover_element("equations_panel");
-    coverage.log_interaction(InteractionKind::View, "equations_panel", Some("L(π) = Σ d(πᵢ, πᵢ₊₁)"), 1);
+    coverage.log_interaction(
+        InteractionKind::View,
+        "equations_panel",
+        Some("L(π) = Σ d(πᵢ, πᵢ₊₁)"),
+        1,
+    );
 
     coverage.cover_element("tsp_canvas");
-    coverage.log_interaction(InteractionKind::View, "tsp_canvas", Some("20 cities rendered"), 2);
+    coverage.log_interaction(
+        InteractionKind::View,
+        "tsp_canvas",
+        Some("20 cities rendered"),
+        2,
+    );
 
     coverage.cover_element("sparkline");
-    coverage.log_interaction(InteractionKind::View, "sparkline", Some("convergence graph"), 3);
+    coverage.log_interaction(
+        InteractionKind::View,
+        "sparkline",
+        Some("convergence graph"),
+        3,
+    );
 
     coverage.cover_element("statistics_panel");
     coverage.log_interaction(InteractionKind::View, "statistics_panel", Some("stats"), 4);
@@ -1025,7 +1075,12 @@ fn probar_wasm_gui_coverage_full_optimization() {
     coverage.log_interaction(InteractionKind::View, "stat_restarts", Some("50"), 12);
 
     coverage.cover_element("select_method");
-    coverage.log_interaction(InteractionKind::View, "select_method", Some("Randomized Greedy"), 13);
+    coverage.log_interaction(
+        InteractionKind::View,
+        "select_method",
+        Some("Randomized Greedy"),
+        13,
+    );
 
     coverage.cover_element("slider_n");
     coverage.log_interaction(InteractionKind::View, "slider_n", Some("20"), 14);
@@ -1059,7 +1114,12 @@ fn probar_wasm_gui_coverage_full_optimization() {
 
     // === Probar Test Button ===
     coverage.cover_element("btn_run_tests");
-    coverage.log_interaction(InteractionKind::Click, "btn_run_tests", Some("Run All Tests"), 21);
+    coverage.log_interaction(
+        InteractionKind::Click,
+        "btn_run_tests",
+        Some("Run All Tests"),
+        21,
+    );
 
     // === Screen: converged_state ===
     coverage.cover_screen("converged_state");
@@ -1146,7 +1206,11 @@ fn probar_gui_coverage_interaction_logging() {
     coverage.log_interaction(InteractionKind::KeyPress, "r_reset", Some("R"), 2);
 
     // Verify interactions are logged
-    assert_eq!(coverage.interaction_count(), 3, "Should have 3 interactions logged");
+    assert_eq!(
+        coverage.interaction_count(),
+        3,
+        "Should have 3 interactions logged"
+    );
 }
 
 /// Test GUI coverage journey completion tracking
@@ -1264,19 +1328,46 @@ fn probar_visual_baseline_structure() {
     let wasm = GuiCoverage::tsp_wasm();
 
     // Check TUI has equivalent elements
-    assert!(tui.has_element("title_bar"), "TUI missing title_bar (header)");
+    assert!(
+        tui.has_element("title_bar"),
+        "TUI missing title_bar (header)"
+    );
     assert!(tui.has_element("city_plot"), "TUI missing city_plot");
-    assert!(tui.has_element("statistics_panel"), "TUI missing statistics_panel");
-    assert!(tui.has_element("controls_panel"), "TUI missing controls_panel");
-    assert!(tui.has_element("equations_panel"), "TUI missing equations_panel");
-    assert!(tui.has_element("status_bar"), "TUI missing status_bar (footer)");
+    assert!(
+        tui.has_element("statistics_panel"),
+        "TUI missing statistics_panel"
+    );
+    assert!(
+        tui.has_element("controls_panel"),
+        "TUI missing controls_panel"
+    );
+    assert!(
+        tui.has_element("equations_panel"),
+        "TUI missing equations_panel"
+    );
+    assert!(
+        tui.has_element("status_bar"),
+        "TUI missing status_bar (footer)"
+    );
 
     // Check WASM has equivalent elements
     assert!(wasm.has_element("header"), "WASM missing header");
-    assert!(wasm.has_element("tsp_canvas"), "WASM missing tsp_canvas (city_plot)");
-    assert!(wasm.has_element("statistics_panel"), "WASM missing statistics_panel");
-    assert!(wasm.has_element("controls_panel"), "WASM missing controls_panel");
-    assert!(wasm.has_element("equations_panel"), "WASM missing equations_panel");
+    assert!(
+        wasm.has_element("tsp_canvas"),
+        "WASM missing tsp_canvas (city_plot)"
+    );
+    assert!(
+        wasm.has_element("statistics_panel"),
+        "WASM missing statistics_panel"
+    );
+    assert!(
+        wasm.has_element("controls_panel"),
+        "WASM missing controls_panel"
+    );
+    assert!(
+        wasm.has_element("equations_panel"),
+        "WASM missing equations_panel"
+    );
     assert!(wasm.has_element("footer"), "WASM missing footer");
 
     // All regions accounted for

@@ -164,7 +164,9 @@ impl TspApp {
     /// Get the optimal known value if loaded from YAML.
     #[must_use]
     pub fn optimal_known(&self) -> Option<u32> {
-        self.loaded_instance.as_ref().and_then(|i| i.meta.optimal_known)
+        self.loaded_instance
+            .as_ref()
+            .and_then(|i| i.meta.optimal_known)
     }
 
     /// Reset the simulation.
@@ -441,7 +443,8 @@ mod tests {
         let mut app = TspApp::new(10, 42);
         assert_eq!(app.construction_method_name(), "Randomized Greedy");
 
-        app.demo.set_construction_method(ConstructionMethod::NearestNeighbor);
+        app.demo
+            .set_construction_method(ConstructionMethod::NearestNeighbor);
         assert_eq!(app.construction_method_name(), "Nearest Neighbor");
 
         app.demo.set_construction_method(ConstructionMethod::Random);
@@ -812,10 +815,7 @@ mod mutation_tests {
         let mut app = TspApp::new(10, 42);
         let auto_before = app.auto_run;
         app.handle_key(KeyCode::Char(' '));
-        assert_ne!(
-            app.auto_run, auto_before,
-            "Space must toggle auto_run"
-        );
+        assert_ne!(app.auto_run, auto_before, "Space must toggle auto_run");
     }
 
     /// Mutation test: Plus key actually increases RCL.
@@ -859,9 +859,6 @@ mod mutation_tests {
         // Value should be tour length * 1000 (as u64)
         #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
         let expected = (app.demo.best_tour_length * 1000.0).max(0.0) as u64;
-        assert_eq!(
-            last, expected,
-            "History must track tour length * 1000"
-        );
+        assert_eq!(last, expected, "History must track tour length * 1000");
     }
 }

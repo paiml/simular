@@ -74,7 +74,7 @@ COPY Cargo.toml Cargo.lock ./
 COPY src ./src
 
 # Build WASM
-RUN wasm-pack build --target web --features wasm
+RUN wasm-pack build --target web --no-default-features --features wasm
 
 # WASM output stage
 FROM scratch AS wasm

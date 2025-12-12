@@ -209,7 +209,11 @@ mod tui {
             Line::from(vec![
                 Span::styled("Jidoka: ", Style::default().fg(Color::Gray)),
                 Span::styled(
-                    if jidoka_status.energy_ok { "✓" } else { "✗" },
+                    if jidoka_status.energy_ok {
+                        "✓"
+                    } else {
+                        "✗"
+                    },
                     Style::default().fg(jidoka_color),
                 ),
                 Span::raw(" Energy "),
@@ -223,7 +227,11 @@ mod tui {
                 ),
                 Span::raw(" L "),
                 Span::styled(
-                    if jidoka_status.finite_ok { "✓" } else { "✗" },
+                    if jidoka_status.finite_ok {
+                        "✓"
+                    } else {
+                        "✗"
+                    },
                     Style::default().fg(jidoka_color),
                 ),
                 Span::raw(" Finite"),

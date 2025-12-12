@@ -50,7 +50,10 @@ fn demo_basic_coverage() {
     coverage.register_screen("settings");
 
     // Register user journeys
-    coverage.register_journey("login_flow", vec!["login_screen", "login_button", "dashboard"]);
+    coverage.register_journey(
+        "login_flow",
+        vec!["login_screen", "login_button", "dashboard"],
+    );
 
     // Simulate test coverage
     coverage.cover_element("login_button");
@@ -59,12 +62,26 @@ fn demo_basic_coverage() {
 
     // Log interactions
     coverage.log_interaction(InteractionKind::Click, "login_button", None, 0);
-    coverage.log_interaction(InteractionKind::Input, "username_field", Some("testuser"), 1);
+    coverage.log_interaction(
+        InteractionKind::Input,
+        "username_field",
+        Some("testuser"),
+        1,
+    );
 
     // Check coverage
-    println!("Element coverage: {:.1}%", coverage.element_coverage() * 100.0);
-    println!("Screen coverage:  {:.1}%", coverage.screen_coverage() * 100.0);
-    println!("Journey coverage: {:.1}%", coverage.journey_coverage() * 100.0);
+    println!(
+        "Element coverage: {:.1}%",
+        coverage.element_coverage() * 100.0
+    );
+    println!(
+        "Screen coverage:  {:.1}%",
+        coverage.screen_coverage() * 100.0
+    );
+    println!(
+        "Journey coverage: {:.1}%",
+        coverage.journey_coverage() * 100.0
+    );
     println!("Summary: {}\n", coverage.summary());
 }
 

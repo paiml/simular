@@ -1124,7 +1124,11 @@ mod tests {
             runs: 3,
             identical: false,
             reference_hash: "abc123".to_string(),
-            run_hashes: vec!["abc123".to_string(), "def456".to_string(), "ghi789".to_string()],
+            run_hashes: vec![
+                "abc123".to_string(),
+                "def456".to_string(),
+                "ghi789".to_string(),
+            ],
             platform: "x86_64".to_string(),
         };
         assert!(!summary.passed);
@@ -1448,7 +1452,11 @@ mod tests {
         };
 
         let runner = ExperimentRunner::new();
-        let crit = FalsificationCriterion::new("Test Criterion", "error > 0.01", FalsificationAction::Warn);
+        let crit = FalsificationCriterion::new(
+            "Test Criterion",
+            "error > 0.01",
+            FalsificationAction::Warn,
+        );
         let spec = ExperimentSpec::builder()
             .name("Test")
             .seed(42)

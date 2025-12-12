@@ -126,7 +126,10 @@ fn print_reproducibility(reproducibility: Option<&crate::edd::ReproducibilitySum
     if let Some(repro) = reproducibility {
         println!("\nReproducibility:");
         let sym = if repro.passed { "✓" } else { "✗" };
-        println!("  {} {} runs, identical: {}", sym, repro.runs, repro.identical);
+        println!(
+            "  {} {} runs, identical: {}",
+            sym, repro.runs, repro.identical
+        );
         println!("  Reference hash: {}", repro.reference_hash);
     }
 }

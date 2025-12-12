@@ -165,15 +165,15 @@ pub fn load_yaml_experiment(path: &Path) -> Result<YamlExperiment, YamlLoadError
     }
 
     // Read file contents
-    let contents = std::fs::read_to_string(path)
-        .map_err(|e| YamlLoadError::ParseError(e.to_string()))?;
+    let contents =
+        std::fs::read_to_string(path).map_err(|e| YamlLoadError::ParseError(e.to_string()))?;
 
     // Check for prohibited patterns (custom code)
     check_for_custom_code(&contents)?;
 
     // Parse YAML
-    let experiment: YamlExperiment = serde_yaml::from_str(&contents)
-        .map_err(|e| YamlLoadError::ParseError(e.to_string()))?;
+    let experiment: YamlExperiment =
+        serde_yaml::from_str(&contents).map_err(|e| YamlLoadError::ParseError(e.to_string()))?;
 
     // Validate required fields
     validate_experiment(&experiment)?;
@@ -336,7 +336,8 @@ impl FalsificationEvaluator {
         criterion: &FalsificationCriterionV2,
         actual_value: f64,
     ) -> FalsificationEvalResult {
-        let passed = Self::evaluate_condition(&criterion.condition, actual_value, criterion.threshold);
+        let passed =
+            Self::evaluate_condition(&criterion.condition, actual_value, criterion.threshold);
 
         let message = if passed {
             format!(
@@ -368,7 +369,8 @@ impl FalsificationEvaluator {
 
         if condition_lower.contains("< threshold") || condition_lower.contains("<= threshold") {
             value <= threshold
-        } else if condition_lower.contains("> threshold") || condition_lower.contains(">= threshold")
+        } else if condition_lower.contains("> threshold")
+            || condition_lower.contains(">= threshold")
         {
             value >= threshold
         } else if condition_lower.contains('<') {
@@ -534,11 +536,16 @@ impl SchemaValidator {
 
         if let Err(error) = result {
             // Single error case - collect into vec
-            return Err(SchemaValidationError::ValidationFailed(vec![error.to_string()]));
+            return Err(SchemaValidationError::ValidationFailed(vec![
+                error.to_string()
+            ]));
         }
 
         // Also check iter_errors for additional validation errors
-        let errors: Vec<String> = compiled.iter_errors(instance).map(|e| e.to_string()).collect();
+        let errors: Vec<String> = compiled
+            .iter_errors(instance)
+            .map(|e| e.to_string())
+            .collect();
         if !errors.is_empty() {
             return Err(SchemaValidationError::ValidationFailed(errors));
         }
@@ -799,11 +806,17 @@ falsification:
         let mut recorder = ReplayRecorder::new(42, "experiments/test.yaml");
 
         let mut state1 = HashMap::new();
-        state1.insert("tour_length".to_string(), serde_yaml::Value::Number(1234.into()));
+        state1.insert(
+            "tour_length".to_string(),
+            serde_yaml::Value::Number(1234.into()),
+        );
         recorder.record_step(0, state1);
 
         let mut state2 = HashMap::new();
-        state2.insert("tour_length".to_string(), serde_yaml::Value::Number(1198.into()));
+        state2.insert(
+            "tour_length".to_string(),
+            serde_yaml::Value::Number(1198.into()),
+        );
         recorder.record_step(1, state2);
 
         assert_eq!(recorder.step_count(), 2, "Should record 2 steps");
@@ -901,7 +914,10 @@ falsification:
         };
 
         let result = FalsificationEvaluator::evaluate_criterion(&criterion, 0.18);
-        assert!(result.passed, "Should pass when gap (0.18) < threshold (0.25)");
+        assert!(
+            result.passed,
+            "Should pass when gap (0.18) < threshold (0.25)"
+        );
     }
 
     #[test]
@@ -932,7 +948,10 @@ falsification:
         };
 
         let result = FalsificationEvaluator::evaluate_criterion(&criterion, 0.97);
-        assert!(result.passed, "Should pass when accuracy (0.97) > threshold (0.95)");
+        assert!(
+            result.passed,
+            "Should pass when accuracy (0.97) > threshold (0.95)"
+        );
     }
 
     #[test]
@@ -965,15 +984,13 @@ falsification:
 
     #[test]
     fn test_falsification_evaluator_detects_failure() {
-        let criteria = vec![
-            FalsificationCriterionV2 {
-                id: "gap".to_string(),
-                metric: Some("gap".to_string()),
-                threshold: 0.25,
-                condition: "gap < threshold".to_string(),
-                severity: "critical".to_string(),
-            },
-        ];
+        let criteria = vec![FalsificationCriterionV2 {
+            id: "gap".to_string(),
+            metric: Some("gap".to_string()),
+            threshold: 0.25,
+            condition: "gap < threshold".to_string(),
+            severity: "critical".to_string(),
+        }];
 
         let mut values = HashMap::new();
         values.insert("gap".to_string(), 0.30); // Over threshold!
@@ -1073,7 +1090,11 @@ falsification:
 "#;
 
         let result = validate_experiment_yaml(valid_yaml);
-        assert!(result.is_ok(), "Valid experiment YAML should pass: {:?}", result);
+        assert!(
+            result.is_ok(),
+            "Valid experiment YAML should pass: {:?}",
+            result
+        );
     }
 
     #[test]
@@ -1296,14 +1317,20 @@ governing_equation:
     fn test_validate_experiment_file_not_found() {
         let validator = SchemaValidator::from_embedded();
         let result = validator.validate_experiment_file(Path::new("/nonexistent/file.yaml"));
-        assert!(matches!(result, Err(SchemaValidationError::YamlParseError(_))));
+        assert!(matches!(
+            result,
+            Err(SchemaValidationError::YamlParseError(_))
+        ));
     }
 
     #[test]
     fn test_validate_emc_file_not_found() {
         let validator = SchemaValidator::from_embedded();
         let result = validator.validate_emc_file(Path::new("/nonexistent/emc.yaml"));
-        assert!(matches!(result, Err(SchemaValidationError::YamlParseError(_))));
+        assert!(matches!(
+            result,
+            Err(SchemaValidationError::YamlParseError(_))
+        ));
     }
 
     #[test]
@@ -1353,10 +1380,16 @@ governing_equation:
 
         // Default behavior: check if value is within 1% of threshold
         let result = FalsificationEvaluator::evaluate_criterion(&criterion, 100.5);
-        assert!(result.passed, "Should pass when value is within 1% of threshold");
+        assert!(
+            result.passed,
+            "Should pass when value is within 1% of threshold"
+        );
 
         let result_fail = FalsificationEvaluator::evaluate_criterion(&criterion, 110.0);
-        assert!(!result_fail.passed, "Should fail when value is not within 1% of threshold");
+        assert!(
+            !result_fail.passed,
+            "Should fail when value is not within 1% of threshold"
+        );
     }
 
     #[test]
@@ -1395,19 +1428,21 @@ governing_equation:
 
     #[test]
     fn test_falsification_evaluator_missing_metric() {
-        let criteria = vec![
-            FalsificationCriterionV2 {
-                id: "gap".to_string(),
-                metric: Some("missing_metric".to_string()),
-                threshold: 0.25,
-                condition: "gap < threshold".to_string(),
-                severity: "critical".to_string(),
-            },
-        ];
+        let criteria = vec![FalsificationCriterionV2 {
+            id: "gap".to_string(),
+            metric: Some("missing_metric".to_string()),
+            threshold: 0.25,
+            condition: "gap < threshold".to_string(),
+            severity: "critical".to_string(),
+        }];
 
         let values = HashMap::new(); // No values at all
         let results = FalsificationEvaluator::evaluate_all(&criteria, &values);
-        assert_eq!(results.len(), 0, "Should skip criteria with missing metrics");
+        assert_eq!(
+            results.len(),
+            0,
+            "Should skip criteria with missing metrics"
+        );
     }
 
     #[test]
@@ -1427,14 +1462,20 @@ governing_equation:
     fn test_schema_validates_invalid_yaml_syntax() {
         let invalid_yaml = "{ this is: [ not valid yaml:";
         let result = validate_experiment_yaml(invalid_yaml);
-        assert!(matches!(result, Err(SchemaValidationError::YamlParseError(_))));
+        assert!(matches!(
+            result,
+            Err(SchemaValidationError::YamlParseError(_))
+        ));
     }
 
     #[test]
     fn test_schema_validates_emc_invalid_yaml_syntax() {
         let invalid_yaml = "{ this is: [ not valid yaml:";
         let result = validate_emc_yaml(invalid_yaml);
-        assert!(matches!(result, Err(SchemaValidationError::YamlParseError(_))));
+        assert!(matches!(
+            result,
+            Err(SchemaValidationError::YamlParseError(_))
+        ));
     }
 
     #[test]

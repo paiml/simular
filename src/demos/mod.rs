@@ -54,8 +54,8 @@ pub mod tsp_wasm_app;
 
 // Re-exports for convenience
 pub use engine::{
-    CriterionResult, DemoEngine, DemoError, DemoMeta, DeterministicReplay,
-    FalsificationCriterion, MetamorphicRelation, MrResult, RendererIndependent, Severity,
+    CriterionResult, DemoEngine, DemoError, DemoMeta, DeterministicReplay, FalsificationCriterion,
+    MetamorphicRelation, MrResult, RendererIndependent, Severity,
 };
 pub use harmonic_oscillator::HarmonicOscillatorDemo;
 pub use kepler_orbit::KeplerOrbitDemo;
@@ -63,7 +63,9 @@ pub use kingmans_hockey::KingmanHockeyDemo;
 pub use littles_law_factory::LittlesLawFactoryDemo;
 pub use monte_carlo_pi::MonteCarloPlDemo;
 pub use tsp_grasp::TspGraspDemo;
-pub use tsp_instance::{TspInstanceYaml, TspInstanceError, TspMeta, TspCity, TspParams, TspAlgorithmConfig, Coords};
+pub use tsp_instance::{
+    Coords, TspAlgorithmConfig, TspCity, TspInstanceError, TspInstanceYaml, TspMeta, TspParams,
+};
 
 use serde::{Deserialize, Serialize};
 

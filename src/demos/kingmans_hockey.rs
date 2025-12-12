@@ -785,11 +785,7 @@ mod tests {
     fn test_calculate_r_squared_perfect_fit() {
         let mut demo = KingmanHockeyDemo::new(42);
         // Perfect fit - simulated equals predicted
-        demo.history = vec![
-            (0.5, 1.0, 1.0),
-            (0.7, 2.0, 2.0),
-            (0.9, 9.0, 9.0),
-        ];
+        demo.history = vec![(0.5, 1.0, 1.0), (0.7, 2.0, 2.0), (0.9, 9.0, 9.0)];
         let r2 = demo.calculate_r_squared();
         assert!((r2 - 1.0).abs() < 1e-10, "R² should be 1.0, got {r2}");
     }
@@ -798,11 +794,7 @@ mod tests {
     fn test_calculate_r_squared_zero_variance() {
         let mut demo = KingmanHockeyDemo::new(42);
         // All same values - zero variance (ss_tot = 0)
-        demo.history = vec![
-            (0.5, 1.0, 1.1),
-            (0.7, 1.0, 1.2),
-            (0.9, 1.0, 1.3),
-        ];
+        demo.history = vec![(0.5, 1.0, 1.1), (0.7, 1.0, 1.2), (0.9, 1.0, 1.3)];
         let r2 = demo.calculate_r_squared();
         assert!((r2 - 0.0).abs() < 1e-10);
     }
@@ -910,8 +902,8 @@ mod tests {
         let mut demo = KingmanHockeyDemo::new(42);
         // Set up data that fails R² test (bad fit)
         demo.history = vec![
-            (0.5, 1.0, 5.0),  // predicted way off
-            (0.7, 2.0, 10.0), // predicted way off
+            (0.5, 1.0, 5.0),    // predicted way off
+            (0.7, 2.0, 10.0),   // predicted way off
             (0.95, 19.0, 50.0), // predicted way off
         ];
         let status = demo.get_falsification_status();

@@ -325,7 +325,8 @@ pub mod z3_impl {
                 elapsed,
             )),
             z3::SatResult::Unsat => Err(ProofError::Unprovable {
-                reason: "Little's Law constraints are unsatisfiable (should not happen)".to_string(),
+                reason: "Little's Law constraints are unsatisfiable (should not happen)"
+                    .to_string(),
             }),
             z3::SatResult::Unknown => Err(ProofError::Z3Error {
                 message: "Z3 returned Unknown".to_string(),

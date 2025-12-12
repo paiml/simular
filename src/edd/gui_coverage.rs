@@ -176,10 +176,7 @@ impl GuiCoverage {
             "change_method",
             vec!["main_view", "m_method", "method_display"],
         );
-        coverage.register_journey(
-            "adjust_rcl",
-            vec!["main_view", "plus_rcl", "rcl_display"],
-        );
+        coverage.register_journey("adjust_rcl", vec!["main_view", "plus_rcl", "rcl_display"]);
         coverage.register_journey(
             "full_convergence",
             vec![
@@ -201,64 +198,50 @@ impl GuiCoverage {
         let mut coverage = Self::new("TSP GRASP WASM");
 
         // === Panel Elements (matches TUI) ===
-        coverage.register_element("header");           // TUI: title_bar
-        coverage.register_element("equations_panel");  // Same
-        coverage.register_element("tsp_canvas");       // TUI: city_plot
-        coverage.register_element("sparkline");        // TUI: convergence_graph
+        coverage.register_element("header"); // TUI: title_bar
+        coverage.register_element("equations_panel"); // Same
+        coverage.register_element("tsp_canvas"); // TUI: city_plot
+        coverage.register_element("sparkline"); // TUI: convergence_graph
         coverage.register_element("statistics_panel"); // Same
-        coverage.register_element("controls_panel");   // Same
-        coverage.register_element("footer");           // TUI: status_bar
+        coverage.register_element("controls_panel"); // Same
+        coverage.register_element("footer"); // TUI: status_bar
 
         // === Display Elements (matches TUI stat-* IDs) ===
-        coverage.register_element("stat_best");        // TUI: tour_length_display
-        coverage.register_element("eq_tour");          // TUI: best_tour_display
-        coverage.register_element("stat_lb");          // TUI: lower_bound_display
-        coverage.register_element("stat_gap");         // TUI: gap_display
-        coverage.register_element("fals_status");      // TUI: crossings_display (falsification)
-        coverage.register_element("stat_restarts");    // TUI: restarts_display
-        coverage.register_element("select_method");    // TUI: method_display
-        coverage.register_element("slider_n");         // TUI: rcl_display (city count)
+        coverage.register_element("stat_best"); // TUI: tour_length_display
+        coverage.register_element("eq_tour"); // TUI: best_tour_display
+        coverage.register_element("stat_lb"); // TUI: lower_bound_display
+        coverage.register_element("stat_gap"); // TUI: gap_display
+        coverage.register_element("fals_status"); // TUI: crossings_display (falsification)
+        coverage.register_element("stat_restarts"); // TUI: restarts_display
+        coverage.register_element("select_method"); // TUI: method_display
+        coverage.register_element("slider_n"); // TUI: rcl_display (city count)
 
         // === Interactive Elements (matches TUI keybinds) ===
-        coverage.register_element("btn_play");         // TUI: space_toggle
-        coverage.register_element("btn_step");         // TUI: g_step
-        coverage.register_element("btn_reset");        // TUI: r_reset
-        coverage.register_element("btn_run10");        // TUI: plus_rcl (run more)
-        coverage.register_element("btn_run100");       // TUI: minus_rcl (run lots)
-        coverage.register_element("select_method");    // TUI: m_method
-        coverage.register_element("btn_run_tests");    // Probar: test suite
+        coverage.register_element("btn_play"); // TUI: space_toggle
+        coverage.register_element("btn_step"); // TUI: g_step
+        coverage.register_element("btn_reset"); // TUI: r_reset
+        coverage.register_element("btn_run10"); // TUI: plus_rcl (run more)
+        coverage.register_element("btn_run100"); // TUI: minus_rcl (run lots)
+        coverage.register_element("select_method"); // TUI: m_method
+        coverage.register_element("btn_run_tests"); // Probar: test suite
 
         // === Screens (matches TUI states) ===
-        coverage.register_screen("main_view");         // Initial view
-        coverage.register_screen("running_state");     // Animation running
-        coverage.register_screen("paused_state");      // Paused
-        coverage.register_screen("converged_state");   // Algorithm converged
+        coverage.register_screen("main_view"); // Initial view
+        coverage.register_screen("running_state"); // Animation running
+        coverage.register_screen("paused_state"); // Paused
+        coverage.register_screen("converged_state"); // Algorithm converged
 
         // === User Journeys (matches TUI journeys) ===
-        coverage.register_journey(
-            "basic_run",
-            vec!["main_view", "btn_play", "running_state"],
-        );
-        coverage.register_journey(
-            "single_step",
-            vec!["main_view", "btn_step", "stat_best"],
-        );
+        coverage.register_journey("basic_run", vec!["main_view", "btn_play", "running_state"]);
+        coverage.register_journey("single_step", vec!["main_view", "btn_step", "stat_best"]);
         coverage.register_journey(
             "change_method",
             vec!["main_view", "select_method", "stat_best"],
         );
-        coverage.register_journey(
-            "adjust_cities",
-            vec!["main_view", "slider_n", "tsp_canvas"],
-        );
+        coverage.register_journey("adjust_cities", vec!["main_view", "slider_n", "tsp_canvas"]);
         coverage.register_journey(
             "full_convergence",
-            vec![
-                "main_view",
-                "btn_play",
-                "running_state",
-                "converged_state",
-            ],
+            vec!["main_view", "btn_play", "running_state", "converged_state"],
         );
 
         coverage
@@ -280,8 +263,10 @@ impl GuiCoverage {
 
     /// Register a user journey.
     pub fn register_journey(&mut self, name: &str, steps: Vec<&str>) {
-        self.journeys
-            .insert(name.to_string(), steps.into_iter().map(String::from).collect());
+        self.journeys.insert(
+            name.to_string(),
+            steps.into_iter().map(String::from).collect(),
+        );
     }
 
     // =========================================================================
@@ -317,7 +302,13 @@ impl GuiCoverage {
     }
 
     /// Log an interaction.
-    pub fn log_interaction(&mut self, kind: InteractionKind, target: &str, value: Option<&str>, frame: u64) {
+    pub fn log_interaction(
+        &mut self,
+        kind: InteractionKind,
+        target: &str,
+        value: Option<&str>,
+        frame: u64,
+    ) {
         self.interaction_log.push(Interaction {
             kind,
             target: target.to_string(),

@@ -236,10 +236,16 @@ mod tests {
 
     #[test]
     fn test_all_equation_classes_display() {
-        assert_eq!(EquationClass::Statistical.to_string(), "Statistical Mechanics");
+        assert_eq!(
+            EquationClass::Statistical.to_string(),
+            "Statistical Mechanics"
+        );
         assert_eq!(EquationClass::Inventory.to_string(), "Inventory Management");
         assert_eq!(EquationClass::Optimization.to_string(), "Optimization");
-        assert_eq!(EquationClass::MachineLearning.to_string(), "Machine Learning");
+        assert_eq!(
+            EquationClass::MachineLearning.to_string(),
+            "Machine Learning"
+        );
     }
 
     #[test]
@@ -266,8 +272,7 @@ mod tests {
 
     #[test]
     fn test_citation_with_pages() {
-        let cite = Citation::new(&["Test"], "Venue", 2022)
-            .with_pages("100-200");
+        let cite = Citation::new(&["Test"], "Venue", 2022).with_pages("100-200");
         assert!(cite.pages.is_some());
         assert_eq!(cite.pages.as_ref().map(String::as_str), Some("100-200"));
     }
