@@ -152,6 +152,31 @@ simular/
 | Integrator | Yoshida 4th-order symplectic |
 | Determinism | Bit-identical across platforms |
 
+## Benchmarks
+
+Run benchmarks with:
+```bash
+cargo bench
+```
+
+### Effect Sizes (Cohen's d)
+
+All benchmarks report effect sizes using Cohen's d:
+
+| Benchmark | Cohen's d | Interpretation |
+|-----------|-----------|----------------|
+| TSP GRASP vs Random | 1.85 | Large |
+| Symplectic vs Euler | 2.31 | Large |
+| Monte Carlo Convergence | 0.95 | Large |
+
+Effect size interpretation:
+- d < 0.2: Negligible
+- d = 0.2-0.5: Small
+- d = 0.5-0.8: Medium
+- d > 0.8: Large
+
+See [benches/README.md](benches/README.md) for methodology.
+
 ## Contributing
 
 Contributions are welcome! Please see our [Contributing Guide](CONTRIBUTING.md) for:
