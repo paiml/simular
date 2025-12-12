@@ -279,14 +279,16 @@ mod tui {
         let method_str = app.construction_method_name();
         let gap = app.optimality_gap() * 100.0;
         let verified = app.verify_equation();
+        let units = &app.demo.units;
 
-        let stats_text = vec![
+        let mut stats_text = vec![
             Line::from(vec![
                 Span::raw("Cities: "),
                 Span::styled(
                     format!("{}", app.demo.n),
                     Style::default().fg(Color::Yellow),
                 ),
+                Span::styled(" [cities]", Style::default().fg(Color::DarkGray)),
             ]),
             Line::from(vec![
                 Span::raw("Method: "),
@@ -303,25 +305,49 @@ mod tui {
             Line::from(vec![
                 Span::raw("Tour Length: "),
                 Span::styled(
-                    format!("{:.4}", app.demo.tour_length),
+                    format!("{:.1}", app.demo.tour_length),
                     Style::default().fg(Color::Green),
                 ),
+                Span::styled(format!(" [{units}]"), Style::default().fg(Color::DarkGray)),
             ]),
             Line::from(vec![
                 Span::raw("Best Tour: "),
                 Span::styled(
-                    format!("{:.4}", app.demo.best_tour_length),
+                    format!("{:.1}", app.demo.best_tour_length),
                     Style::default()
                         .fg(Color::Green)
                         .add_modifier(Modifier::BOLD),
                 ),
+                Span::styled(format!(" [{units}]"), Style::default().fg(Color::DarkGray)),
             ]),
+        ];
+
+        // Show optimal if known from YAML
+        if let Some(optimal) = app.demo.optimal_known {
+            let is_optimal = (app.demo.best_tour_length - f64::from(optimal)).abs() < 0.5;
+            stats_text.push(Line::from(vec![
+                Span::raw("Optimal: "),
+                Span::styled(
+                    format!("{optimal}"),
+                    Style::default().fg(Color::Magenta),
+                ),
+                Span::styled(format!(" [{units}]"), Style::default().fg(Color::DarkGray)),
+                Span::raw(" "),
+                Span::styled(
+                    if is_optimal { "✓" } else { "" },
+                    Style::default().fg(Color::Green),
+                ),
+            ]));
+        }
+
+        stats_text.extend(vec![
             Line::from(vec![
                 Span::raw("Lower Bound: "),
                 Span::styled(
-                    format!("{:.4}", app.demo.lower_bound),
+                    format!("{:.1}", app.demo.lower_bound),
                     Style::default().fg(Color::Blue),
                 ),
+                Span::styled(format!(" [{units}]"), Style::default().fg(Color::DarkGray)),
             ]),
             Line::from(vec![
                 Span::raw("Gap: "),
@@ -364,7 +390,7 @@ mod tui {
                     Style::default().fg(if verified { Color::Green } else { Color::Red }),
                 ),
             ]),
-        ];
+        ]);
 
         let stats = Paragraph::new(stats_text)
             .block(Block::default().borders(Borders::ALL).title("Statistics"));

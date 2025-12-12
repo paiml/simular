@@ -114,6 +114,12 @@ pub struct TspGraspDemo {
     pub area: f64,
     /// Seed for reproducibility.
     pub seed: u64,
+    /// Unit label for distances (e.g., "miles", "km").
+    #[serde(default = "default_units")]
+    pub units: String,
+    /// Known optimal tour length (if available from YAML).
+    #[serde(default)]
+    pub optimal_known: Option<u32>,
     /// RNG for stochastic elements.
     #[serde(skip)]
     rng: Option<SimRng>,
@@ -129,6 +135,10 @@ pub struct TspGraspDemo {
     /// Enable audit logging (can be disabled for performance).
     #[serde(default = "default_audit_enabled")]
     pub audit_enabled: bool,
+}
+
+fn default_units() -> String {
+    "units".to_string()
 }
 
 fn default_audit_enabled() -> bool {
@@ -188,6 +198,8 @@ impl TspGraspDemo {
             lower_bound: 0.0,
             area: 1.0, // Unit square
             seed,
+            units: "units".to_string(), // Default for random cities
+            optimal_known: None,        // Unknown for random instances
             rng: Some(rng),
             distance_matrix: Vec::new(),
             audit_log: Vec::new(),
@@ -241,6 +253,8 @@ impl TspGraspDemo {
             lower_bound: 0.0,
             area: area.max(0.001), // Avoid zero area
             seed,
+            units: "units".to_string(), // Default for custom cities
+            optimal_known: None,        // Unknown for custom instances
             rng: Some(rng),
             distance_matrix: Vec::new(),
             audit_log: Vec::new(),
@@ -320,6 +334,10 @@ impl TspGraspDemo {
             .iter()
             .map(|row| row.iter().map(|&d| f64::from(d)).collect())
             .collect();
+
+        // Copy metadata from YAML instance
+        demo.units.clone_from(&instance.meta.units);
+        demo.optimal_known = instance.meta.optimal_known;
 
         // Recompute lower bound with actual distances
         demo.compute_lower_bound();
@@ -1300,6 +1318,18 @@ mod wasm {
         #[wasm_bindgen(js_name = getN)]
         pub fn get_n(&self) -> usize {
             self.inner.n
+        }
+
+        /// Get the unit label for distances (e.g., "miles", "km").
+        #[wasm_bindgen(js_name = getUnits)]
+        pub fn get_units(&self) -> String {
+            self.inner.units.clone()
+        }
+
+        /// Get known optimal tour length (if available from YAML).
+        #[wasm_bindgen(js_name = getOptimalKnown)]
+        pub fn get_optimal_known(&self) -> Option<u32> {
+            self.inner.optimal_known
         }
 
         #[wasm_bindgen(js_name = getRclSize)]
@@ -3187,5 +3217,46 @@ algorithm:
             (orig_lb - mod_lb).abs() > 0.5,
             "Modified YAML should produce different lower bound"
         );
+    }
+
+    // =========================================================================
+    // Unit Label Tests (OR-001: [cities] and [miles] display)
+    // =========================================================================
+
+    #[test]
+    fn test_wasm_get_units_bay_area() {
+        let demo = WasmTspGrasp::from_yaml(BAY_AREA_YAML).expect("parse");
+        assert_eq!(demo.get_units(), "miles", "Bay Area uses miles");
+    }
+
+    #[test]
+    fn test_wasm_get_units_minimal() {
+        let demo = WasmTspGrasp::from_yaml(MINIMAL_YAML).expect("parse");
+        assert_eq!(demo.get_units(), "miles", "Minimal YAML uses miles");
+    }
+
+    #[test]
+    fn test_wasm_get_optimal_known_bay_area() {
+        let demo = WasmTspGrasp::from_yaml(BAY_AREA_YAML).expect("parse");
+        assert_eq!(demo.get_optimal_known(), Some(115), "Bay Area optimal is 115 miles");
+    }
+
+    #[test]
+    fn test_wasm_get_optimal_known_minimal() {
+        let demo = WasmTspGrasp::from_yaml(MINIMAL_YAML).expect("parse");
+        assert_eq!(demo.get_optimal_known(), Some(20), "Minimal YAML optimal is 20");
+    }
+
+    #[test]
+    fn test_wasm_get_n_is_city_count() {
+        let demo = WasmTspGrasp::from_yaml(BAY_AREA_YAML).expect("parse");
+        assert_eq!(demo.get_n(), 6, "Bay Area has 6 cities");
+    }
+
+    #[test]
+    fn test_wasm_new_defaults_units() {
+        let demo = WasmTspGrasp::new(42, 5);
+        assert_eq!(demo.get_units(), "units", "New demo uses default 'units'");
+        assert_eq!(demo.get_optimal_known(), None, "New demo has no known optimal");
     }
 }
