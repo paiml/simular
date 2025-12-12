@@ -23,18 +23,24 @@ use std::cell::RefCell;
 use std::rc::Rc;
 
 use crate::demos::tsp_grasp::TspGraspDemo;
+use crate::demos::tsp_instance::TspInstanceYaml;
 
-/// Global app state - wrapped in RefCell for interior mutability
+/// Embedded Bay Area TSP instance - same as TUI uses
+const BAY_AREA_YAML: &str = include_str!("../../examples/experiments/bay_area_tsp.yaml");
+
+/// Global app state - wrapped in `RefCell` for interior mutability
 struct TspAppState {
     tsp: TspGraspDemo,
     canvas: web_sys::HtmlCanvasElement,
     ctx: web_sys::CanvasRenderingContext2d,
     convergence: Vec<f64>,
     seed: u32,
+    running: bool,
+    frame_count: u32,
 }
 
 impl TspAppState {
-    fn new(canvas: web_sys::HtmlCanvasElement, n: usize, seed: u32) -> Self {
+    fn new(canvas: web_sys::HtmlCanvasElement, _n: usize, seed: u32) -> Self {
         let ctx = canvas
             .get_context("2d")
             .unwrap()
@@ -42,28 +48,68 @@ impl TspAppState {
             .dyn_into::<web_sys::CanvasRenderingContext2d>()
             .unwrap();
 
+        // Load Bay Area TSP from embedded YAML - same as TUI
+        let instance = TspInstanceYaml::from_yaml(BAY_AREA_YAML)
+            .expect("embedded YAML should be valid");
+        let tsp = TspGraspDemo::from_instance(&instance);
+
         Self {
-            tsp: TspGraspDemo::new(u64::from(seed), n),
+            tsp,
             canvas,
             ctx,
             convergence: Vec::new(),
             seed,
+            running: false,
+            frame_count: 0,
         }
+    }
+
+    fn toggle_running(&mut self) -> bool {
+        self.running = !self.running;
+        self.running
     }
 
     fn render(&self) {
         let w = self.canvas.width() as f64;
         let h = self.canvas.height() as f64;
-        let pad = 40.0;
-        let scale = w.min(h) - pad * 2.0;
+        let pad = 50.0;
 
         // Clear
         self.ctx.set_fill_style_str("#0f0f23");
         self.ctx.fill_rect(0.0, 0.0, w, h);
 
-        // Get data
+        // Get data - x=lon, y=lat for geographic coordinates
         let cities: Vec<[f64; 2]> = self.tsp.cities.iter().map(|c| [c.x, c.y]).collect();
         let tour = &self.tsp.best_tour;
+
+        if cities.is_empty() {
+            return;
+        }
+
+        // Compute bounds for normalization (Bay Area coordinates)
+        let min_x = cities.iter().map(|c| c[0]).fold(f64::INFINITY, f64::min);
+        let max_x = cities.iter().map(|c| c[0]).fold(f64::NEG_INFINITY, f64::max);
+        let min_y = cities.iter().map(|c| c[1]).fold(f64::INFINITY, f64::min);
+        let max_y = cities.iter().map(|c| c[1]).fold(f64::NEG_INFINITY, f64::max);
+
+        let range_x = (max_x - min_x).max(0.001);
+        let range_y = (max_y - min_y).max(0.001);
+
+        // Scale to fit canvas while maintaining aspect ratio
+        let scale_x = (w - pad * 2.0) / range_x;
+        let scale_y = (h - pad * 2.0) / range_y;
+        let scale = scale_x.min(scale_y);
+
+        // Center the drawing
+        let offset_x = (w - range_x * scale) / 2.0;
+        let offset_y = (h - range_y * scale) / 2.0;
+
+        // Transform function: geographic -> canvas (flip Y for lat)
+        let transform = |lon: f64, lat: f64| -> (f64, f64) {
+            let x = offset_x + (lon - min_x) * scale;
+            let y = offset_y + (max_y - lat) * scale; // Flip Y so north is up
+            (x, y)
+        };
 
         // Draw tour
         if !tour.is_empty() {
@@ -72,8 +118,7 @@ impl TspAppState {
             self.ctx.begin_path();
 
             for (i, &idx) in tour.iter().enumerate() {
-                let x = pad + cities[idx][0] * scale;
-                let y = pad + cities[idx][1] * scale;
+                let (x, y) = transform(cities[idx][0], cities[idx][1]);
                 if i == 0 {
                     self.ctx.move_to(x, y);
                 } else {
@@ -82,26 +127,31 @@ impl TspAppState {
             }
             // Close the tour
             let first = tour[0];
-            self.ctx.line_to(pad + cities[first][0] * scale, pad + cities[first][1] * scale);
+            let (x, y) = transform(cities[first][0], cities[first][1]);
+            self.ctx.line_to(x, y);
             self.ctx.stroke();
         }
 
         // Draw cities
-        self.ctx.set_fill_style_str("#ffd93d");
         for (i, city) in cities.iter().enumerate() {
-            let x = pad + city[0] * scale;
-            let y = pad + city[1] * scale;
+            let (x, y) = transform(city[0], city[1]);
 
+            // City dot
+            self.ctx.set_fill_style_str("#ffd93d");
             self.ctx.begin_path();
-            self.ctx.arc(x, y, 5.0, 0.0, std::f64::consts::PI * 2.0).unwrap();
+            self.ctx.arc(x, y, 6.0, 0.0, std::f64::consts::PI * 2.0).unwrap();
             self.ctx.fill();
 
-            // Label
-            self.ctx.set_fill_style_str("#888");
-            self.ctx.set_font("9px monospace");
-            self.ctx.fill_text(&i.to_string(), x + 7.0, y + 3.0).unwrap();
-            self.ctx.set_fill_style_str("#ffd93d");
+            // City index label
+            self.ctx.set_fill_style_str("#e0e0e0");
+            self.ctx.set_font("10px 'JetBrains Mono', monospace");
+            self.ctx.fill_text(&format!("{i}"), x + 8.0, y + 4.0).unwrap();
         }
+
+        // Draw title
+        self.ctx.set_fill_style_str("#4ecdc4");
+        self.ctx.set_font("bold 14px 'JetBrains Mono', monospace");
+        self.ctx.fill_text("Bay Area TSP - 20 Cities", 10.0, 20.0).unwrap();
     }
 
     fn update_stats(&self, document: &web_sys::Document) {
@@ -112,16 +162,17 @@ impl TspAppState {
         let restarts = self.tsp.restarts;
         let two_opt = self.tsp.two_opt_improvements;
         let cv = self.tsp.restart_cv();
+        let units = &self.tsp.units;
 
         set_text(document, "stat-n", &n.to_string());
-        set_text(document, "stat-best", &format!("{best:.4}"));
-        set_text(document, "stat-lb", &format!("{lb:.4}"));
+        set_text(document, "stat-best", &format!("{best:.1} {units}"));
+        set_text(document, "stat-lb", &format!("{lb:.1} {units}"));
         set_text(document, "stat-gap", &format!("{:.1}%", gap * 100.0));
         set_text(document, "stat-restarts", &restarts.to_string());
         set_text(document, "stat-2opt", &two_opt.to_string());
 
-        set_text(document, "eq-tour", &format!("L = {best:.4}"));
-        set_text(document, "eq-lb", &format!("LB = {lb:.4}"));
+        set_text(document, "eq-tour", &format!("L = {best:.1} {units}"));
+        set_text(document, "eq-lb", &format!("LB = {lb:.1} {units}"));
 
         let gap_ok = gap <= 0.20;
         let cv_ok = cv <= 0.05 || restarts < 2;
@@ -153,10 +204,26 @@ impl TspAppState {
         }
     }
 
-    fn reset(&mut self, n: usize) {
+    fn reset(&mut self, _n: usize) {
         self.seed = (js_sys::Math::random() * 1_000_000.0) as u32;
-        self.tsp = TspGraspDemo::new(u64::from(self.seed), n);
+        // Reload from embedded YAML - same cities, new seed
+        let instance = TspInstanceYaml::from_yaml(BAY_AREA_YAML)
+            .expect("embedded YAML should be valid");
+        self.tsp = TspGraspDemo::from_instance(&instance);
+        self.tsp.seed = u64::from(self.seed);
         self.convergence.clear();
+        self.running = false;
+        self.frame_count = 0;
+    }
+
+    fn tick(&mut self) {
+        if self.running {
+            self.frame_count += 1;
+            // Step every 3rd frame (~20 iterations/sec at 60fps)
+            if self.frame_count.is_multiple_of(3) {
+                self.step();
+            }
+        }
     }
 }
 
@@ -282,10 +349,58 @@ pub fn init_tsp_app() -> Result<(), JsValue> {
         closure.forget();
     }
 
+    // Play/Pause button handler
+    setup_button(&document, "btn-play", {
+        let state = Rc::clone(&state);
+        let doc = document.clone();
+        move || {
+            let mut s = state.borrow_mut();
+            let running = s.toggle_running();
+            // Update button text
+            if let Some(btn) = doc.get_element_by_id("btn-play") {
+                btn.set_text_content(Some(if running { "⏸ Pause" } else { "▶ Play" }));
+            }
+        }
+    })?;
+
+    // Animation loop using requestAnimationFrame
+    {
+        let state = Rc::clone(&state);
+        let doc = document.clone();
+
+        // Create a reference-counted closure for the animation loop
+        #[allow(clippy::type_complexity)]
+        let f: Rc<RefCell<Option<Closure<dyn FnMut()>>>> = Rc::new(RefCell::new(None));
+        let g = Rc::clone(&f);
+
+        *g.borrow_mut() = Some(Closure::new(move || {
+            {
+                let mut s = state.borrow_mut();
+                if s.running {
+                    s.tick();
+                    s.render();
+                    s.update_stats(&doc);
+                }
+            }
+            // Request next frame
+            request_animation_frame(f.borrow().as_ref().unwrap());
+        }));
+
+        // Start the loop
+        request_animation_frame(g.borrow().as_ref().unwrap());
+    }
+
     // Tab switching
     setup_tabs(&document)?;
 
     Ok(())
+}
+
+fn request_animation_frame(f: &Closure<dyn FnMut()>) {
+    web_sys::window()
+        .unwrap()
+        .request_animation_frame(f.as_ref().unchecked_ref())
+        .unwrap();
 }
 
 fn setup_tabs(document: &web_sys::Document) -> Result<(), JsValue> {

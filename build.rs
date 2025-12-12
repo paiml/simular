@@ -1,5 +1,5 @@
-/// Build script for simular
-/// Captures build environment for reproducibility
+//! Build script for simular
+//! Captures build environment for reproducibility
 
 fn main() {
     // Capture build metadata for reproducibility verification

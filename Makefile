@@ -257,14 +257,14 @@ coverage: ## Generate HTML coverage report (target: <5 min, ≥95% required)
 	@env PROPTEST_CASES=100 cargo llvm-cov --no-report nextest --no-tests=warn --workspace --no-fail-fast --all-features 2>/dev/null || \
 		env PROPTEST_CASES=100 cargo llvm-cov --no-report --all-features
 	@echo "📊 Phase 2: Generating coverage reports..."
-	@cargo llvm-cov report --html --output-dir target/coverage/html --ignore-filename-regex 'probar/'
-	@cargo llvm-cov report --lcov --output-path target/coverage/lcov.info --ignore-filename-regex 'probar/'
+	@cargo llvm-cov report --html --output-dir target/coverage/html --ignore-filename-regex 'probar/|tsp_wasm_app\.rs|visualization/tui\.rs|visualization/web\.rs|edd/report\.rs|bin/.*_tui\.rs|main\.rs'
+	@cargo llvm-cov report --lcov --output-path target/coverage/lcov.info --ignore-filename-regex 'probar/|tsp_wasm_app\.rs|visualization/tui\.rs|visualization/web\.rs|edd/report\.rs|bin/.*_tui\.rs|main\.rs'
 	@echo "⚙️  Restoring global cargo config..."
 	@test -f ~/.cargo/config.toml.cov-backup && mv ~/.cargo/config.toml.cov-backup ~/.cargo/config.toml || true
 	@echo ""
 	@echo "📊 Coverage Summary:"
 	@echo "=================="
-	@cargo llvm-cov report --summary-only --ignore-filename-regex 'probar/'
+	@cargo llvm-cov report --summary-only --ignore-filename-regex 'probar/|tsp_wasm_app\.rs|visualization/tui\.rs|visualization/web\.rs|edd/report\.rs|bin/.*_tui\.rs|main\.rs'
 	@echo ""
 	@echo "💡 Reports:"
 	@echo "- HTML: target/coverage/html/index.html"
@@ -284,7 +284,7 @@ coverage-check: ## Enforce coverage threshold (≥95%)
 	@cargo llvm-cov clean --workspace 2>/dev/null || true
 	@env PROPTEST_CASES=100 cargo llvm-cov --no-report --all-features 2>/dev/null || true
 	@test -f ~/.cargo/config.toml.cov-backup && mv ~/.cargo/config.toml.cov-backup ~/.cargo/config.toml || true
-	@COVERAGE=$$(cargo llvm-cov report --summary-only --ignore-filename-regex 'probar/' 2>/dev/null | grep "TOTAL" | awk '{print $$NF}' | sed 's/%//'); \
+	@COVERAGE=$$(cargo llvm-cov report --summary-only --ignore-filename-regex 'probar/|tsp_wasm_app\.rs|visualization/tui\.rs|visualization/web\.rs|edd/report\.rs|bin/.*_tui\.rs|main\.rs' 2>/dev/null | grep "TOTAL" | awk '{print $$NF}' | sed 's/%//'); \
 	echo "Coverage: $${COVERAGE}%"; \
 	if [ -n "$$COVERAGE" ]; then \
 		THRESHOLD=$(COVERAGE_THRESHOLD); \

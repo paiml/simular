@@ -430,6 +430,60 @@ mod tests {
         assert_eq!(result.proof_time_us, 1000);
     }
 
+    #[test]
+    fn test_proof_error_unprovable() {
+        let err = ProofError::Unprovable {
+            reason: "Found counterexample".to_string(),
+        };
+        let msg = format!("{err}");
+        assert!(msg.contains("unprovable"));
+        assert!(msg.contains("Found counterexample"));
+    }
+
+    #[test]
+    fn test_proof_error_timeout() {
+        let err = ProofError::Timeout { timeout_ms: 5000 };
+        let msg = format!("{err}");
+        assert!(msg.contains("timeout"));
+        assert!(msg.contains("5000"));
+    }
+
+    #[test]
+    fn test_proof_error_z3_error() {
+        let err = ProofError::Z3Error {
+            message: "Internal failure".to_string(),
+        };
+        let msg = format!("{err}");
+        assert!(msg.contains("internal error"));
+        assert!(msg.contains("Internal failure"));
+    }
+
+    #[test]
+    fn test_proof_error_encoding_error() {
+        let err = ProofError::EncodingError {
+            message: "Invalid constraint".to_string(),
+        };
+        let msg = format!("{err}");
+        assert!(msg.contains("encoding"));
+        assert!(msg.contains("Invalid constraint"));
+    }
+
+    #[test]
+    fn test_proof_result_debug() {
+        let result = ProofResult::proven("E=mc²", "Energy-mass equivalence", 42);
+        let debug = format!("{result:?}");
+        assert!(debug.contains("ProofResult"));
+        assert!(debug.contains("proven: true"));
+    }
+
+    #[test]
+    fn test_proof_result_clone() {
+        let result = ProofResult::proven("test", "explanation", 100);
+        let cloned = result.clone();
+        assert_eq!(cloned.proven, result.proven);
+        assert_eq!(cloned.theorem, result.theorem);
+    }
+
     #[cfg(feature = "z3-proofs")]
     mod z3_tests {
         use super::super::z3_impl::*;

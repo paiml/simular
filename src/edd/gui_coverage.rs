@@ -194,44 +194,70 @@ impl GuiCoverage {
     }
 
     /// Create a TSP WASM coverage tracker with all elements.
+    ///
+    /// Matches TUI's 22 elements, 4 screens, 5 journeys for full parity.
     #[must_use]
     pub fn tsp_wasm() -> Self {
         let mut coverage = Self::new("TSP GRASP WASM");
 
-        // WASM API elements
-        coverage.register_element("new_from_yaml");
-        coverage.register_element("step");
-        coverage.register_element("get_tour_length");
-        coverage.register_element("get_best_tour");
-        coverage.register_element("get_cities");
-        coverage.register_element("get_gap");
-        coverage.register_element("get_status");
-        coverage.register_element("set_rcl_size");
-        coverage.register_element("set_method");
-        coverage.register_element("reset");
+        // === Panel Elements (matches TUI) ===
+        coverage.register_element("header");           // TUI: title_bar
+        coverage.register_element("equations_panel");  // Same
+        coverage.register_element("tsp_canvas");       // TUI: city_plot
+        coverage.register_element("sparkline");        // TUI: convergence_graph
+        coverage.register_element("statistics_panel"); // Same
+        coverage.register_element("controls_panel");   // Same
+        coverage.register_element("footer");           // TUI: status_bar
 
-        // Data retrieval
-        coverage.register_element("get_convergence_history");
-        coverage.register_element("get_tour_edges");
-        coverage.register_element("get_best_tour_edges");
+        // === Display Elements (matches TUI stat-* IDs) ===
+        coverage.register_element("stat_best");        // TUI: tour_length_display
+        coverage.register_element("eq_tour");          // TUI: best_tour_display
+        coverage.register_element("stat_lb");          // TUI: lower_bound_display
+        coverage.register_element("stat_gap");         // TUI: gap_display
+        coverage.register_element("fals_status");      // TUI: crossings_display (falsification)
+        coverage.register_element("stat_restarts");    // TUI: restarts_display
+        coverage.register_element("select_method");    // TUI: method_display
+        coverage.register_element("slider_n");         // TUI: rcl_display (city count)
 
-        // Screens (WASM states)
-        coverage.register_screen("initialized");
-        coverage.register_screen("running");
-        coverage.register_screen("converged");
+        // === Interactive Elements (matches TUI keybinds) ===
+        coverage.register_element("btn_play");         // TUI: space_toggle
+        coverage.register_element("btn_step");         // TUI: g_step
+        coverage.register_element("btn_reset");        // TUI: r_reset
+        coverage.register_element("btn_run10");        // TUI: plus_rcl (run more)
+        coverage.register_element("btn_run100");       // TUI: minus_rcl (run lots)
+        coverage.register_element("select_method");    // TUI: m_method
+        coverage.register_element("btn_run_tests");    // Probar: test suite
 
-        // User journeys
+        // === Screens (matches TUI states) ===
+        coverage.register_screen("main_view");         // Initial view
+        coverage.register_screen("running_state");     // Animation running
+        coverage.register_screen("paused_state");      // Paused
+        coverage.register_screen("converged_state");   // Algorithm converged
+
+        // === User Journeys (matches TUI journeys) ===
         coverage.register_journey(
-            "basic_solve",
-            vec!["new_from_yaml", "step", "get_tour_length"],
+            "basic_run",
+            vec!["main_view", "btn_play", "running_state"],
         );
         coverage.register_journey(
-            "full_optimization",
+            "single_step",
+            vec!["main_view", "btn_step", "stat_best"],
+        );
+        coverage.register_journey(
+            "change_method",
+            vec!["main_view", "select_method", "stat_best"],
+        );
+        coverage.register_journey(
+            "adjust_cities",
+            vec!["main_view", "slider_n", "tsp_canvas"],
+        );
+        coverage.register_journey(
+            "full_convergence",
             vec![
-                "new_from_yaml",
-                "step",
-                "get_gap",
-                "converged",
+                "main_view",
+                "btn_play",
+                "running_state",
+                "converged_state",
             ],
         );
 
@@ -416,6 +442,36 @@ impl GuiCoverage {
             .collect()
     }
 
+    /// Get total element count.
+    #[must_use]
+    pub fn element_count(&self) -> usize {
+        self.elements.len()
+    }
+
+    /// Get total screen count.
+    #[must_use]
+    pub fn screen_count(&self) -> usize {
+        self.screens.len()
+    }
+
+    /// Get total journey count.
+    #[must_use]
+    pub fn journey_count(&self) -> usize {
+        self.journeys.len()
+    }
+
+    /// Check if an element is registered.
+    #[must_use]
+    pub fn has_element(&self, name: &str) -> bool {
+        self.elements.contains(name)
+    }
+
+    /// Check if a screen is registered.
+    #[must_use]
+    pub fn has_screen(&self, name: &str) -> bool {
+        self.screens.contains(name)
+    }
+
     /// Generate a detailed coverage report.
     #[must_use]
     pub fn detailed_report(&self) -> String {
@@ -572,10 +628,23 @@ mod tests {
     fn test_tsp_wasm_preset() {
         let coverage = GuiCoverage::tsp_wasm();
 
-        // Should have WASM API elements
-        assert!(coverage.elements.contains("new_from_yaml"));
-        assert!(coverage.elements.contains("step"));
-        assert!(coverage.elements.contains("get_tour_length"));
+        // Should have DOM elements matching TUI
+        assert!(coverage.elements.contains("tsp_canvas"));
+        assert!(coverage.elements.contains("sparkline"));
+        assert!(coverage.elements.contains("btn_play"));
+        assert!(coverage.elements.contains("btn_step"));
+        assert!(coverage.elements.contains("stat_best"));
+
+        // Should have 4 screens (matches TUI)
+        assert!(coverage.screens.contains("main_view"));
+        assert!(coverage.screens.contains("running_state"));
+        assert!(coverage.screens.contains("paused_state"));
+        assert!(coverage.screens.contains("converged_state"));
+
+        // Should have 5 journeys (matches TUI)
+        assert!(coverage.journeys.contains_key("basic_run"));
+        assert!(coverage.journeys.contains_key("full_convergence"));
+        assert!(coverage.journeys.contains_key("single_step"));
     }
 
     #[test]

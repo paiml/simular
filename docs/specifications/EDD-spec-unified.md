@@ -13,11 +13,11 @@
 
 This specification defines **Equation-Driven Development (EDD) v2**, a simplified, rigorous methodology for simulation development. EDD v2 enforces:
 
-1. **YAML-Only Simulations**: Zero JavaScript/HTML/custom code - all simulations defined declaratively
-2. **probar-First Testing**: Unified TUI/WASM testing with replayable, shareable simulations
-3. **95% Mutation Coverage**: Hard requirement, no exceptions
-4. **Popperian Falsification**: Every simulation must be falsifiable
-5. **Equation Model Cards**: Mandatory mathematical documentation
+1. **YAML-Only Simulations**: Zero JavaScript/HTML/user-defined custom code - all simulations defined declaratively.
+2. **probar-First Testing**: Unified TUI/WASM testing with replayable, shareable simulations.
+3. **95% Mutation Coverage**: Hard requirement, no exceptions.
+4. **Popperian Falsification**: Every simulation must be falsifiable.
+5. **Equation Model Cards**: Mandatory mathematical documentation.
 
 > **Core Principle**: If it can't be expressed in YAML and proven with probar, it doesn't ship.
 
@@ -93,7 +93,7 @@ User Need → YAML Proposal → Core Implementation → probar Verification → 
 
 ### 1.3 YAML Schema Enforcement
 
-Every YAML file MUST validate against the simular schema:
+Every YAML file MUST validate against the authoritative simular schema defined in `schemas/experiment.schema.json`.
 
 ```bash
 # Validation is MANDATORY before any simulation runs
@@ -141,13 +141,13 @@ probar provides unified testing for TUI and WASM with replayable simulations:
 | **Shareable Output** | Export as WASM bundle, TUI session, or .mp4 |
 | **Visual Verification** | Assert on rendered output |
 | **Equation Display** | Verify equation cards render correctly |
+| **Headless Execution** | Run simulations without UI for CI/CD |
 
 ### 2.3 probar Test Structure
 
 ```rust
 // All TUI/WASM tests use probar
-#[probar::test]
-async fn test_tsp_simulation_renders_correctly() {
+#[probar::test] async fn test_tsp_simulation_renders_correctly() {
     // Load from YAML (the ONLY input source)
     let sim = probar::load_yaml("experiments/tsp_grasp.yaml");
 
@@ -230,7 +230,7 @@ identity:
   version: "1.0.0"
 
 governing_equation:
-  latex: "L(\\pi) = \\sum_{i=1}^{n} d(\\pi_i, \\pi_{i+1})"
+  latex: "L(\pi) = \sum_{i=1}^{n} d(\pi_i, \pi_{i+1})"
   plain_text: "L(π) = Σ d(πᵢ, πᵢ₊₁)"
   description: "Tour length is sum of edge distances"
 
@@ -306,8 +306,7 @@ falsification:
 ### 4.2 Falsification in probar
 
 ```rust
-#[probar::test]
-async fn test_falsification_criteria() {
+#[probar::test] async fn test_falsification_criteria() {
     let sim = probar::load_yaml("experiments/orbit.yaml");
     let result = probar::run_to_completion(sim).await;
 
@@ -353,7 +352,7 @@ hypothesis:
 | **Falsification Defined** | Required | Schema validation |
 | **Max Complexity** | 15 | CI blocking |
 | **Max Nesting** | 4 | CI blocking |
-| **Zero SATD** | No TODO/FIXME | CI blocking |
+| **Zero SATD** | No TODO/FIXME (Self-Admitted Technical Debt) | CI blocking |
 
 ### 5.2 The 95% Mutation Requirement
 
@@ -404,12 +403,18 @@ jobs:
         run: cargo install cargo-mutants
       - name: Run mutation testing (95% required)
         run: |
-          cargo mutants --timeout 300
-          MUTANTS_KILLED=$(cargo mutants --json | jq '.killed')
-          MUTANTS_TOTAL=$(cargo mutants --json | jq '.total')
+          cargo mutants --timeout 300 --json > mutants.json
+          MUTANTS_KILLED=$(jq '.killed' mutants.json)
+          MUTANTS_TOTAL=$(jq '.total' mutants.json)
+          if [ "$MUTANTS_TOTAL" -eq 0 ]; then
+            echo "No mutants generated. Check configuration."
+            exit 1
+          fi
           RATIO=$(echo "scale=2; $MUTANTS_KILLED / $MUTANTS_TOTAL" | bc)
+          echo "Mutation Coverage: $RATIO (Killed: $MUTANTS_KILLED, Total: $MUTANTS_TOTAL)"
+          
           if (( $(echo "$RATIO < 0.95" | bc -l) )); then
-            echo "Mutation coverage $RATIO < 95%"
+            echo "FAILED: Mutation coverage $RATIO < 0.95"
             exit 1
           fi
 
@@ -436,9 +441,14 @@ jobs:
 
 ### 6.1 Creating a New Simulation
 
-1. **Write YAML Experiment Spec**
+1. **Directory Structure Compliance**
+   - Experiments: `examples/experiments/*.yaml`
+   - EMCs: `docs/emc/*.emc.yaml`
+   - Tests: `tests/probar_*.rs`
+
+2. **Write YAML Experiment Spec**
 ```yaml
-# experiments/my_simulation.yaml
+# examples/experiments/my_simulation.yaml
 experiment:
   id: "MY-SIM-001"
   seed: 42
@@ -446,7 +456,7 @@ experiment:
   # ... full spec
 ```
 
-2. **Write EMC**
+3. **Write EMC**
 ```yaml
 # docs/emc/my_equation.emc.yaml
 emc_version: "1.0"
@@ -456,16 +466,15 @@ governing_equation:
   # ... full EMC
 ```
 
-3. **Write probar Tests**
+4. **Write probar Tests**
 ```rust
-#[probar::test]
-async fn test_my_simulation() {
-    let sim = probar::load_yaml("experiments/my_simulation.yaml");
+#[probar::test] async fn test_my_simulation() {
+    let sim = probar::load_yaml("examples/experiments/my_simulation.yaml");
     // ... assertions
 }
 ```
 
-4. **If Core Changes Needed**
+5. **If Core Changes Needed**
    - Open GitHub Issue with YAML interface proposal
    - Core team reviews and implements
    - NO custom code in simulations
@@ -474,16 +483,16 @@ async fn test_my_simulation() {
 
 ```bash
 # Validate YAML
-simular validate experiments/my_simulation.yaml
+simular validate examples/experiments/my_simulation.yaml
 
 # Run simulation
-simular run experiments/my_simulation.yaml
+simular run examples/experiments/my_simulation.yaml
 
 # Export replay
-simular run experiments/my_simulation.yaml --export-replay
+simular run examples/experiments/my_simulation.yaml --export-replay
 
 # Generate shareable outputs
-probar export --wasm --mp4 experiments/my_simulation.yaml
+probar export --wasm --mp4 examples/experiments/my_simulation.yaml
 ```
 
 ### 6.3 Verification Checklist
@@ -498,6 +507,7 @@ Before any simulation ships:
 - [ ] 95% test coverage
 - [ ] Replay exports work (WASM, TUI, MP4)
 - [ ] Equation card displays correctly
+- [ ] Zero SATD (No TODOs/FIXMEs)
 
 ---
 

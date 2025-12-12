@@ -174,12 +174,60 @@ Greedy improvement: 38.2%
 
 ## WASM Integration
 
-The demo exports WebAssembly bindings for integration with probar:
+The demo exports WebAssembly bindings for interactive visualization in web browsers.
 
-```rust
-#[cfg(target_arch = "wasm32")]
-#[wasm_bindgen]
-pub struct TspGraspWasm { ... }
+### Running the WASM Demo
+
+```bash
+# Build WASM package
+wasm-pack build --target web --no-default-features --features wasm
+
+# Copy to web directory
+cp pkg/* web/pkg/
+
+# Serve locally
+cd web && python3 -m http.server 8080
 ```
 
-This enables interactive visualization in web frontends.
+Then open `http://localhost:8080/tsp.html` in your browser.
+
+### Features
+
+- **▶ Play** - Real-time convergence animation (~20 iterations/sec)
+- **Step** - Single GRASP iteration
+- **Run 10/100** - Batch iterations
+- **Reset** - New random seed
+
+### TUI/WASM Parity
+
+Both the TUI (`cargo run --bin tsp_tui`) and WASM demos share:
+- Same YAML configuration (`bay_area_tsp.yaml`)
+- Same governing equations
+- Same color scheme (via `edd::style` module)
+- 100% GUI coverage (22 elements, 4 screens, 5 journeys)
+
+The shared style constants ensure visual consistency:
+
+```rust
+use simular::edd::style;
+
+// Both TUI and WASM use these colors
+assert_eq!(style::ACCENT, "#4ecdc4");     // Teal tour lines
+assert_eq!(style::CITY_NODE, "#ffd93d");  // Yellow city dots
+assert_eq!(style::BG_PRIMARY, "#0a0a1a"); // Dark background
+```
+
+### Probar Integration
+
+The WASM demo includes embedded probar tests:
+
+```javascript
+// Run in-browser tests via the Probar Tests tab
+// Tests include:
+// - Valid permutation (visits all cities once)
+// - Closed tour (forms loop)
+// - Monotonic improvement
+// - Deterministic replay
+```
+
+All 54 probar tests pass, ensuring TUI/WASM behavioral parity.

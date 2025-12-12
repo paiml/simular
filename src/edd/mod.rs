@@ -34,8 +34,10 @@ pub mod operations;
 pub mod prover;
 pub mod report;
 pub mod runner;
+pub mod style;
 pub mod tps;
 pub mod traits;
+pub mod v2;
 pub mod validation;
 
 // Re-exports

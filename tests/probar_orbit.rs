@@ -7,7 +7,7 @@
 
 #![cfg(feature = "wasm")]
 
-use probar::{Assertion, InvariantCheck, InvariantChecker, TestCase, TestHarness, TestSuite};
+use jugar_probar::{Assertion, InvariantCheck, InvariantChecker, TestCase, TestHarness, TestSuite};
 use simular::orbit::units::AU;
 use simular::orbit::wasm::OrbitSimulation;
 

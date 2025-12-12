@@ -471,6 +471,7 @@
             <div class="panel">
                 <h3>Controls</h3>
                 <div class="controls">
+                    <button id="btn-play" style="background: var(--accent); color: var(--bg-primary);">▶ Play</button>
                     <button id="btn-step">Step</button>
                     <button id="btn-run10">Run 10</button>
                     <button id="btn-run100">Run 100</button>
@@ -676,6 +677,8 @@
         let convergence = [];
         let prevBest = Infinity;
         let currentSeed = 42;
+        let running = false;
+        let frameCount = 0;
 
         // EMC YAML content
         const emcYaml = `emc_version: "1.0"
@@ -812,10 +815,21 @@ falsification_criteria:
         }
 
         function setupControls() {
+            // Play/Pause button - real-time convergence like TUI
+            document.getElementById('btn-play').onclick = () => {
+                running = !running;
+                const btn = document.getElementById('btn-play');
+                btn.textContent = running ? '⏸ Pause' : '▶ Play';
+                btn.style.background = running ? 'var(--accent-warn)' : 'var(--accent)';
+            };
+
             document.getElementById('btn-step').onclick = () => { tsp.graspIteration(); afterStep(); };
             document.getElementById('btn-run10').onclick = () => { tsp.runGrasp(10); afterStep(); };
             document.getElementById('btn-run100').onclick = () => { tsp.runGrasp(100); afterStep(); };
             document.getElementById('btn-reset').onclick = () => {
+                running = false;
+                document.getElementById('btn-play').textContent = '▶ Play';
+                document.getElementById('btn-play').style.background = 'var(--accent)';
                 createTsp(parseInt(document.getElementById('slider-n').value));
                 render(); updateStats(); checkInvariants();
             };
@@ -834,6 +848,19 @@ falsification_criteria:
 
             document.getElementById('btn-run-tests').onclick = runTests;
             document.getElementById('btn-fuzz').onclick = runFuzz;
+
+            // Animation loop - runs at 60fps, steps every 3rd frame (~20 iter/sec)
+            function animate() {
+                if (running) {
+                    frameCount++;
+                    if (frameCount % 3 === 0) {
+                        tsp.graspIteration();
+                        afterStep();
+                    }
+                }
+                requestAnimationFrame(animate);
+            }
+            requestAnimationFrame(animate);
         }
 
         function afterStep() {

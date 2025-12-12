@@ -94,7 +94,7 @@ roadmap:
 - id: COV-001
   github_issue: null
   item_type: epic
-  title: "Zero-Tolerance 95% Coverage with Full PMAT Compliance"
+  title: Zero-Tolerance 95% Coverage with Full PMAT Compliance
   status: inprogress
   priority: critical
   assigned_to: null
@@ -102,38 +102,38 @@ roadmap:
   updated: 2025-12-12T12:36:10.197104084+00:00
   spec: docs/specifications/cov-001-spec.md
   acceptance_criteria:
-  - "AC-1 Overall test coverage >= 95%"
-  - "AC-2 All demo modules >= 95% coverage"
-  - "AC-3 EDD modules (report, runner, tps) >= 95%"
-  - "AC-4 Visualization modules >= 95%"
-  - "AC-5 CLI commands >= 95%"
-  - "AC-6 Zero exclusions except probar/"
-  - "AC-7 Entry points minimal (<15 lines)"
+  - AC-1 Overall test coverage >= 95%
+  - AC-2 All demo modules >= 95% coverage
+  - AC-3 EDD modules (report, runner, tps) >= 95%
+  - AC-4 Visualization modules >= 95%
+  - AC-5 CLI commands >= 95%
+  - AC-6 Zero exclusions except probar/
+  - AC-7 Entry points minimal (<15 lines)
   phases: []
   subtasks:
   - id: COV-001-01
     github_issue: null
-    title: "Phase 1 - CLI module extraction"
+    title: Phase 1 - CLI module extraction
     status: completed
     completion: 100
   - id: COV-001-02
     github_issue: null
-    title: "Phase 2 - TUI app extraction"
+    title: Phase 2 - TUI app extraction
     status: completed
     completion: 100
   - id: COV-001-03
     github_issue: null
-    title: "Phase 3 - Demo coverage to 95%"
+    title: Phase 3 - Demo coverage to 95%
     status: completed
     completion: 100
   - id: COV-001-04
     github_issue: null
-    title: "Phase 4 - EDD/Visualization coverage"
+    title: Phase 4 - EDD/Visualization coverage
     status: completed
     completion: 100
   - id: COV-001-05
     github_issue: null
-    title: "Phase 5 - CLI commands success paths"
+    title: Phase 5 - CLI commands success paths
     status: completed
     completion: 100
   estimated_effort: null
@@ -141,11 +141,11 @@ roadmap:
   - coverage
   - pmat
   - quality
-  notes: "Current coverage 93.86%. TUI binaries mocked with TestBackend. Gap of 1.14% to 95% target."
+  notes: Current coverage 93.86%. TUI binaries mocked with TestBackend. Gap of 1.14% to 95% target.
 - id: OR-001
   github_issue: null
   item_type: epic
-  title: "Simple OR Example: Bay Area TSP Ground Truth"
+  title: 'Simple OR Example: Bay Area TSP Ground Truth'
   status: completed
   priority: high
   assigned_to: null
@@ -153,62 +153,62 @@ roadmap:
   updated: 2025-12-12T20:00:00+00:00
   spec: docs/specifications/simple-or-example.md
   acceptance_criteria:
-  - "AC-1: TspGraspDemo::from_yaml() parses bay_area_tsp.yaml [VERIFIED]"
-  - "AC-2: Bay Area instance returns optimal 115 miles [VERIFIED]"
-  - "AC-3: User can modify YAML cities [VERIFIED]"
-  - "AC-4: User can switch algorithm via YAML [VERIFIED]"
-  - "AC-5: Probar E2E tests pass with deterministic replay [VERIFIED]"
-  - "QG-1: 98.6% test coverage on tsp_instance.rs [VERIFIED]"
+  - 'AC-1: TspGraspDemo::from_yaml() parses bay_area_tsp.yaml [VERIFIED]'
+  - 'AC-2: Bay Area instance returns optimal 115 miles [VERIFIED]'
+  - 'AC-3: User can modify YAML cities [VERIFIED]'
+  - 'AC-4: User can switch algorithm via YAML [VERIFIED]'
+  - 'AC-5: Probar E2E tests pass with deterministic replay [VERIFIED]'
+  - 'QG-1: 98.6% test coverage on tsp_instance.rs [VERIFIED]'
   phases: []
   subtasks:
   - id: OR-001-01
     github_issue: null
-    title: "TspInstanceYaml struct + serde"
+    title: TspInstanceYaml struct + serde
     status: completed
     completion: 100
   - id: OR-001-02
     github_issue: null
-    title: "from_yaml() implementation"
+    title: from_yaml() implementation
     status: completed
     completion: 100
   - id: OR-001-03
     github_issue: null
-    title: "bay_area_tsp.yaml ground truth"
+    title: bay_area_tsp.yaml ground truth
     status: completed
     completion: 100
   - id: OR-001-04
     github_issue: null
-    title: "Jidoka validators"
+    title: Jidoka validators
     status: completed
     completion: 100
   - id: OR-001-05
     github_issue: null
-    title: "Probar E2E tests (19 tests)"
+    title: Probar E2E tests (19 tests)
     status: completed
     completion: 100
   - id: OR-001-06
     github_issue: null
-    title: "WASM TspWasmInstance + WasmTspGrasp.fromYaml"
+    title: WASM TspWasmInstance + WasmTspGrasp.fromYaml
     status: completed
     completion: 100
   - id: OR-001-07
     github_issue: null
-    title: "Unified TspGraspDemo with TspInstanceYaml"
+    title: Unified TspGraspDemo with TspInstanceYaml
     status: completed
     completion: 100
   - id: OR-001-08
     github_issue: null
-    title: "TUI YAML file loading support"
+    title: TUI YAML file loading support
     status: completed
     completion: 100
   - id: OR-001-09
     github_issue: null
-    title: "WASM uses YAML config"
+    title: WASM uses YAML config
     status: completed
     completion: 100
   - id: OR-001-10
     github_issue: null
-    title: "Probar unified architecture tests (28 total)"
+    title: Probar unified architecture tests (28 total)
     status: completed
     completion: 100
   estimated_effort: null
@@ -217,4 +217,36 @@ roadmap:
   - tsp
   - yaml-first
   - wasm
-  notes: "YAML-first TSP with Bay Area ground truth. 6 cities, optimal 115 miles. ONE unified demo for TUI+WASM."
+  notes: YAML-first TSP with Bay Area ground truth. 6 cities, optimal 115 miles. ONE unified demo for TUI+WASM.
+- id: EDD-001
+  github_issue: null
+  item_type: task
+  title: 'New task: EDD-001'
+  status: inprogress
+  priority: medium
+  assigned_to: null
+  created: 2025-12-12T19:49:07.748523511+00:00
+  updated: 2025-12-12T19:49:07.748523511+00:00
+  spec: null
+  acceptance_criteria: []
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels: []
+  notes: null
+- id: EDD-002
+  github_issue: null
+  item_type: task
+  title: 'New task: EDD-002'
+  status: inprogress
+  priority: medium
+  assigned_to: null
+  created: 2025-12-12T20:57:02.432228295+00:00
+  updated: 2025-12-12T20:57:02.432228295+00:00
+  spec: null
+  acceptance_criteria: []
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels: []
+  notes: null

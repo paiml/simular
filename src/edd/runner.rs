@@ -1443,7 +1443,7 @@ mod tests {
     fn test_check_falsification_criteria_with_criteria() {
         use crate::edd::experiment::{ExperimentSpec, FalsificationAction, FalsificationCriterion};
         use crate::edd::loader::{
-            EmcReferenceYaml, ExperimentFalsificationYaml, ExperimentMetadataYaml, ExperimentYaml,
+            ExperimentFalsificationYaml, ExperimentMetadataYaml, ExperimentYaml,
             FalsificationCriterionYaml, ReproducibilityYaml,
         };
 
