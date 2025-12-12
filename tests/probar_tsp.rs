@@ -287,3 +287,161 @@ fn probar_tsp_detects_triangle_violation() {
         Err(TspInstanceError::TriangleInequalityViolation { .. })
     ));
 }
+
+// =============================================================================
+// Probar E2E: Unified Architecture (OR-001-10)
+// =============================================================================
+
+use simular::demos::TspGraspDemo;
+
+#[test]
+fn probar_unified_tsp_grasp_from_yaml() {
+    // TspGraspDemo can load from YAML
+    let demo = TspGraspDemo::from_yaml(BAY_AREA_YAML).expect("YAML should parse");
+
+    assert_eq!(demo.n, 6);
+    assert_eq!(demo.rcl_size, 3); // From YAML config
+}
+
+#[test]
+fn probar_unified_yaml_distances_used() {
+    // Verify TspGraspDemo uses YAML distances, not Euclidean
+    let demo = TspGraspDemo::from_yaml(BAY_AREA_YAML).expect("YAML should parse");
+
+    // SF to Oakland = 12 miles (from YAML)
+    let sf_oakland = demo.distance(0, 1);
+    assert!(
+        (sf_oakland - 12.0).abs() < 0.1,
+        "SF→Oakland should be 12 miles from YAML, got {sf_oakland}"
+    );
+}
+
+#[test]
+fn probar_unified_optimal_tour_115() {
+    // TspGraspDemo computes correct tour length using YAML distances
+    let demo = TspGraspDemo::from_yaml(BAY_AREA_YAML).expect("YAML should parse");
+
+    // Optimal tour: SF(0) → OAK(1) → BRK(4) → FRE(5) → SJ(2) → PA(3)
+    let optimal_tour = vec![0, 1, 4, 5, 2, 3];
+    let length = demo.compute_tour_length(&optimal_tour);
+
+    assert!(
+        (length - 115.0).abs() < 0.1,
+        "Optimal tour should be 115 miles, got {length}"
+    );
+}
+
+#[test]
+fn probar_unified_grasp_algorithm_works() {
+    // GRASP can find a good tour with YAML distances
+    let mut demo = TspGraspDemo::from_yaml(BAY_AREA_YAML).expect("YAML should parse");
+
+    demo.run_grasp(20);
+
+    // Should find tour within 10% of optimal (115)
+    assert!(
+        demo.best_tour_length <= 115.0 * 1.1,
+        "GRASP should find tour ≤126.5 miles, got {}",
+        demo.best_tour_length
+    );
+
+    // Should visit all cities exactly once
+    let mut visited = demo.best_tour.clone();
+    visited.sort();
+    assert_eq!(visited, vec![0, 1, 2, 3, 4, 5]);
+}
+
+#[test]
+fn probar_unified_deterministic_replay() {
+    // Same YAML + same seed = identical results
+    let mut demo1 = TspGraspDemo::from_yaml(BAY_AREA_YAML).expect("parse 1");
+    let mut demo2 = TspGraspDemo::from_yaml(BAY_AREA_YAML).expect("parse 2");
+
+    demo1.run_grasp(10);
+    demo2.run_grasp(10);
+
+    assert_eq!(
+        demo1.best_tour_length, demo2.best_tour_length,
+        "Deterministic replay failed"
+    );
+    assert_eq!(demo1.best_tour, demo2.best_tour);
+}
+
+#[test]
+fn probar_unified_user_modification_changes_result() {
+    // User modifies YAML → different results
+    let original_demo = TspGraspDemo::from_yaml(BAY_AREA_YAML).expect("original");
+
+    // User reduces SF→Oakland from 12 to 1 mile
+    let modified_yaml = BAY_AREA_YAML.replace("[ 0, 12, 48", "[ 0,  1, 48");
+    let modified_demo = TspGraspDemo::from_yaml(&modified_yaml).expect("modified");
+
+    // Distances should differ
+    let original_sf_oak = original_demo.distance(0, 1);
+    let modified_sf_oak = modified_demo.distance(0, 1);
+
+    assert!(
+        (original_sf_oak - 12.0).abs() < 0.1,
+        "Original should be 12"
+    );
+    assert!(
+        (modified_sf_oak - 1.0).abs() < 0.1,
+        "Modified should be 1"
+    );
+}
+
+#[test]
+fn probar_unified_algorithm_method_respected() {
+    // Different algorithm methods produce different behavior
+    let grasp_yaml = BAY_AREA_YAML;
+    let nn_yaml = BAY_AREA_YAML.replace("method: \"grasp\"", "method: \"nearest_neighbor\"");
+
+    let grasp_demo = TspGraspDemo::from_yaml(grasp_yaml).expect("grasp");
+    let nn_demo = TspGraspDemo::from_yaml(&nn_yaml).expect("nn");
+
+    // Construction methods should differ
+    assert!(matches!(
+        grasp_demo.construction_method,
+        simular::demos::tsp_grasp::ConstructionMethod::RandomizedGreedy
+    ));
+    assert!(matches!(
+        nn_demo.construction_method,
+        simular::demos::tsp_grasp::ConstructionMethod::NearestNeighbor
+    ));
+}
+
+#[test]
+fn probar_unified_instance_and_demo_consistency() {
+    // TspInstanceYaml and TspGraspDemo should agree on distances
+    let instance = TspInstanceYaml::from_yaml(BAY_AREA_YAML).expect("instance");
+    let demo = TspGraspDemo::from_yaml(BAY_AREA_YAML).expect("demo");
+
+    // Check all pairwise distances match
+    for i in 0..6 {
+        for j in 0..6 {
+            let instance_dist = instance.distance(i, j);
+            let demo_dist = demo.distance(i, j);
+            assert!(
+                (f64::from(instance_dist) - demo_dist).abs() < 0.1,
+                "Distance mismatch at ({i},{j}): instance={instance_dist}, demo={demo_dist}"
+            );
+        }
+    }
+}
+
+#[test]
+fn probar_unified_tour_length_consistency() {
+    // TspInstanceYaml::tour_length and TspGraspDemo::compute_tour_length should match
+    let instance = TspInstanceYaml::from_yaml(BAY_AREA_YAML).expect("instance");
+    let demo = TspGraspDemo::from_yaml(BAY_AREA_YAML).expect("demo");
+
+    let optimal_tour = vec![0, 1, 4, 5, 2, 3];
+
+    let instance_length = instance.tour_length(&optimal_tour);
+    let demo_length = demo.compute_tour_length(&optimal_tour);
+
+    assert!(
+        (f64::from(instance_length) - demo_length).abs() < 0.1,
+        "Tour length mismatch: instance={instance_length}, demo={demo_length}"
+    );
+}
