@@ -8,7 +8,25 @@
 #[cfg(feature = "tui")]
 fn main() -> std::io::Result<()> {
     use simular::tui::tsp_app::TspApp;
-    tui::run(TspApp::new(30, 42))
+
+    let args: Vec<String> = std::env::args().collect();
+
+    let app = if args.len() > 1 {
+        // Load from YAML file
+        let yaml_path = &args[1];
+        match TspApp::from_yaml_file(yaml_path) {
+            Ok(app) => app,
+            Err(e) => {
+                eprintln!("Error loading YAML file '{}': {}", yaml_path, e);
+                std::process::exit(1);
+            }
+        }
+    } else {
+        // Default: 30 random cities
+        TspApp::new(30, 42)
+    };
+
+    tui::run(app)
 }
 
 #[cfg(not(feature = "tui"))]
