@@ -37,23 +37,28 @@
     clippy::manual_midpoint,       // Manual midpoint is intentional in numerical code
 )]
 
+pub mod cli;
 pub mod config;
-pub mod engine;
+pub mod demos;
+pub mod discovery;
 pub mod domains;
-pub mod replay;
+pub mod edd;
+pub mod engine;
 pub mod error;
 pub mod falsification;
-pub mod scenarios;
-pub mod discovery;
-pub mod visualization;
 pub mod orbit;
+pub mod replay;
+pub mod scenarios;
+#[cfg(feature = "tui")]
+pub mod tui;
+pub mod visualization;
 
 /// Prelude for convenient imports
 pub mod prelude {
     pub use crate::config::{SimConfig, SimConfigBuilder};
-    pub use crate::engine::{SimEngine, SimState, SimTime};
-    pub use crate::engine::rng::SimRng;
     pub use crate::engine::jidoka::{JidokaGuard, JidokaViolation};
+    pub use crate::engine::rng::SimRng;
+    pub use crate::engine::{SimEngine, SimState, SimTime};
     pub use crate::error::{SimError, SimResult};
     pub use crate::falsification::{FalsifiableHypothesis, NHSTResult};
 }

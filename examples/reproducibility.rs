@@ -123,7 +123,7 @@ fn main() {
 
     let hash1 = compute_simulation_hash(42, 10000);
     let hash2 = compute_simulation_hash(42, 10000);
-    let hash3 = compute_simulation_hash(43, 10000);  // Different seed
+    let hash3 = compute_simulation_hash(43, 10000); // Different seed
 
     println!("   Seed 42, run 1: {}", hash1);
     println!("   Seed 42, run 2: {}", hash2);

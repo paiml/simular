@@ -30,9 +30,9 @@
 //! let next_point = optimizer.suggest();
 //! ```
 
-use serde::{Deserialize, Serialize};
 use crate::engine::rng::SimRng;
 use crate::error::{SimError, SimResult};
+use serde::{Deserialize, Serialize};
 
 /// Acquisition functions for Bayesian optimization.
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize, Default)]
@@ -176,16 +176,14 @@ impl GaussianProcess {
         };
 
         // k* = kernel between x and training points
-        let k_star: Vec<f64> = self.x_train
+        let k_star: Vec<f64> = self
+            .x_train
             .iter()
             .map(|xi| self.rbf_kernel(xi, x))
             .collect();
 
         // Mean: mu = k*^T * K^{-1} * y
-        let mu: f64 = k_star.iter()
-            .zip(k_inv_y.iter())
-            .map(|(k, a)| k * a)
-            .sum();
+        let mu: f64 = k_star.iter().zip(k_inv_y.iter()).map(|(k, a)| k * a).sum();
 
         // Variance: sigma^2 = k(x, x) - k*^T * K^{-1} * k*
         let k_xx = self.rbf_kernel(x, x);
@@ -199,10 +197,7 @@ impl GaussianProcess {
 
     /// RBF (squared exponential) kernel.
     fn rbf_kernel(&self, x1: &[f64], x2: &[f64]) -> f64 {
-        let sq_dist: f64 = x1.iter()
-            .zip(x2.iter())
-            .map(|(a, b)| (a - b).powi(2))
-            .sum();
+        let sq_dist: f64 = x1.iter().zip(x2.iter()).map(|(a, b)| (a - b).powi(2)).sum();
 
         self.signal_variance * (-sq_dist / (2.0 * self.length_scale.powi(2))).exp()
     }
@@ -223,7 +218,7 @@ impl GaussianProcess {
                     let val = matrix[i][i] - sum;
                     if val <= 0.0 {
                         return Err(SimError::optimization(
-                            "Cholesky decomposition failed: matrix not positive definite"
+                            "Cholesky decomposition failed: matrix not positive definite",
                         ));
                     }
                     l[i][j] = val.sqrt();
@@ -357,12 +352,8 @@ impl BayesianOptimizer {
         let sigma = variance.sqrt();
 
         match self.config.acquisition {
-            AcquisitionFunction::ExpectedImprovement => {
-                self.expected_improvement(mu, sigma)
-            }
-            AcquisitionFunction::UCB { kappa } => {
-                Self::upper_confidence_bound(mu, sigma, kappa)
-            }
+            AcquisitionFunction::ExpectedImprovement => self.expected_improvement(mu, sigma),
+            AcquisitionFunction::UCB { kappa } => Self::upper_confidence_bound(mu, sigma, kappa),
             AcquisitionFunction::ProbabilityOfImprovement => {
                 self.probability_of_improvement(mu, sigma)
             }
@@ -423,14 +414,16 @@ impl BayesianOptimizer {
         let sign = if z < 0.0 { -1.0 } else { 1.0 };
         let z_abs = z.abs();
         let t = 1.0 / (1.0 + P * z_abs);
-        let y = 1.0 - (((((A5 * t + A4) * t) + A3) * t + A2) * t + A1) * t * (-z_abs * z_abs / 2.0).exp();
+        let y = 1.0
+            - (((((A5 * t + A4) * t) + A3) * t + A2) * t + A1) * t * (-z_abs * z_abs / 2.0).exp();
 
         0.5 * (1.0 + sign * y)
     }
 
     /// Generate a random point within bounds.
     fn random_point(&mut self) -> Vec<f64> {
-        self.config.bounds
+        self.config
+            .bounds
             .iter()
             .map(|(min, max)| self.rng.gen_range_f64(*min, *max))
             .collect()
@@ -532,7 +525,10 @@ mod tests {
         let (_, var_near) = gp.predict(&[0.0]);
         let (_, var_far) = gp.predict(&[5.0]);
 
-        assert!(var_near < var_far, "Variance should be lower near observations");
+        assert!(
+            var_near < var_far,
+            "Variance should be lower near observations"
+        );
     }
 
     #[test]
@@ -682,10 +678,7 @@ mod tests {
     #[test]
     fn test_cholesky() {
         // Simple 2x2 positive definite matrix
-        let matrix = vec![
-            vec![4.0, 2.0],
-            vec![2.0, 5.0],
-        ];
+        let matrix = vec![vec![4.0, 2.0], vec![2.0, 5.0]];
 
         let l = GaussianProcess::cholesky(&matrix).expect("Should succeed");
 
@@ -725,7 +718,11 @@ mod tests {
 
         let (best_x, best_y) = optimizer.best().expect("Should have best");
         assert!(best_y < 0.1, "Should find near-minimum, got y={}", best_y);
-        assert!((best_x[0] - 2.0).abs() < 0.5, "Should find x near 2, got x={}", best_x[0]);
+        assert!(
+            (best_x[0] - 2.0).abs() < 0.5,
+            "Should find x near 2, got x={}",
+            best_x[0]
+        );
     }
 }
 

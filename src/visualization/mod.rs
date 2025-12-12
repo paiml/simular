@@ -15,10 +15,10 @@
 //! ```
 
 use std::collections::VecDeque;
-use std::path::Path;
-use std::io::{self, Write as IoWrite, BufWriter};
-use std::fs::File;
 use std::fmt::Write as FmtWrite;
+use std::fs::File;
+use std::io::{self, BufWriter, Write as IoWrite};
+use std::path::Path;
 
 use serde::{Deserialize, Serialize};
 
@@ -37,7 +37,7 @@ pub use tui::SimularTui;
 pub mod web;
 
 #[cfg(feature = "web")]
-pub use web::{WebVisualization, WebPayload};
+pub use web::{WebPayload, WebVisualization};
 
 // ============================================================================
 // Simulation Metrics
@@ -335,13 +335,13 @@ impl Trajectory {
     /// Get frame closest to time.
     #[must_use]
     pub fn frame_at_time(&self, time: f64) -> Option<&TrajectoryFrame> {
-        self.frames
-            .iter()
-            .min_by(|a, b| {
-                let diff_a = (a.time - time).abs();
-                let diff_b = (b.time - time).abs();
-                diff_a.partial_cmp(&diff_b).unwrap_or(std::cmp::Ordering::Equal)
-            })
+        self.frames.iter().min_by(|a, b| {
+            let diff_a = (a.time - time).abs();
+            let diff_b = (b.time - time).abs();
+            diff_a
+                .partial_cmp(&diff_b)
+                .unwrap_or(std::cmp::Ordering::Equal)
+        })
     }
 
     /// Get duration.
@@ -461,8 +461,8 @@ impl Exporter {
     ///
     /// Returns error if file operations fail.
     pub fn to_json_lines(&self, trajectory: &Trajectory, path: &Path) -> SimResult<()> {
-        let file = File::create(path)
-            .map_err(|e| SimError::io(format!("Failed to create file: {e}")))?;
+        let file =
+            File::create(path).map_err(|e| SimError::io(format!("Failed to create file: {e}")))?;
         let mut writer = BufWriter::new(file);
 
         for (i, frame) in trajectory.frames.iter().enumerate() {
@@ -472,11 +472,11 @@ impl Exporter {
 
             let json = serde_json::to_string(frame)
                 .map_err(|e| SimError::serialization(format!("JSON serialization failed: {e}")))?;
-            writeln!(writer, "{json}")
-                .map_err(|e| SimError::io(format!("Write failed: {e}")))?;
+            writeln!(writer, "{json}").map_err(|e| SimError::io(format!("Write failed: {e}")))?;
         }
 
-        writer.flush()
+        writer
+            .flush()
             .map_err(|e| SimError::io(format!("Flush failed: {e}")))?;
 
         Ok(())
@@ -488,8 +488,8 @@ impl Exporter {
     ///
     /// Returns error if file operations fail.
     pub fn to_csv(&self, trajectory: &Trajectory, path: &Path) -> SimResult<()> {
-        let file = File::create(path)
-            .map_err(|e| SimError::io(format!("Failed to create file: {e}")))?;
+        let file =
+            File::create(path).map_err(|e| SimError::io(format!("Failed to create file: {e}")))?;
         let mut writer = BufWriter::new(file);
 
         // Write header
@@ -541,7 +541,8 @@ impl Exporter {
                 .map_err(|e| SimError::io(format!("Write data failed: {e}")))?;
         }
 
-        writer.flush()
+        writer
+            .flush()
             .map_err(|e| SimError::io(format!("Flush failed: {e}")))?;
 
         Ok(())
@@ -553,8 +554,8 @@ impl Exporter {
     ///
     /// Returns error if file operations fail.
     pub fn to_binary(&self, trajectory: &Trajectory, path: &Path) -> SimResult<()> {
-        let file = File::create(path)
-            .map_err(|e| SimError::io(format!("Failed to create file: {e}")))?;
+        let file =
+            File::create(path).map_err(|e| SimError::io(format!("Failed to create file: {e}")))?;
         let writer = BufWriter::new(file);
 
         bincode::serialize_into(writer, trajectory)
@@ -569,8 +570,8 @@ impl Exporter {
     ///
     /// Returns error if file operations fail.
     pub fn from_binary(path: &Path) -> SimResult<Trajectory> {
-        let file = File::open(path)
-            .map_err(|e| SimError::io(format!("Failed to open file: {e}")))?;
+        let file =
+            File::open(path).map_err(|e| SimError::io(format!("Failed to open file: {e}")))?;
         let reader = io::BufReader::new(file);
 
         bincode::deserialize_from(reader)
@@ -587,12 +588,12 @@ impl Exporter {
             ExportFormat::JsonLines => self.to_json_lines(trajectory, path),
             ExportFormat::Csv => self.to_csv(trajectory, path),
             ExportFormat::Binary => self.to_binary(trajectory, path),
-            ExportFormat::Parquet { .. } => {
-                Err(SimError::config("Parquet export requires alimentar integration".to_string()))
-            }
-            ExportFormat::Video { .. } => {
-                Err(SimError::config("Video export requires ffmpeg integration".to_string()))
-            }
+            ExportFormat::Parquet { .. } => Err(SimError::config(
+                "Parquet export requires alimentar integration".to_string(),
+            )),
+            ExportFormat::Video { .. } => Err(SimError::config(
+                "Video export requires ffmpeg integration".to_string(),
+            )),
         }
     }
 }
@@ -616,8 +617,8 @@ impl StreamingExporter {
     ///
     /// Returns error if file creation fails.
     pub fn new(path: &Path, decimation: usize) -> SimResult<Self> {
-        let file = File::create(path)
-            .map_err(|e| SimError::io(format!("Failed to create file: {e}")))?;
+        let file =
+            File::create(path).map_err(|e| SimError::io(format!("Failed to create file: {e}")))?;
         Ok(Self {
             writer: BufWriter::new(file),
             frame_count: 0,
@@ -640,8 +641,7 @@ impl StreamingExporter {
 
         let json = serde_json::to_string(frame)
             .map_err(|e| SimError::serialization(format!("JSON serialization failed: {e}")))?;
-        writeln!(self.writer, "{json}")
-            .map_err(|e| SimError::io(format!("Write failed: {e}")))?;
+        writeln!(self.writer, "{json}").map_err(|e| SimError::io(format!("Write failed: {e}")))?;
 
         self.frame_count += 1;
         Ok(())
@@ -653,7 +653,8 @@ impl StreamingExporter {
     ///
     /// Returns error if flush fails.
     pub fn finish(mut self) -> SimResult<u64> {
-        self.writer.flush()
+        self.writer
+            .flush()
             .map_err(|e| SimError::io(format!("Flush failed: {e}")))?;
         Ok(self.frame_count)
     }
@@ -818,7 +819,10 @@ mod tests {
 
     #[test]
     fn test_data_point_clone() {
-        let dp = DataPoint { time: 1.0, value: 2.0 };
+        let dp = DataPoint {
+            time: 1.0,
+            value: 2.0,
+        };
         let cloned = dp.clone();
         assert!((cloned.time - 1.0).abs() < f64::EPSILON);
         assert!((cloned.value - 2.0).abs() < f64::EPSILON);
@@ -1025,7 +1029,10 @@ mod tests {
         exporter.to_json_lines(&traj, &path).unwrap();
 
         let mut content = String::new();
-        File::open(&path).unwrap().read_to_string(&mut content).unwrap();
+        File::open(&path)
+            .unwrap()
+            .read_to_string(&mut content)
+            .unwrap();
         assert!(content.contains("\"time\":0.0"));
         assert!(content.contains("\"index\":0"));
     }
@@ -1054,7 +1061,10 @@ mod tests {
         exporter.to_json_lines(&traj, &path).unwrap();
 
         let mut content = String::new();
-        File::open(&path).unwrap().read_to_string(&mut content).unwrap();
+        File::open(&path)
+            .unwrap()
+            .read_to_string(&mut content)
+            .unwrap();
         // Should have frames 0, 2, 4, 6, 8
         let lines: Vec<_> = content.lines().collect();
         assert_eq!(lines.len(), 5);
@@ -1078,7 +1088,10 @@ mod tests {
         exporter.to_csv(&traj, &path).unwrap();
 
         let mut content = String::new();
-        File::open(&path).unwrap().read_to_string(&mut content).unwrap();
+        File::open(&path)
+            .unwrap()
+            .read_to_string(&mut content)
+            .unwrap();
         assert!(content.contains("time,index"));
         assert!(content.contains("0,0"));
     }
@@ -1105,7 +1118,10 @@ mod tests {
         exporter.to_csv(&traj, &path).unwrap();
 
         let mut content = String::new();
-        File::open(&path).unwrap().read_to_string(&mut content).unwrap();
+        File::open(&path)
+            .unwrap()
+            .read_to_string(&mut content)
+            .unwrap();
         // Header shouldn't have vx, vy, vz
         assert!(!content.lines().next().unwrap().contains("vx"));
     }
@@ -1132,7 +1148,10 @@ mod tests {
         exporter.to_csv(&traj, &path).unwrap();
 
         let mut content = String::new();
-        File::open(&path).unwrap().read_to_string(&mut content).unwrap();
+        File::open(&path)
+            .unwrap()
+            .read_to_string(&mut content)
+            .unwrap();
         assert!(!content.contains("total_energy"));
     }
 
@@ -1160,7 +1179,10 @@ mod tests {
         exporter.to_csv(&traj, &path).unwrap();
 
         let mut content = String::new();
-        File::open(&path).unwrap().read_to_string(&mut content).unwrap();
+        File::open(&path)
+            .unwrap()
+            .read_to_string(&mut content)
+            .unwrap();
         // Should have header + frames 0, 3, 6, 9
         let lines: Vec<_> = content.lines().collect();
         assert_eq!(lines.len(), 5); // header + 4 data lines
@@ -1216,7 +1238,9 @@ mod tests {
 
         let traj = Trajectory::new();
         let config = ExportConfig {
-            format: ExportFormat::Parquet { compression: ParquetCompression::Snappy },
+            format: ExportFormat::Parquet {
+                compression: ParquetCompression::Snappy,
+            },
             ..Default::default()
         };
         let exporter = Exporter::with_config(config);
@@ -1231,7 +1255,10 @@ mod tests {
 
         let traj = Trajectory::new();
         let config = ExportConfig {
-            format: ExportFormat::Video { format: VideoFormat::Mp4, fps: 30 },
+            format: ExportFormat::Video {
+                format: VideoFormat::Mp4,
+                fps: 30,
+            },
             ..Default::default()
         };
         let exporter = Exporter::with_config(config);
@@ -1299,15 +1326,27 @@ mod tests {
 
     #[test]
     fn test_export_format_parquet_variants() {
-        let _ = ExportFormat::Parquet { compression: ParquetCompression::None };
-        let _ = ExportFormat::Parquet { compression: ParquetCompression::Zstd };
-        let _ = ExportFormat::Parquet { compression: ParquetCompression::Lz4 };
+        let _ = ExportFormat::Parquet {
+            compression: ParquetCompression::None,
+        };
+        let _ = ExportFormat::Parquet {
+            compression: ParquetCompression::Zstd,
+        };
+        let _ = ExportFormat::Parquet {
+            compression: ParquetCompression::Lz4,
+        };
     }
 
     #[test]
     fn test_export_format_video_variants() {
-        let _ = ExportFormat::Video { format: VideoFormat::Gif, fps: 24 };
-        let _ = ExportFormat::Video { format: VideoFormat::WebM, fps: 60 };
+        let _ = ExportFormat::Video {
+            format: VideoFormat::Gif,
+            fps: 24,
+        };
+        let _ = ExportFormat::Video {
+            format: VideoFormat::WebM,
+            fps: 60,
+        };
     }
 
     #[test]
@@ -1406,7 +1445,10 @@ mod tests {
 
     #[test]
     fn test_data_point_debug_clone() {
-        let dp = DataPoint { time: 1.0, value: 2.0 };
+        let dp = DataPoint {
+            time: 1.0,
+            value: 2.0,
+        };
         let cloned = dp.clone();
         assert!((cloned.time - 1.0).abs() < f64::EPSILON);
         assert!((cloned.value - 2.0).abs() < f64::EPSILON);

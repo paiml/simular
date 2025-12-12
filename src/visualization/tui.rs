@@ -17,9 +17,9 @@ use ratatui::{
     widgets::{Block, Borders, Paragraph},
 };
 
+use super::{SimMetrics, TimeSeries};
 use crate::engine::{SimState, SimTime};
 use crate::error::{SimError, SimResult};
-use super::{SimMetrics, TimeSeries};
 
 /// TUI Dashboard for real-time simulation visualization.
 pub struct SimularTui {
@@ -179,8 +179,7 @@ impl DashboardState {
              [R] Reset\n\
              [Q] Quit\n\n\
              {}",
-            status_text,
-            self.status
+            status_text, self.status
         )
     }
 
@@ -253,7 +252,12 @@ impl DashboardState {
                  Current: {:.6}\n\
                  Time: {:.2}s - {:.2}s\n\
                  Samples: {}",
-                min, max, last, t_start, t_end, energy_data.len()
+                min,
+                max,
+                last,
+                t_start,
+                t_end,
+                energy_data.len()
             )
         }
     }
@@ -278,8 +282,7 @@ impl SimularTui {
     ///
     /// Returns error if terminal initialization fails.
     pub fn new(refresh_hz: u32) -> SimResult<Self> {
-        enable_raw_mode()
-            .map_err(|e| SimError::io(format!("Failed to enable raw mode: {e}")))?;
+        enable_raw_mode().map_err(|e| SimError::io(format!("Failed to enable raw mode: {e}")))?;
 
         let mut stdout = io::stdout();
         execute!(stdout, EnterAlternateScreen)
@@ -340,9 +343,7 @@ impl SimularTui {
 
                 let trajectory_text = Paragraph::new(format!(
                     "Bodies: {}\nTime: {:.3}s\nStep: {}",
-                    state.metrics.body_count,
-                    state.metrics.time,
-                    state.metrics.step
+                    state.metrics.body_count, state.metrics.time, state.metrics.step
                 ))
                 .block(trajectory_block)
                 .style(Style::default().fg(Color::White));
@@ -390,8 +391,7 @@ impl SimularTui {
              [R] Reset\n\
              [Q] Quit\n\n\
              {}",
-            status_text,
-            state.status
+            status_text, state.status
         );
 
         Paragraph::new(text)
@@ -482,7 +482,12 @@ impl SimularTui {
                  Current: {:.6}\n\
                  Time: {:.2}s - {:.2}s\n\
                  Samples: {}",
-                min, max, last, t_start, t_end, energy_data.len()
+                min,
+                max,
+                last,
+                t_start,
+                t_end,
+                energy_data.len()
             )
         };
 
@@ -512,8 +517,8 @@ impl SimularTui {
             if event::poll(remaining)
                 .map_err(|e| SimError::io(format!("Event poll failed: {e}")))?
             {
-                if let Event::Key(key) = event::read()
-                    .map_err(|e| SimError::io(format!("Event read failed: {e}")))?
+                if let Event::Key(key) =
+                    event::read().map_err(|e| SimError::io(format!("Event read failed: {e}")))?
                 {
                     if key.kind == KeyEventKind::Press {
                         match key.code {
@@ -566,8 +571,7 @@ impl SimularTui {
 
     /// Restore terminal state.
     fn restore_terminal(&mut self) -> SimResult<()> {
-        disable_raw_mode()
-            .map_err(|e| SimError::io(format!("Failed to disable raw mode: {e}")))?;
+        disable_raw_mode().map_err(|e| SimError::io(format!("Failed to disable raw mode: {e}")))?;
         execute!(self.terminal.backend_mut(), LeaveAlternateScreen)
             .map_err(|e| SimError::io(format!("Failed to leave alternate screen: {e}")))?;
         self.terminal
@@ -756,7 +760,11 @@ mod tests {
     fn test_dashboard_update_from_sim() {
         let mut state = DashboardState::default();
         let mut sim_state = SimState::new();
-        sim_state.add_body(1.0, crate::engine::state::Vec3::zero(), crate::engine::state::Vec3::zero());
+        sim_state.add_body(
+            1.0,
+            crate::engine::state::Vec3::zero(),
+            crate::engine::state::Vec3::zero(),
+        );
 
         let time = SimTime::from_secs(1.5);
         let mut metrics = SimMetrics::new();
@@ -1030,5 +1038,134 @@ mod tests {
         assert!(debug_str.contains("DashboardState"));
         assert!(debug_str.contains("running: true"));
         assert!(debug_str.contains("paused: false"));
+    }
+
+    #[test]
+    fn test_dashboard_multiple_updates() {
+        let mut state = DashboardState::default();
+        let sim_state = SimState::new();
+        let mut metrics = SimMetrics::new();
+
+        // Multiple updates at different times
+        for i in 0..10 {
+            let time = SimTime::from_secs(i as f64 * 0.1);
+            metrics.total_energy = Some(100.0 - i as f64 * 0.1);
+            metrics.kinetic_energy = Some(60.0 - i as f64 * 0.05);
+            metrics.potential_energy = Some(40.0 - i as f64 * 0.05);
+            metrics.steps_per_second = 1000.0 + i as f64 * 10.0;
+            state.update_from_sim(&sim_state, time, &metrics);
+        }
+
+        assert_eq!(state.energy_series.len(), 10);
+        assert_eq!(state.ke_series.len(), 10);
+        assert_eq!(state.pe_series.len(), 10);
+        assert_eq!(state.throughput_series.len(), 10);
+    }
+
+    #[test]
+    fn test_dashboard_partial_energy_update() {
+        let mut state = DashboardState::default();
+        let sim_state = SimState::new();
+        let time = SimTime::from_secs(1.0);
+
+        // Only total energy set
+        let mut metrics = SimMetrics::new();
+        metrics.total_energy = Some(100.0);
+        state.update_from_sim(&sim_state, time, &metrics);
+
+        assert_eq!(state.energy_series.len(), 1);
+        assert!(state.ke_series.is_empty());
+        assert!(state.pe_series.is_empty());
+    }
+
+    #[test]
+    fn test_dashboard_state_accessors_chain() {
+        let state = DashboardState::default();
+
+        // Test chained accessor calls
+        let _ = state.metrics().time;
+        let _ = state.energy_series().len();
+        let _ = state.ke_series().len();
+        let _ = state.pe_series().len();
+        let _ = state.throughput_series().len();
+        let _ = state.is_paused();
+        let _ = state.is_running();
+        let _ = state.status_color();
+    }
+
+    #[test]
+    fn test_format_metrics_partial_values() {
+        let mut state = DashboardState::default();
+        // Only kinetic energy set
+        state.metrics.kinetic_energy = Some(50.0);
+
+        let text = state.format_metrics_text();
+        assert!(text.contains("Total: N/A"));
+        assert!(text.contains("Kinetic: 50.000000"));
+        assert!(text.contains("Potential: N/A"));
+    }
+
+    #[test]
+    fn test_format_energy_chart_single_point() {
+        let mut state = DashboardState::default();
+        state.energy_series.push(0.0, 100.0);
+
+        let text = state.format_energy_chart_text();
+        assert!(text.contains("Samples: 1"));
+    }
+
+    #[test]
+    fn test_render_controls_all_states() {
+        // Running state
+        let state_running = DashboardState::default();
+        let _ = SimularTui::render_controls(&state_running);
+
+        // Paused state
+        let mut state_paused = DashboardState::default();
+        state_paused.paused = true;
+        let _ = SimularTui::render_controls(&state_paused);
+
+        // Stopped state
+        let mut state_stopped = DashboardState::default();
+        state_stopped.running = false;
+        state_stopped.paused = false;
+        let _ = SimularTui::render_controls(&state_stopped);
+    }
+
+    #[test]
+    fn test_render_metrics_all_branches() {
+        // All values present
+        let mut state_full = DashboardState::default();
+        state_full.metrics.total_energy = Some(100.0);
+        state_full.metrics.kinetic_energy = Some(60.0);
+        state_full.metrics.potential_energy = Some(40.0);
+        state_full.metrics.energy_drift = Some(0.001);
+        let _ = SimularTui::render_metrics(&state_full);
+
+        // No values present
+        let state_empty = DashboardState::default();
+        let _ = SimularTui::render_metrics(&state_empty);
+
+        // Partial values
+        let mut state_partial = DashboardState::default();
+        state_partial.metrics.total_energy = Some(100.0);
+        // kinetic, potential, drift are None
+        let _ = SimularTui::render_metrics(&state_partial);
+    }
+
+    #[test]
+    fn test_render_energy_chart_all_branches() {
+        let area = ratatui::prelude::Rect::new(0, 0, 80, 24);
+
+        // Empty data
+        let state_empty = DashboardState::default();
+        let _ = SimularTui::render_energy_chart(&state_empty, area);
+
+        // With data
+        let mut state_data = DashboardState::default();
+        for i in 0..50 {
+            state_data.energy_series.push(i as f64 * 0.1, 100.0 - i as f64 * 0.01);
+        }
+        let _ = SimularTui::render_energy_chart(&state_data, area);
     }
 }

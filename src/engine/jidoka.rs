@@ -28,10 +28,10 @@
 //! detection of anomalies. This prevents error propagation and
 //! enables root cause analysis.
 
-use serde::{Deserialize, Serialize};
 use crate::config::SimConfig;
-use crate::error::{SimError, SimResult};
 use crate::engine::state::SimState;
+use crate::error::{SimError, SimResult};
+use serde::{Deserialize, Serialize};
 
 /// Severity levels for Jidoka violations.
 ///
@@ -160,12 +160,10 @@ pub enum JidokaViolation {
 impl From<JidokaViolation> for SimError {
     fn from(v: JidokaViolation) -> Self {
         match v {
-            JidokaViolation::NonFiniteValue { location, .. } => {
-                Self::NonFiniteValue { location }
-            }
-            JidokaViolation::EnergyDrift { drift, tolerance, .. } => {
-                Self::EnergyDrift { drift, tolerance }
-            }
+            JidokaViolation::NonFiniteValue { location, .. } => Self::NonFiniteValue { location },
+            JidokaViolation::EnergyDrift {
+                drift, tolerance, ..
+            } => Self::EnergyDrift { drift, tolerance },
             JidokaViolation::ConstraintViolation {
                 name,
                 violation,
@@ -274,7 +272,7 @@ impl JidokaGuard {
     }
 
     /// Check for non-finite values in state.
-    #[allow(clippy::unused_self)]  // Consistent method signature with other checks
+    #[allow(clippy::unused_self)] // Consistent method signature with other checks
     fn check_finite(&self, state: &SimState) -> SimResult<()> {
         // Check all positions
         for (i, pos) in state.positions().iter().enumerate() {
@@ -363,7 +361,7 @@ impl JidokaGuard {
     }
 
     /// Reset the guard (clear initial energy).
-    #[allow(clippy::missing_const_for_fn)]  // Mutable const not stable in all contexts
+    #[allow(clippy::missing_const_for_fn)] // Mutable const not stable in all contexts
     pub fn reset(&mut self) {
         self.initial_energy = None;
     }
@@ -382,7 +380,10 @@ impl JidokaGuard {
     /// # Errors
     ///
     /// Returns error for Critical/Fatal violations.
-    pub fn check_with_warnings(&mut self, state: &SimState) -> Result<Vec<JidokaWarning>, SimError> {
+    pub fn check_with_warnings(
+        &mut self,
+        state: &SimState,
+    ) -> Result<Vec<JidokaWarning>, SimError> {
         let mut warnings = Vec::new();
 
         // Check 1: Non-finite values (always Fatal)
@@ -404,7 +405,10 @@ impl JidokaGuard {
     }
 
     /// Check energy with graduated severity.
-    fn check_energy_graduated(&mut self, state: &SimState) -> Result<Option<JidokaWarning>, SimError> {
+    fn check_energy_graduated(
+        &mut self,
+        state: &SimState,
+    ) -> Result<Option<JidokaWarning>, SimError> {
         let current_energy = state.total_energy();
 
         // Skip if no energy defined
@@ -419,10 +423,10 @@ impl JidokaGuard {
             }
             Some(initial) => {
                 let drift = (current_energy - initial).abs() / initial.abs().max(f64::EPSILON);
-                let severity = self.config.severity_classifier.classify_energy_drift(
-                    drift,
-                    self.config.energy_tolerance,
-                );
+                let severity = self
+                    .config
+                    .severity_classifier
+                    .classify_energy_drift(drift, self.config.energy_tolerance);
 
                 match severity {
                     ViolationSeverity::Acceptable => Ok(None),
@@ -442,14 +446,17 @@ impl JidokaGuard {
     }
 
     /// Check constraints with graduated severity.
-    fn check_constraints_graduated(&self, state: &SimState) -> Result<Vec<JidokaWarning>, SimError> {
+    fn check_constraints_graduated(
+        &self,
+        state: &SimState,
+    ) -> Result<Vec<JidokaWarning>, SimError> {
         let mut warnings = Vec::new();
 
         for (name, violation) in state.constraint_violations() {
-            let severity = self.config.severity_classifier.classify_constraint(
-                violation,
-                self.config.constraint_tolerance,
-            );
+            let severity = self
+                .config
+                .severity_classifier
+                .classify_constraint(violation, self.config.constraint_tolerance);
 
             match severity {
                 ViolationSeverity::Acceptable => {}
@@ -828,7 +835,11 @@ impl SelfHealingJidoka {
         let anomaly_type = self.anomaly_type_key(anomaly);
 
         // Check type-specific correction count
-        let type_count = self.corrections_by_type.get(&anomaly_type).copied().unwrap_or(0);
+        let type_count = self
+            .corrections_by_type
+            .get(&anomaly_type)
+            .copied()
+            .unwrap_or(0);
         if type_count >= self.max_same_type_corrections {
             return JidokaResponse::Andon;
         }
@@ -848,7 +859,8 @@ impl SelfHealingJidoka {
                 }
             }
 
-            TrainingAnomaly::GradientExplosion { .. } | TrainingAnomaly::GradientVanishing { .. } => {
+            TrainingAnomaly::GradientExplosion { .. }
+            | TrainingAnomaly::GradientVanishing { .. } => {
                 if self.correction_count < self.max_auto_corrections {
                     JidokaResponse::AutoCorrect
                 } else {
@@ -876,7 +888,9 @@ impl SelfHealingJidoka {
             }
 
             TrainingAnomaly::GradientExplosion { norm, .. } => {
-                Some(RulePatch::EnableGradientClipping { max_norm: norm / 10.0 })
+                Some(RulePatch::EnableGradientClipping {
+                    max_norm: norm / 10.0,
+                })
             }
 
             TrainingAnomaly::GradientVanishing { .. } => {
@@ -1038,7 +1052,10 @@ mod tests {
 
         // Record initial energy - needs non-zero energy to record
         guard.check(&state).ok();
-        assert!(guard.initial_energy.is_some(), "Initial energy should be recorded for non-zero energy state");
+        assert!(
+            guard.initial_energy.is_some(),
+            "Initial energy should be recorded for non-zero energy state"
+        );
 
         // Reset
         guard.reset();
@@ -1132,14 +1149,32 @@ mod tests {
         let classifier = SeverityClassifier::new(0.8);
 
         // Test positive violation
-        assert_eq!(classifier.classify_constraint(0.5, 1.0), ViolationSeverity::Acceptable);
-        assert_eq!(classifier.classify_constraint(0.85, 1.0), ViolationSeverity::Warning);
-        assert_eq!(classifier.classify_constraint(1.5, 1.0), ViolationSeverity::Critical);
+        assert_eq!(
+            classifier.classify_constraint(0.5, 1.0),
+            ViolationSeverity::Acceptable
+        );
+        assert_eq!(
+            classifier.classify_constraint(0.85, 1.0),
+            ViolationSeverity::Warning
+        );
+        assert_eq!(
+            classifier.classify_constraint(1.5, 1.0),
+            ViolationSeverity::Critical
+        );
 
         // Test negative violation (abs applied)
-        assert_eq!(classifier.classify_constraint(-0.5, 1.0), ViolationSeverity::Acceptable);
-        assert_eq!(classifier.classify_constraint(-0.85, 1.0), ViolationSeverity::Warning);
-        assert_eq!(classifier.classify_constraint(-1.5, 1.0), ViolationSeverity::Critical);
+        assert_eq!(
+            classifier.classify_constraint(-0.5, 1.0),
+            ViolationSeverity::Acceptable
+        );
+        assert_eq!(
+            classifier.classify_constraint(-0.85, 1.0),
+            ViolationSeverity::Warning
+        );
+        assert_eq!(
+            classifier.classify_constraint(-1.5, 1.0),
+            ViolationSeverity::Critical
+        );
     }
 
     #[test]
@@ -1216,7 +1251,9 @@ mod tests {
         assert!(!warnings.is_empty(), "Should have constraint warning");
 
         match &warnings[0] {
-            JidokaWarning::ConstraintApproaching { name, violation, .. } => {
+            JidokaWarning::ConstraintApproaching {
+                name, violation, ..
+            } => {
                 assert_eq!(name, "test");
                 assert!((*violation - 0.9).abs() < f64::EPSILON);
             }
@@ -1301,8 +1338,7 @@ mod tests {
 
     #[test]
     fn test_preflight_gradient_explosion() {
-        let mut preflight = PreflightJidoka::new()
-            .with_explosion_threshold(100.0);
+        let mut preflight = PreflightJidoka::new().with_explosion_threshold(100.0);
 
         assert!(preflight.check_gradient_norm(50.0).is_ok());
         assert!(preflight.check_gradient_norm(150.0).is_err());
@@ -1312,8 +1348,9 @@ mod tests {
     #[test]
     fn test_preflight_gradient_vanishing() {
         let mut preflight = PreflightJidoka::with_conditions(
-            AbortConditions::NON_FINITE | AbortConditions::GRADIENT_VANISHING
-        ).with_vanishing_threshold(1e-8);
+            AbortConditions::NON_FINITE | AbortConditions::GRADIENT_VANISHING,
+        )
+        .with_vanishing_threshold(1e-8);
 
         assert!(preflight.check_gradient_norm(1e-6).is_ok()); // Above threshold
         assert!(preflight.check_gradient_norm(1e-10).is_err()); // Below threshold
@@ -1346,7 +1383,9 @@ mod tests {
     #[test]
     fn test_self_healing_nan_always_andon() {
         let healer = SelfHealingJidoka::new(10);
-        let anomaly = TrainingAnomaly::NaN { location: "loss".to_string() };
+        let anomaly = TrainingAnomaly::NaN {
+            location: "loss".to_string(),
+        };
         assert_eq!(healer.classify_response(&anomaly), JidokaResponse::Andon);
     }
 
@@ -1367,7 +1406,10 @@ mod tests {
             expected: 1.0,
             z_score: 3.0,
         };
-        assert_eq!(healer.classify_response(&anomaly), JidokaResponse::AutoCorrect);
+        assert_eq!(
+            healer.classify_response(&anomaly),
+            JidokaResponse::AutoCorrect
+        );
     }
 
     #[test]
@@ -1388,7 +1430,10 @@ mod tests {
             norm: 1e7,
             threshold: 1e6,
         };
-        assert_eq!(healer.classify_response(&anomaly), JidokaResponse::AutoCorrect);
+        assert_eq!(
+            healer.classify_response(&anomaly),
+            JidokaResponse::AutoCorrect
+        );
     }
 
     #[test]
@@ -1421,11 +1466,17 @@ mod tests {
         };
 
         // First two should auto-correct
-        assert_eq!(healer.classify_response(&anomaly), JidokaResponse::AutoCorrect);
+        assert_eq!(
+            healer.classify_response(&anomaly),
+            JidokaResponse::AutoCorrect
+        );
         let patch = healer.generate_patch(&anomaly).unwrap();
         healer.record_correction(&anomaly, patch);
 
-        assert_eq!(healer.classify_response(&anomaly), JidokaResponse::AutoCorrect);
+        assert_eq!(
+            healer.classify_response(&anomaly),
+            JidokaResponse::AutoCorrect
+        );
         let patch = healer.generate_patch(&anomaly).unwrap();
         healer.record_correction(&anomaly, patch);
 
@@ -1443,21 +1494,30 @@ mod tests {
             expected: 1.0,
             z_score: 4.0,
         };
-        assert!(matches!(healer.generate_patch(&anomaly), Some(RulePatch::SkipBatch)));
+        assert!(matches!(
+            healer.generate_patch(&anomaly),
+            Some(RulePatch::SkipBatch)
+        ));
 
         // Gradient explosion -> gradient clipping
         let anomaly = TrainingAnomaly::GradientExplosion {
             norm: 1e7,
             threshold: 1e6,
         };
-        assert!(matches!(healer.generate_patch(&anomaly), Some(RulePatch::EnableGradientClipping { .. })));
+        assert!(matches!(
+            healer.generate_patch(&anomaly),
+            Some(RulePatch::EnableGradientClipping { .. })
+        ));
 
         // Slow convergence -> warmup
         let anomaly = TrainingAnomaly::SlowConvergence {
             recent_losses: vec![],
             expected_rate: 0.1,
         };
-        assert!(matches!(healer.generate_patch(&anomaly), Some(RulePatch::EnableWarmup { .. })));
+        assert!(matches!(
+            healer.generate_patch(&anomaly),
+            Some(RulePatch::EnableWarmup { .. })
+        ));
     }
 
     #[test]
@@ -1504,7 +1564,10 @@ mod tests {
         assert_eq!(healer.classify_response(&explosion), JidokaResponse::Andon);
 
         // But loss spike should still be AutoCorrect (different type)
-        assert_eq!(healer.classify_response(&spike), JidokaResponse::AutoCorrect);
+        assert_eq!(
+            healer.classify_response(&spike),
+            JidokaResponse::AutoCorrect
+        );
     }
 
     // === Clone and Debug Tests ===

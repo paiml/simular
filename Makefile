@@ -27,14 +27,14 @@ SHELL := /bin/bash
 # Coverage threshold (95% minimum - refactored TUI for testability)
 COVERAGE_THRESHOLD := 95
 
-.PHONY: all build test test-fast test-quick test-full lint fmt fmt-check clean doc \
-        tier1 tier2 tier3 tier4 coverage coverage-fast coverage-full coverage-open coverage-check \
-        bench dev pre-push ci check audit deps-validate deny \
-        pmat-score pmat-gates pmat-tdg pmat-analyze pmat-all \
-        quality-report kaizen mutants mutants-fast mutants-check \
-        property-test property-test-fast property-test-full \
-        install-tools help release-check release release-tag examples \
-        quality-gates validate
+.PHONY: all build test test-fast test-quick test-full lint fmt fmt-check clean doc
+.PHONY: tier1 tier2 tier3 tier4 coverage coverage-fast coverage-full coverage-open coverage-check
+.PHONY: bench dev pre-push ci check audit deps-validate deny
+.PHONY: pmat-score pmat-gates pmat-tdg pmat-analyze pmat-all
+.PHONY: quality-report kaizen mutants mutants-fast mutants-check
+.PHONY: property-test property-test-fast property-test-full
+.PHONY: install-tools help release-check release release-tag examples
+.PHONY: quality-gates validate
 
 # Default target
 all: tier2
@@ -257,14 +257,14 @@ coverage: ## Generate HTML coverage report (target: <5 min, ≥95% required)
 	@env PROPTEST_CASES=100 cargo llvm-cov --no-report nextest --no-tests=warn --workspace --no-fail-fast --all-features 2>/dev/null || \
 		env PROPTEST_CASES=100 cargo llvm-cov --no-report --all-features
 	@echo "📊 Phase 2: Generating coverage reports..."
-	@cargo llvm-cov report --html --output-dir target/coverage/html --ignore-filename-regex 'main\.rs'
-	@cargo llvm-cov report --lcov --output-path target/coverage/lcov.info --ignore-filename-regex 'main\.rs'
+	@cargo llvm-cov report --html --output-dir target/coverage/html --ignore-filename-regex 'probar/'
+	@cargo llvm-cov report --lcov --output-path target/coverage/lcov.info --ignore-filename-regex 'probar/'
 	@echo "⚙️  Restoring global cargo config..."
 	@test -f ~/.cargo/config.toml.cov-backup && mv ~/.cargo/config.toml.cov-backup ~/.cargo/config.toml || true
 	@echo ""
 	@echo "📊 Coverage Summary:"
 	@echo "=================="
-	@cargo llvm-cov report --summary-only --ignore-filename-regex 'main\.rs'
+	@cargo llvm-cov report --summary-only --ignore-filename-regex 'probar/'
 	@echo ""
 	@echo "💡 Reports:"
 	@echo "- HTML: target/coverage/html/index.html"
@@ -284,7 +284,7 @@ coverage-check: ## Enforce coverage threshold (≥95%)
 	@cargo llvm-cov clean --workspace 2>/dev/null || true
 	@env PROPTEST_CASES=100 cargo llvm-cov --no-report --all-features 2>/dev/null || true
 	@test -f ~/.cargo/config.toml.cov-backup && mv ~/.cargo/config.toml.cov-backup ~/.cargo/config.toml || true
-	@COVERAGE=$$(cargo llvm-cov report --summary-only 2>/dev/null | grep "TOTAL" | awk '{print $$NF}' | sed 's/%//'); \
+	@COVERAGE=$$(cargo llvm-cov report --summary-only --ignore-filename-regex 'probar/' 2>/dev/null | grep "TOTAL" | awk '{print $$NF}' | sed 's/%//'); \
 	echo "Coverage: $${COVERAGE}%"; \
 	if [ -n "$$COVERAGE" ]; then \
 		THRESHOLD=$(COVERAGE_THRESHOLD); \

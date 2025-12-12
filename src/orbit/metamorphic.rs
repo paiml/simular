@@ -82,42 +82,46 @@ fn compute_pairwise_distances(state: &NBodyState) -> Vec<f64> {
 /// Apply 3D rotation matrix around Z-axis.
 fn rotate_z(x: f64, y: f64, z: f64, angle: f64) -> (f64, f64, f64) {
     let (sin_a, cos_a) = angle.sin_cos();
-    (
-        x * cos_a - y * sin_a,
-        x * sin_a + y * cos_a,
-        z,
-    )
+    (x * cos_a - y * sin_a, x * sin_a + y * cos_a, z)
 }
 
 /// Rotate entire system around Z-axis.
 fn rotate_state(state: &NBodyState, angle: f64) -> NBodyState {
-    let rotated_bodies: Vec<OrbitBody> = state.bodies.iter().map(|body| {
-        let (px, py, pz) = body.position.as_meters();
-        let (vx, vy, vz) = body.velocity.as_mps();
+    let rotated_bodies: Vec<OrbitBody> = state
+        .bodies
+        .iter()
+        .map(|body| {
+            let (px, py, pz) = body.position.as_meters();
+            let (vx, vy, vz) = body.velocity.as_mps();
 
-        let (rpx, rpy, rpz) = rotate_z(px, py, pz, angle);
-        let (rvx, rvy, rvz) = rotate_z(vx, vy, vz, angle);
+            let (rpx, rpy, rpz) = rotate_z(px, py, pz, angle);
+            let (rvx, rvy, rvz) = rotate_z(vx, vy, vz, angle);
 
-        OrbitBody::new(
-            body.mass,
-            Position3D::from_meters(rpx, rpy, rpz),
-            Velocity3D::from_mps(rvx, rvy, rvz),
-        )
-    }).collect();
+            OrbitBody::new(
+                body.mass,
+                Position3D::from_meters(rpx, rpy, rpz),
+                Velocity3D::from_mps(rvx, rvy, rvz),
+            )
+        })
+        .collect();
 
     NBodyState::new(rotated_bodies, state.min_separation().min(1e6))
 }
 
 /// Reverse velocities for time-reversal test.
 fn reverse_velocities(state: &NBodyState) -> NBodyState {
-    let reversed_bodies: Vec<OrbitBody> = state.bodies.iter().map(|body| {
-        let (vx, vy, vz) = body.velocity.as_mps();
-        OrbitBody::new(
-            body.mass,
-            body.position,
-            Velocity3D::from_mps(-vx, -vy, -vz),
-        )
-    }).collect();
+    let reversed_bodies: Vec<OrbitBody> = state
+        .bodies
+        .iter()
+        .map(|body| {
+            let (vx, vy, vz) = body.velocity.as_mps();
+            OrbitBody::new(
+                body.mass,
+                body.position,
+                Velocity3D::from_mps(-vx, -vy, -vz),
+            )
+        })
+        .collect();
 
     NBodyState::new(reversed_bodies, state.min_separation().min(1e6))
 }
@@ -125,13 +129,17 @@ fn reverse_velocities(state: &NBodyState) -> NBodyState {
 /// Scale all masses by a uniform factor.
 #[allow(dead_code)] // Reserved for MR-3 mass scaling relation
 fn scale_masses(state: &NBodyState, factor: f64) -> NBodyState {
-    let scaled_bodies: Vec<OrbitBody> = state.bodies.iter().map(|body| {
-        OrbitBody::new(
-            OrbitMass::from_kg(body.mass.as_kg() * factor),
-            body.position,
-            body.velocity,
-        )
-    }).collect();
+    let scaled_bodies: Vec<OrbitBody> = state
+        .bodies
+        .iter()
+        .map(|body| {
+            OrbitBody::new(
+                OrbitMass::from_kg(body.mass.as_kg() * factor),
+                body.position,
+                body.velocity,
+            )
+        })
+        .collect();
 
     NBodyState::new(scaled_bodies, state.min_separation().min(1e6))
 }
@@ -261,7 +269,11 @@ pub fn test_time_reversal(
 
         let initial_r = (ix * ix + iy * iy + iz * iz).sqrt();
         let pos_error = ((fx - ix).powi(2) + (fy - iy).powi(2) + (fz - iz).powi(2)).sqrt();
-        let rel_pos_error = if initial_r > f64::EPSILON { pos_error / initial_r } else { pos_error };
+        let rel_pos_error = if initial_r > f64::EPSILON {
+            pos_error / initial_r
+        } else {
+            pos_error
+        };
         max_pos_error = max_pos_error.max(rel_pos_error);
 
         let (ivx, ivy, ivz) = initial.velocity.as_mps();
@@ -269,7 +281,11 @@ pub fn test_time_reversal(
 
         let initial_v = (ivx * ivx + ivy * ivy + ivz * ivz).sqrt();
         let vel_error = ((fvx - ivx).powi(2) + (fvy - ivy).powi(2) + (fvz - ivz).powi(2)).sqrt();
-        let rel_vel_error = if initial_v > f64::EPSILON { vel_error / initial_v } else { vel_error };
+        let rel_vel_error = if initial_v > f64::EPSILON {
+            vel_error / initial_v
+        } else {
+            vel_error
+        };
         max_vel_error = max_vel_error.max(rel_vel_error);
     }
 
@@ -423,14 +439,18 @@ pub fn test_deterministic_replay(
 
     // Compare bit-for-bit (intentional exact comparison for determinism test)
     #[allow(clippy::float_cmp)]
-    let identical = state1.bodies.iter().zip(state2.bodies.iter()).all(|(b1, b2)| {
-        let (x1, y1, z1) = b1.position.as_meters();
-        let (x2, y2, z2) = b2.position.as_meters();
-        let (vx1, vy1, vz1) = b1.velocity.as_mps();
-        let (vx2, vy2, vz2) = b2.velocity.as_mps();
+    let identical = state1
+        .bodies
+        .iter()
+        .zip(state2.bodies.iter())
+        .all(|(b1, b2)| {
+            let (x1, y1, z1) = b1.position.as_meters();
+            let (x2, y2, z2) = b2.position.as_meters();
+            let (vx1, vy1, vz1) = b1.velocity.as_mps();
+            let (vx2, vy2, vz2) = b2.velocity.as_mps();
 
-        x1 == x2 && y1 == y2 && z1 == z2 && vx1 == vx2 && vy1 == vy2 && vz1 == vz2
-    });
+            x1 == x2 && y1 == y2 && z1 == z2 && vx1 == vx2 && vy1 == vy2 && vz1 == vz2
+        });
 
     if identical {
         MetamorphicResult::pass("Deterministic Replay", 0.0, 0.0)
@@ -463,8 +483,8 @@ pub fn run_all_metamorphic_tests(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::orbit::units::AU;
     use crate::orbit::scenarios::KeplerConfig;
+    use crate::orbit::units::AU;
 
     fn create_earth_sun_state() -> NBodyState {
         KeplerConfig::earth_sun().build(1e6)
@@ -489,7 +509,7 @@ mod tests {
         let state = create_earth_sun_state();
         let distances = compute_pairwise_distances(&state);
         assert_eq!(distances.len(), 1); // 2 bodies = 1 pair
-        // Earth starts at perihelion (~0.983 AU due to eccentricity 0.0167)
+                                        // Earth starts at perihelion (~0.983 AU due to eccentricity 0.0167)
         let perihelion = AU * (1.0 - 0.0167);
         assert!((distances[0] - perihelion).abs() / perihelion < 0.01);
     }
@@ -569,7 +589,11 @@ mod tests {
     fn test_mr_angular_momentum_conservation() {
         let state = create_earth_sun_state();
         let result = test_angular_momentum_conservation(&state, 100, 3600.0, 1e-12);
-        assert!(result.passed, "Angular momentum conservation failed: {:?}", result);
+        assert!(
+            result.passed,
+            "Angular momentum conservation failed: {:?}",
+            result
+        );
     }
 
     #[test]

@@ -12,9 +12,9 @@
 //! [23] Hohmann, "Die Erreichbarkeit der Himmelskörper," 1925.
 //! [24] Szebehely, "Theory of Orbits," 1967.
 
-use serde::{Deserialize, Serialize};
 use crate::orbit::physics::{NBodyState, OrbitBody};
-use crate::orbit::units::{OrbitMass, Position3D, Velocity3D, G, AU, SOLAR_MASS, EARTH_MASS};
+use crate::orbit::units::{OrbitMass, Position3D, Velocity3D, AU, EARTH_MASS, G, SOLAR_MASS};
+use serde::{Deserialize, Serialize};
 
 /// Scenario type enumeration.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -50,7 +50,7 @@ impl Default for KeplerConfig {
             central_mass: SOLAR_MASS,
             orbiter_mass: EARTH_MASS,
             semi_major_axis: AU,
-            eccentricity: 0.0167,  // Earth's eccentricity
+            eccentricity: 0.0167, // Earth's eccentricity
             initial_anomaly: 0.0,
         }
     }
@@ -210,13 +210,17 @@ impl NBodyConfig {
     /// Build N-body state from this configuration.
     #[must_use]
     pub fn build(&self, softening: f64) -> NBodyState {
-        let bodies = self.bodies.iter().map(|b| {
-            OrbitBody::new(
-                OrbitMass::from_kg(b.mass),
-                Position3D::from_meters(b.position.0, b.position.1, b.position.2),
-                Velocity3D::from_mps(b.velocity.0, b.velocity.1, b.velocity.2),
-            )
-        }).collect();
+        let bodies = self
+            .bodies
+            .iter()
+            .map(|b| {
+                OrbitBody::new(
+                    OrbitMass::from_kg(b.mass),
+                    Position3D::from_meters(b.position.0, b.position.1, b.position.2),
+                    Velocity3D::from_mps(b.velocity.0, b.velocity.1, b.velocity.2),
+                )
+            })
+            .collect();
 
         NBodyState::new(bodies, softening)
     }
@@ -259,12 +263,12 @@ impl HohmannConfig {
     /// LEO to GEO transfer.
     #[must_use]
     pub fn leo_to_geo() -> Self {
-        let _earth_mu = 3.986e14;  // m³/s²
-        let r_earth = 6.378e6;    // m
+        let _earth_mu = 3.986e14; // m³/s²
+        let r_earth = 6.378e6; // m
         Self {
             central_mass: EARTH_MASS,
             spacecraft_mass: 1000.0,
-            r1: r_earth + 400_000.0,   // 400 km LEO
+            r1: r_earth + 400_000.0,    // 400 km LEO
             r2: r_earth + 35_786_000.0, // GEO
             phase: 0,
         }
@@ -454,8 +458,8 @@ impl LagrangeConfig {
         let r = self.separation;
 
         // Barycenter-centered coordinates
-        let x1 = -mu * r;  // Primary position
-        let x2 = (1.0 - mu) * r;  // Secondary position
+        let x1 = -mu * r; // Primary position
+        let x2 = (1.0 - mu) * r; // Secondary position
 
         // Orbital angular velocity
         let omega = (G * total_mass / r.powi(3)).sqrt();
@@ -571,7 +575,10 @@ mod tests {
         let total = config.total_delta_v();
         let expected = 5600.0; // ~5.6 km/s for Earth-Mars
         let relative_error = (total - expected).abs() / expected;
-        assert!(relative_error < 0.1, "Total delta-v error: {relative_error}");
+        assert!(
+            relative_error < 0.1,
+            "Total delta-v error: {relative_error}"
+        );
     }
 
     #[test]
@@ -580,7 +587,10 @@ mod tests {
         let time = config.transfer_time();
         let expected = 259.0 * 86400.0; // ~259 days
         let relative_error = (time - expected).abs() / expected;
-        assert!(relative_error < 0.1, "Transfer time error: {relative_error}");
+        assert!(
+            relative_error < 0.1,
+            "Transfer time error: {relative_error}"
+        );
     }
 
     #[test]

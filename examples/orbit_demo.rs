@@ -8,10 +8,10 @@
 //!
 //! Run with: cargo run --example orbit_demo
 
-use simular::orbit::prelude::*;
 use simular::orbit::physics::YoshidaIntegrator;
-use simular::orbit::{run_simulation, SimulationResult};
+use simular::orbit::prelude::*;
 use simular::orbit::scenarios::ScenarioType;
+use simular::orbit::{run_simulation, SimulationResult};
 
 fn main() {
     println!("=== Simular Orbit Demo ===\n");
@@ -19,15 +19,23 @@ fn main() {
     // 1. Earth-Sun Keplerian Orbit
     println!("1. Earth-Sun Keplerian Orbit:");
     let config = KeplerConfig::earth_sun();
-    println!("   Semi-major axis: {:.2e} m (1 AU)", config.semi_major_axis);
+    println!(
+        "   Semi-major axis: {:.2e} m (1 AU)",
+        config.semi_major_axis
+    );
     println!("   Eccentricity: {:.4}", config.eccentricity);
     println!("   Orbital period: {:.2} days", config.period() / 86400.0);
-    println!("   Circular velocity: {:.2} km/s", config.circular_velocity() / 1000.0);
+    println!(
+        "   Circular velocity: {:.2} km/s",
+        config.circular_velocity() / 1000.0
+    );
 
     let state = config.build(1e6);
-    println!("   Initial Earth position: ({:.2e}, {:.2e}) m",
-             state.bodies[1].position.as_meters().0,
-             state.bodies[1].position.as_meters().1);
+    println!(
+        "   Initial Earth position: ({:.2e}, {:.2e}) m",
+        state.bodies[1].position.as_meters().0,
+        state.bodies[1].position.as_meters().1
+    );
     println!();
 
     // 2. Symplectic Integration (Energy Conservation)
@@ -55,10 +63,15 @@ fn main() {
 
     println!("   Simulated 1 year ({} steps)", steps);
     println!("   Energy drift: {:.2e} (target: <1e-9)", energy_error);
-    println!("   Angular momentum drift: {:.2e} (target: <1e-12)", l_error);
-    println!("   Final Earth position: ({:.2e}, {:.2e}) m",
-             state.bodies[1].position.as_meters().0,
-             state.bodies[1].position.as_meters().1);
+    println!(
+        "   Angular momentum drift: {:.2e} (target: <1e-12)",
+        l_error
+    );
+    println!(
+        "   Final Earth position: ({:.2e}, {:.2e}) m",
+        state.bodies[1].position.as_meters().0,
+        state.bodies[1].position.as_meters().1
+    );
     println!();
 
     // 3. Jidoka Guards
@@ -101,22 +114,28 @@ fn main() {
             }
         }
     }
-    println!("   10 frames simulated {:.2} hours", total_sim_time / 3600.0);
+    println!(
+        "   10 frames simulated {:.2} hours",
+        total_sim_time / 3600.0
+    );
     println!();
 
     // 5. Full Year Simulation with run_simulation
     println!("5. Full Year Simulation:");
     let result: SimulationResult = run_simulation(
         &ScenarioType::Kepler(KeplerConfig::earth_sun()),
-        365.25 * 86400.0,  // 1 year
-        3600.0,            // 1 hour steps
-        1e6,               // softening
+        365.25 * 86400.0, // 1 year
+        3600.0,           // 1 hour steps
+        1e6,              // softening
     );
     println!("   Steps completed: {}", result.steps);
     println!("   Warnings: {}", result.warnings);
     println!("   Paused (Jidoka): {}", result.paused);
     println!("   Energy error: {:.2e}", result.energy_error);
-    println!("   Angular momentum error: {:.2e}", result.angular_momentum_error);
+    println!(
+        "   Angular momentum error: {:.2e}",
+        result.angular_momentum_error
+    );
     println!();
 
     // 6. Hohmann Transfer
@@ -127,7 +146,10 @@ fn main() {
     println!("   Departure burn (delta-v1): {:.2} km/s", dv1 / 1000.0);
     println!("   Arrival burn (delta-v2): {:.2} km/s", dv2 / 1000.0);
     println!("   Total delta-v: {:.2} km/s", (dv1 + dv2) / 1000.0);
-    println!("   Transfer time: {:.0} days", hohmann.transfer_time() / 86400.0);
+    println!(
+        "   Transfer time: {:.0} days",
+        hohmann.transfer_time() / 86400.0
+    );
     println!();
 
     // 7. Lagrange Points
@@ -136,7 +158,10 @@ fn main() {
     let (lx, ly, _lz) = l2_config.lagrange_position();
     let l2_distance = (lx * lx + ly * ly).sqrt();
     println!("   L2 distance from Sun: {:.4} AU", l2_distance / AU);
-    println!("   L2 distance from Earth: {:.2e} km", (l2_distance - AU) / 1000.0);
+    println!(
+        "   L2 distance from Earth: {:.2e} km",
+        (l2_distance - AU) / 1000.0
+    );
     println!();
 
     // 8. N-Body Solar System

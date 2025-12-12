@@ -5,9 +5,9 @@
 //! - Atmospheric drag
 //! - Variable mass (fuel consumption)
 
-use serde::{Deserialize, Serialize};
-use crate::engine::state::{SimState, Vec3};
 use crate::domains::physics::ForceField;
+use crate::engine::state::{SimState, Vec3};
+use serde::{Deserialize, Serialize};
 
 /// Configuration for a rocket stage.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -137,19 +137,24 @@ impl RocketScenario {
     pub fn total_mass(&self) -> f64 {
         match self.stage {
             StageSeparation::Stage1Active | StageSeparation::Separating => {
-                self.config.stage1.dry_mass + self.fuel_remaining_1
-                    + self.config.stage2.as_ref().map_or(0.0, |s| s.dry_mass + s.fuel_mass)
+                self.config.stage1.dry_mass
+                    + self.fuel_remaining_1
+                    + self
+                        .config
+                        .stage2
+                        .as_ref()
+                        .map_or(0.0, |s| s.dry_mass + s.fuel_mass)
             }
-            StageSeparation::Stage2Active => {
-                self.config.stage2.as_ref()
-                    .map_or(0.0, |s| s.dry_mass + self.fuel_remaining_2)
-            }
-            StageSeparation::Complete => {
-                self.config.stage2.as_ref().map_or(
-                    self.config.stage1.dry_mass,
-                    |s| s.dry_mass,
-                )
-            }
+            StageSeparation::Stage2Active => self
+                .config
+                .stage2
+                .as_ref()
+                .map_or(0.0, |s| s.dry_mass + self.fuel_remaining_2),
+            StageSeparation::Complete => self
+                .config
+                .stage2
+                .as_ref()
+                .map_or(self.config.stage1.dry_mass, |s| s.dry_mass),
         }
     }
 
@@ -399,7 +404,10 @@ mod tests {
         let config = RocketConfig::default();
         let scenario = RocketScenario::new(config.clone());
         assert!((scenario.fuel_remaining_stage1() - config.stage1.fuel_mass).abs() < f64::EPSILON);
-        assert!((scenario.fuel_remaining_stage2() - config.stage2.as_ref().unwrap().fuel_mass).abs() < f64::EPSILON);
+        assert!(
+            (scenario.fuel_remaining_stage2() - config.stage2.as_ref().unwrap().fuel_mass).abs()
+                < f64::EPSILON
+        );
     }
 
     #[test]

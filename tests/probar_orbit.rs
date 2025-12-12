@@ -1,19 +1,15 @@
 //! Probar WASM Tests for Orbit Module
 //!
-//! Per spec Section 12: jugar-probar integration for WASM testing.
+//! Per spec Section 12: probar integration for WASM testing.
 //! These tests verify physics invariants, deterministic replay, and fuzzing.
 //!
 //! Run with: cargo test --test probar_orbit --features wasm
 
 #![cfg(feature = "wasm")]
 
-use jugar_probar::{
-    Assertion, InvariantChecker, InvariantCheck,
-    TestHarness, TestSuite,
-};
-use jugar_probar::prelude::TestCase;
-use simular::orbit::wasm::OrbitSimulation;
+use probar::{Assertion, InvariantCheck, InvariantChecker, TestCase, TestHarness, TestSuite};
 use simular::orbit::units::AU;
+use simular::orbit::wasm::OrbitSimulation;
 
 // ============================================================================
 // WASM LOADING & INITIALIZATION
@@ -66,8 +62,15 @@ fn test_energy_conservation_short_term() {
     let final_energy = sim.total_energy();
     // Use relative error check instead of approx_eq (which uses absolute epsilon)
     let rel_error = (final_energy - initial_energy).abs() / initial_energy.abs();
-    let result = Assertion::is_true(rel_error < 1e-9, &format!("Energy drift {:.2e} exceeds 1e-9", rel_error));
-    assert!(result.passed, "Energy should be conserved (short term): {}", result.message);
+    let result = Assertion::is_true(
+        rel_error < 1e-9,
+        &format!("Energy drift {:.2e} exceeds 1e-9", rel_error),
+    );
+    assert!(
+        result.passed,
+        "Energy should be conserved (short term): {}",
+        result.message
+    );
 }
 
 #[test]
@@ -82,8 +85,15 @@ fn test_energy_conservation_long_term() {
 
     let final_energy = sim.total_energy();
     let rel_error = (final_energy - initial_energy).abs() / initial_energy.abs();
-    let result = Assertion::is_true(rel_error < 1e-9, &format!("Energy drift {:.2e} exceeds 1e-9", rel_error));
-    assert!(result.passed, "Energy conservation (long term): {}", result.message);
+    let result = Assertion::is_true(
+        rel_error < 1e-9,
+        &format!("Energy drift {:.2e} exceeds 1e-9", rel_error),
+    );
+    assert!(
+        result.passed,
+        "Energy conservation (long term): {}",
+        result.message
+    );
 }
 
 #[test]
@@ -98,8 +108,15 @@ fn test_angular_momentum_conservation() {
 
     let final_l = sim.angular_momentum();
     let rel_error = (final_l - initial_l).abs() / initial_l.abs();
-    let result = Assertion::is_true(rel_error < 1e-9, &format!("Angular momentum drift {:.2e} exceeds 1e-9", rel_error));
-    assert!(result.passed, "Angular momentum conservation: {}", result.message);
+    let result = Assertion::is_true(
+        rel_error < 1e-9,
+        &format!("Angular momentum drift {:.2e} exceeds 1e-9", rel_error),
+    );
+    assert!(
+        result.passed,
+        "Angular momentum conservation: {}",
+        result.message
+    );
 }
 
 #[test]
@@ -110,13 +127,25 @@ fn test_jidoka_status_all_ok() {
     let status = sim.jidoka_status_json();
 
     let result = Assertion::contains(&status, "\"energy_ok\":true");
-    assert!(result.passed, "Jidoka energy should be OK: {}", result.message);
+    assert!(
+        result.passed,
+        "Jidoka energy should be OK: {}",
+        result.message
+    );
 
     let result = Assertion::contains(&status, "\"angular_momentum_ok\":true");
-    assert!(result.passed, "Jidoka angular momentum should be OK: {}", result.message);
+    assert!(
+        result.passed,
+        "Jidoka angular momentum should be OK: {}",
+        result.message
+    );
 
     let result = Assertion::contains(&status, "\"finite_ok\":true");
-    assert!(result.passed, "Jidoka finite check should be OK: {}", result.message);
+    assert!(
+        result.passed,
+        "Jidoka finite check should be OK: {}",
+        result.message
+    );
 }
 
 #[test]
@@ -128,7 +157,11 @@ fn test_jidoka_after_simulation() {
 
     let status = sim.jidoka_status_json();
     let result = Assertion::contains(&status, "\"finite_ok\":true");
-    assert!(result.passed, "All values should remain finite: {}", result.message);
+    assert!(
+        result.passed,
+        "All values should remain finite: {}",
+        result.message
+    );
 }
 
 // ============================================================================
@@ -157,13 +190,25 @@ fn test_deterministic_replay_identical() {
 
     // Should be bit-identical
     let result = Assertion::equals(&energy1, &energy2);
-    assert!(result.passed, "Energy should be identical: {}", result.message);
+    assert!(
+        result.passed,
+        "Energy should be identical: {}",
+        result.message
+    );
 
     let result = Assertion::equals(&x1, &x2);
-    assert!(result.passed, "X position should be identical: {}", result.message);
+    assert!(
+        result.passed,
+        "X position should be identical: {}",
+        result.message
+    );
 
     let result = Assertion::equals(&y1, &y2);
-    assert!(result.passed, "Y position should be identical: {}", result.message);
+    assert!(
+        result.passed,
+        "Y position should be identical: {}",
+        result.message
+    );
 }
 
 #[test]
@@ -177,8 +222,15 @@ fn test_different_dt_diverge() {
 
     // Energies should be close but not identical
     let rel_error = (sim1.total_energy() - sim2.total_energy()).abs() / sim1.total_energy().abs();
-    let result = Assertion::is_true(rel_error < 1e-6, &format!("Energies should be within 1e-6: {:.2e}", rel_error));
-    assert!(result.passed, "Different dt should still conserve energy: {}", result.message);
+    let result = Assertion::is_true(
+        rel_error < 1e-6,
+        &format!("Energies should be within 1e-6: {:.2e}", rel_error),
+    );
+    assert!(
+        result.passed,
+        "Different dt should still conserve energy: {}",
+        result.message
+    );
 }
 
 // ============================================================================
@@ -204,8 +256,15 @@ fn test_earth_orbital_period() {
     let orbital_radius = AU * 0.983; // Perihelion
     let rel_error = distance / orbital_radius;
 
-    let result = Assertion::is_true(rel_error < 0.01, &format!("Position drift {:.2e} exceeds 1%", rel_error));
-    assert!(result.passed, "Earth should complete orbit in ~365 days: {}", result.message);
+    let result = Assertion::is_true(
+        rel_error < 0.01,
+        &format!("Position drift {:.2e} exceeds 1%", rel_error),
+    );
+    assert!(
+        result.passed,
+        "Earth should complete orbit in ~365 days: {}",
+        result.message
+    );
 }
 
 #[test]
@@ -214,7 +273,11 @@ fn test_positions_flat_length() {
     let positions = sim.positions_flat();
 
     let result = Assertion::equals(&positions.len(), &6); // 2 bodies * 3 coords
-    assert!(result.passed, "Positions flat should have 6 elements: {}", result.message);
+    assert!(
+        result.passed,
+        "Positions flat should have 6 elements: {}",
+        result.message
+    );
 }
 
 #[test]
@@ -223,7 +286,11 @@ fn test_velocities_flat_length() {
     let velocities = sim.velocities_flat();
 
     let result = Assertion::equals(&velocities.len(), &6); // 2 bodies * 3 coords
-    assert!(result.passed, "Velocities flat should have 6 elements: {}", result.message);
+    assert!(
+        result.passed,
+        "Velocities flat should have 6 elements: {}",
+        result.message
+    );
 }
 
 #[test]
@@ -298,7 +365,10 @@ fn test_invalid_body_index() {
     let result = Assertion::is_true(sim.body_vz(999).is_nan(), "Invalid index should return NaN");
     assert!(result.passed);
 
-    let result = Assertion::is_true(sim.body_mass(999).is_nan(), "Invalid index should return NaN");
+    let result = Assertion::is_true(
+        sim.body_mass(999).is_nan(),
+        "Invalid index should return NaN",
+    );
     assert!(result.passed);
 }
 
@@ -309,10 +379,18 @@ fn test_sim_time_tracking() {
     sim.step_days(10.0);
 
     let result = Assertion::approx_eq(sim.sim_time_days(), 10.0, 0.001);
-    assert!(result.passed, "sim_time_days should track correctly: {}", result.message);
+    assert!(
+        result.passed,
+        "sim_time_days should track correctly: {}",
+        result.message
+    );
 
     let result = Assertion::approx_eq(sim.sim_time(), 10.0 * 86400.0, 1.0);
-    assert!(result.passed, "sim_time should track correctly: {}", result.message);
+    assert!(
+        result.passed,
+        "sim_time should track correctly: {}",
+        result.message
+    );
 }
 
 // ============================================================================
@@ -325,7 +403,9 @@ fn test_fuzz_energy_invariant() {
     let initial_energy = sim.total_energy();
 
     // Use varying time steps deterministically
-    let time_steps = [100.0, 500.0, 1000.0, 2000.0, 3600.0, 5000.0, 7200.0, 10000.0];
+    let time_steps = [
+        100.0, 500.0, 1000.0, 2000.0, 3600.0, 5000.0, 7200.0, 10000.0,
+    ];
 
     for frame in 0..1000 {
         let dt = time_steps[frame % time_steps.len()];
@@ -337,7 +417,10 @@ fn test_fuzz_energy_invariant() {
 
         let result = Assertion::is_true(
             rel_error < 1e-6,
-            &format!("Frame {}: Energy drift {:.2e} exceeds 1e-6", frame, rel_error)
+            &format!(
+                "Frame {}: Energy drift {:.2e} exceeds 1e-6",
+                frame, rel_error
+            ),
         );
         assert!(result.passed, "{}", result.message);
     }
@@ -357,13 +440,13 @@ fn test_fuzz_finite_values_invariant() {
         // Check all values are finite
         for i in 0..sim.num_bodies() {
             let result = Assertion::is_true(
-                sim.body_x(i).is_finite() &&
-                sim.body_y(i).is_finite() &&
-                sim.body_z(i).is_finite() &&
-                sim.body_vx(i).is_finite() &&
-                sim.body_vy(i).is_finite() &&
-                sim.body_vz(i).is_finite(),
-                &format!("Frame {}: Body {} has non-finite values", frame, i)
+                sim.body_x(i).is_finite()
+                    && sim.body_y(i).is_finite()
+                    && sim.body_z(i).is_finite()
+                    && sim.body_vx(i).is_finite()
+                    && sim.body_vy(i).is_finite()
+                    && sim.body_vz(i).is_finite(),
+                &format!("Frame {}: Body {} has non-finite values", frame, i),
             );
             assert!(result.passed, "{}", result.message);
         }
@@ -394,9 +477,18 @@ fn test_probar_harness_integration() {
 #[test]
 fn test_invariant_checker_orbit() {
     let mut checker = InvariantChecker::new();
-    checker.add_check(InvariantCheck::new("energy_bounded", "Energy must remain bounded"));
-    checker.add_check(InvariantCheck::new("finite_values", "All values must be finite"));
-    checker.add_check(InvariantCheck::new("angular_momentum", "Angular momentum conserved"));
+    checker.add_check(InvariantCheck::new(
+        "energy_bounded",
+        "Energy must remain bounded",
+    ));
+    checker.add_check(InvariantCheck::new(
+        "finite_values",
+        "All values must be finite",
+    ));
+    checker.add_check(InvariantCheck::new(
+        "angular_momentum",
+        "Angular momentum conserved",
+    ));
 
     let mut sim = OrbitSimulation::new();
     let initial_energy = sim.total_energy();

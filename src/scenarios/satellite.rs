@@ -5,9 +5,9 @@
 //! - Orbital element conversions
 //! - Common orbit types (LEO, GEO, polar, etc.)
 
-use serde::{Deserialize, Serialize};
-use crate::engine::state::{SimState, Vec3};
 use crate::domains::physics::CentralForceField;
+use crate::engine::state::{SimState, Vec3};
+use serde::{Deserialize, Serialize};
 
 /// Standard gravitational parameter for Earth (m³/s²).
 pub const EARTH_MU: f64 = 3.986_004_418e14;
@@ -75,7 +75,7 @@ impl OrbitalElements {
 
     /// Convert to Cartesian state vectors (position, velocity).
     #[must_use]
-    #[allow(clippy::many_single_char_names)]  // Standard orbital mechanics notation
+    #[allow(clippy::many_single_char_names)] // Standard orbital mechanics notation
     pub fn to_cartesian(&self) -> (Vec3, Vec3) {
         let mu = EARTH_MU;
 
@@ -86,11 +86,7 @@ impl OrbitalElements {
         let r_mag = p / (1.0 + self.e * self.nu.cos());
 
         // Position in perifocal frame
-        let r_pqw = Vec3::new(
-            r_mag * self.nu.cos(),
-            r_mag * self.nu.sin(),
-            0.0,
-        );
+        let r_pqw = Vec3::new(r_mag * self.nu.cos(), r_mag * self.nu.sin(), 0.0);
 
         // Velocity in perifocal frame
         let h = (mu * p).sqrt();
@@ -108,9 +104,9 @@ impl OrbitalElements {
         // Transform to inertial frame (ECI)
         let transform = |v: &Vec3| -> Vec3 {
             let x = (cos_raan * cos_omega - sin_raan * sin_omega * cos_i) * v.x
-                  + (-cos_raan * sin_omega - sin_raan * cos_omega * cos_i) * v.y;
+                + (-cos_raan * sin_omega - sin_raan * cos_omega * cos_i) * v.y;
             let y = (sin_raan * cos_omega + cos_raan * sin_omega * cos_i) * v.x
-                  + (-sin_raan * sin_omega + cos_raan * cos_omega * cos_i) * v.y;
+                + (-sin_raan * sin_omega + cos_raan * cos_omega * cos_i) * v.y;
             let z = sin_omega * sin_i * v.x + cos_omega * sin_i * v.y;
             Vec3::new(x, y, z)
         };
@@ -276,7 +272,11 @@ mod tests {
         // GEO period is one sidereal day (~86164 seconds), not solar day (86400s)
         // Sidereal day = 23h 56m 4s = 86164 seconds
         let period = orbit.period();
-        assert!((period - 86164.0).abs() < 100.0, "GEO period {} should be ~86164s", period);
+        assert!(
+            (period - 86164.0).abs() < 100.0,
+            "GEO period {} should be ~86164s",
+            period
+        );
     }
 
     #[test]
@@ -311,7 +311,12 @@ mod tests {
         // Velocity should be circular velocity: v = sqrt(mu/r)
         let v = vel.magnitude();
         let v_circular = (EARTH_MU / orbit.a).sqrt();
-        assert!((v - v_circular).abs() < 10.0, "v={}, v_circ={}", v, v_circular);
+        assert!(
+            (v - v_circular).abs() < 10.0,
+            "v={}, v_circ={}",
+            v,
+            v_circular
+        );
     }
 
     #[test]
@@ -340,7 +345,7 @@ mod tests {
     #[test]
     fn test_orbital_elements_periapsis_apoapsis() {
         let orbit = OrbitalElements {
-            a: EARTH_RADIUS + 1_000_000.0,  // Higher altitude for valid orbit with e=0.1
+            a: EARTH_RADIUS + 1_000_000.0, // Higher altitude for valid orbit with e=0.1
             e: 0.1,
             i: 0.0,
             raan: 0.0,
@@ -381,7 +386,11 @@ mod tests {
         // Check the satellite is at the right altitude
         let pos = state.positions()[0];
         let altitude = pos.magnitude() - EARTH_RADIUS;
-        assert!((altitude - 400_000.0).abs() < 1000.0, "altitude={}", altitude);
+        assert!(
+            (altitude - 400_000.0).abs() < 1000.0,
+            "altitude={}",
+            altitude
+        );
     }
 
     #[test]

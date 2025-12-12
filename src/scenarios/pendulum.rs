@@ -5,9 +5,9 @@
 //! - Double pendulum (chaotic dynamics)
 //! - Driven pendulum (forced oscillations)
 
-use serde::{Deserialize, Serialize};
-use crate::engine::state::{SimState, Vec3};
 use crate::domains::physics::ForceField;
+use crate::engine::state::{SimState, Vec3};
+use serde::{Deserialize, Serialize};
 
 /// Configuration for a simple pendulum.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -104,9 +104,11 @@ impl PendulumScenario {
 
         // Velocity from angular velocity
         // v = L * omega, tangent to circle
-        let vx = self.config.length * self.config.initial_angular_velocity
+        let vx = self.config.length
+            * self.config.initial_angular_velocity
             * self.config.initial_angle.cos();
-        let vy = self.config.length * self.config.initial_angular_velocity
+        let vy = self.config.length
+            * self.config.initial_angular_velocity
             * self.config.initial_angle.sin();
 
         state.add_body(
@@ -407,7 +409,11 @@ mod tests {
         // At horizontal (theta=pi/2), PE = m*g*L
         let pos_horiz = Vec3::new(1.0, 0.0, 0.0);
         let pe_horiz = field.potential(&pos_horiz, 1.0);
-        assert!((pe_horiz - 9.81).abs() < 0.01, "PE at horizontal={}", pe_horiz);
+        assert!(
+            (pe_horiz - 9.81).abs() < 0.01,
+            "PE at horizontal={}",
+            pe_horiz
+        );
 
         // At top (theta=pi), PE = 2*m*g*L
         let pos_top = Vec3::new(0.0, 1.0, 0.0);

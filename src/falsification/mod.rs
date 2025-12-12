@@ -304,11 +304,7 @@ pub mod stats {
     ///
     /// Tests H₀: μ₁ = μ₂ against H₁: μ₁ ≠ μ₂.
     #[must_use]
-    pub fn two_sample_t_test(
-        sample1: &[f64],
-        sample2: &[f64],
-        significance: f64,
-    ) -> NHSTResult {
+    pub fn two_sample_t_test(sample1: &[f64], sample2: &[f64], significance: f64) -> NHSTResult {
         if sample1.len() < 2 || sample2.len() < 2 {
             return NHSTResult::NotRejected {
                 p_value: 1.0,
@@ -364,11 +360,7 @@ pub mod stats {
 
     /// Chi-square goodness of fit test.
     #[must_use]
-    pub fn chi_square_test(
-        observed: &[f64],
-        expected: &[f64],
-        significance: f64,
-    ) -> NHSTResult {
+    pub fn chi_square_test(observed: &[f64], expected: &[f64], significance: f64) -> NHSTResult {
         if observed.len() != expected.len() || observed.is_empty() {
             return NHSTResult::NotRejected {
                 p_value: 1.0,
@@ -472,7 +464,11 @@ impl NullificationResult {
         format!(
             "{}: {} (p={:.4}, 95% CI [{:.4}, {:.4}], d={:.2})",
             self.hypothesis_id,
-            if self.rejected { "REJECTED" } else { "NOT REJECTED" },
+            if self.rejected {
+                "REJECTED"
+            } else {
+                "NOT REJECTED"
+            },
             self.p_value,
             self.confidence_interval.0,
             self.confidence_interval.1,
@@ -591,7 +587,9 @@ impl NullificationTest {
             let mut sum = 0.0;
             for _ in 0..n {
                 // LCG: next = (a * state + c) mod m
-                lcg_state = lcg_state.wrapping_mul(6_364_136_223_846_793_005).wrapping_add(1);
+                lcg_state = lcg_state
+                    .wrapping_mul(6_364_136_223_846_793_005)
+                    .wrapping_add(1);
                 let idx = (lcg_state as usize) % n;
                 sum += observations[idx];
             }
@@ -605,7 +603,10 @@ impl NullificationTest {
         let upper_idx = (bootstrap_means.len() as f64 * 0.975) as usize;
 
         let lower = bootstrap_means.get(lower_idx).copied().unwrap_or(0.0);
-        let upper = bootstrap_means.get(upper_idx.min(bootstrap_means.len() - 1)).copied().unwrap_or(0.0);
+        let upper = bootstrap_means
+            .get(upper_idx.min(bootstrap_means.len() - 1))
+            .copied()
+            .unwrap_or(0.0);
 
         (lower, upper)
     }
@@ -723,50 +724,43 @@ pub mod ml_hypotheses {
     /// H₀-TRAIN-01: Training converges identically across runs with same seed.
     #[must_use]
     pub fn training_determinism() -> NullificationTest {
-        NullificationTest::new("H0-TRAIN-01")
-            .with_expected(0.0) // Expected bitwise difference = 0
+        NullificationTest::new("H0-TRAIN-01").with_expected(0.0) // Expected bitwise difference = 0
     }
 
     /// H₀-TRAIN-02: Loss monotonically decreases (no spikes).
     #[must_use]
     pub fn loss_stability(threshold_sigma: f64) -> NullificationTest {
-        NullificationTest::new("H0-TRAIN-02")
-            .with_expected(threshold_sigma) // Z-score threshold
+        NullificationTest::new("H0-TRAIN-02").with_expected(threshold_sigma) // Z-score threshold
     }
 
     /// H₀-TRAIN-03: Gradient norms remain bounded.
     #[must_use]
     pub fn gradient_bounded(max_norm: f64) -> NullificationTest {
-        NullificationTest::new("H0-TRAIN-03")
-            .with_expected(max_norm)
+        NullificationTest::new("H0-TRAIN-03").with_expected(max_norm)
     }
 
     /// H₀-TRAIN-05: Model parameters remain finite.
     #[must_use]
     pub fn params_finite() -> NullificationTest {
-        NullificationTest::new("H0-TRAIN-05")
-            .with_expected(0.0) // Expected NaN count = 0
+        NullificationTest::new("H0-TRAIN-05").with_expected(0.0) // Expected NaN count = 0
     }
 
     /// H₀-PRED-01: Predictions are deterministic for temperature=0.
     #[must_use]
     pub fn prediction_determinism() -> NullificationTest {
-        NullificationTest::new("H0-PRED-01")
-            .with_expected(0.0) // Expected variance = 0
+        NullificationTest::new("H0-PRED-01").with_expected(0.0) // Expected variance = 0
     }
 
     /// H₀-PRED-03: Latency within specified SLA.
     #[must_use]
     pub fn latency_sla(sla_ms: f64) -> NullificationTest {
-        NullificationTest::new("H0-PRED-03")
-            .with_expected(sla_ms)
+        NullificationTest::new("H0-PRED-03").with_expected(sla_ms)
     }
 
     /// H₀-MULTI-01: Accuracy >= oracle baseline.
     #[must_use]
     pub fn accuracy_baseline(baseline: f64) -> NullificationTest {
-        NullificationTest::new("H0-MULTI-01")
-            .with_expected(baseline)
+        NullificationTest::new("H0-MULTI-01").with_expected(baseline)
     }
 
     /// H₀-MULTI-05: Results are statistically significant (5 runs, t-test).
@@ -814,13 +808,15 @@ impl FalsifiableHypothesis for EnergyConservationHypothesis {
     }
 
     fn falsification_criteria(&self) -> Vec<FalsificationCriteria> {
-        vec![
-            FalsificationCriteria::less_than("energy_drift", self.tolerance),
-        ]
+        vec![FalsificationCriteria::less_than(
+            "energy_drift",
+            self.tolerance,
+        )]
     }
 
     fn robustness(&self, state: &Self::State) -> f64 {
-        let drift = (state - self.initial_energy).abs() / self.initial_energy.abs().max(f64::EPSILON);
+        let drift =
+            (state - self.initial_energy).abs() / self.initial_energy.abs().max(f64::EPSILON);
         self.tolerance - drift
     }
 
@@ -843,8 +839,8 @@ impl FalsifiableHypothesis for EnergyConservationHypothesis {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use super::stats::*;
+    use super::*;
 
     // -------------------------------------------------------------------------
     // NullificationTest Tests
@@ -1191,17 +1187,14 @@ mod tests {
 
     #[test]
     fn test_nullification_test_with_alpha() {
-        let test = NullificationTest::new("H0-TEST")
-            .with_alpha(0.01);
+        let test = NullificationTest::new("H0-TEST").with_alpha(0.01);
         assert!((test.alpha - 0.01).abs() < f64::EPSILON);
 
         // Test clamping
-        let test = NullificationTest::new("H0-TEST")
-            .with_alpha(0.0001); // Below minimum
+        let test = NullificationTest::new("H0-TEST").with_alpha(0.0001); // Below minimum
         assert!((test.alpha - 0.001).abs() < f64::EPSILON);
 
-        let test = NullificationTest::new("H0-TEST")
-            .with_alpha(0.5); // Above maximum
+        let test = NullificationTest::new("H0-TEST").with_alpha(0.5); // Above maximum
         assert!((test.alpha - 0.1).abs() < f64::EPSILON);
     }
 
@@ -1385,8 +1378,8 @@ mod tests {
 
 #[cfg(test)]
 mod proptests {
-    use super::*;
     use super::stats::*;
+    use super::*;
     use proptest::prelude::*;
 
     proptest! {

@@ -17,6 +17,7 @@
 # Part III: Pre-Built Scenarios
 
 - [Orbit Demo](./orbit_demo.md)
+- [TSP GRASP Demo](./tsp_grasp_demo.md)
 - [Rocket Launch](./scenario_rocket.md)
 - [Satellite Orbits](./scenario_satellite.md)
 - [Pendulum Systems](./scenario_pendulum.md)

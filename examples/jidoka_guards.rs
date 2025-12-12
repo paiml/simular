@@ -24,17 +24,20 @@ fn main() {
     println!("1. Basic Jidoka Guard Configuration:");
 
     let config = JidokaConfig {
-        energy_tolerance: 1e-6,       // 0.0001% energy drift allowed
-        check_finite: true,           // Check for NaN/Inf
-        constraint_tolerance: 0.01,   // 1% constraint violation allowed
-        check_energy: true,           // Enable energy checking
+        energy_tolerance: 1e-6,     // 0.0001% energy drift allowed
+        check_finite: true,         // Check for NaN/Inf
+        constraint_tolerance: 0.01, // 1% constraint violation allowed
+        check_energy: true,         // Enable energy checking
         severity_classifier: SeverityClassifier::default(),
     };
 
     let mut guard = JidokaGuard::new(config.clone());
     println!("   Energy tolerance: {:.0e}", config.energy_tolerance);
     println!("   Finite check: {}", config.check_finite);
-    println!("   Constraint tolerance: {:.2}%\n", config.constraint_tolerance * 100.0);
+    println!(
+        "   Constraint tolerance: {:.2}%\n",
+        config.constraint_tolerance * 100.0
+    );
 
     // 2. Valid State Check
     println!("2. Checking Valid State:");
@@ -65,7 +68,11 @@ fn main() {
     println!("   Injecting Inf into velocity...\n");
 
     let mut inf_state = SimState::new();
-    inf_state.add_body(1.0, Vec3::new(1.0, 2.0, 3.0), Vec3::new(f64::INFINITY, 0.2, 0.3));
+    inf_state.add_body(
+        1.0,
+        Vec3::new(1.0, 2.0, 3.0),
+        Vec3::new(f64::INFINITY, 0.2, 0.3),
+    );
 
     let mut guard = JidokaGuard::new(config.clone());
     match guard.check(&inf_state) {
@@ -117,10 +124,20 @@ fn main() {
     for warning in &warnings {
         match warning {
             JidokaWarning::EnergyDriftApproaching { drift, tolerance } => {
-                println!("   Energy warning: drift={:.2e}, tolerance={:.2e}", drift, tolerance);
+                println!(
+                    "   Energy warning: drift={:.2e}, tolerance={:.2e}",
+                    drift, tolerance
+                );
             }
-            JidokaWarning::ConstraintApproaching { name, violation, tolerance } => {
-                println!("   Constraint warning: {}={:.4}, tolerance={:.4}", name, violation, tolerance);
+            JidokaWarning::ConstraintApproaching {
+                name,
+                violation,
+                tolerance,
+            } => {
+                println!(
+                    "   Constraint warning: {}={:.4}, tolerance={:.4}",
+                    name, violation, tolerance
+                );
             }
         }
     }
@@ -144,7 +161,10 @@ fn main() {
 
     // Initial check establishes baseline
     let _ = guard.check(&state);
-    println!("   Initial total energy: {:.2} J", state.kinetic_energy() + state.potential_energy());
+    println!(
+        "   Initial total energy: {:.2} J",
+        state.kinetic_energy() + state.potential_energy()
+    );
 
     // Simulate energy-conserving step (fall halfway)
     state.set_position(0, Vec3::new(0.0, 0.0, 50.0));

@@ -75,7 +75,9 @@ impl SimRng {
         let partitions: Vec<Self> = (0..n)
             .map(|i| {
                 let stream = self.stream + i as u64;
-                let seed = self.master_seed.wrapping_add(stream.wrapping_mul(0x9E37_79B9_7F4A_7C15));
+                let seed = self
+                    .master_seed
+                    .wrapping_add(stream.wrapping_mul(0x9E37_79B9_7F4A_7C15));
                 Self {
                     master_seed: self.master_seed,
                     stream,
@@ -131,6 +133,22 @@ impl SimRng {
         mean + std * self.gen_standard_normal()
     }
 
+    /// Get RNG state as bytes for hashing (audit logging).
+    ///
+    /// Returns a deterministic byte representation of the RNG state.
+    #[must_use]
+    pub fn state_bytes(&self) -> Vec<u8> {
+        // Use master seed, stream, and serialized RNG state
+        let mut bytes = Vec::with_capacity(24);
+        bytes.extend_from_slice(&self.master_seed.to_le_bytes());
+        bytes.extend_from_slice(&self.stream.to_le_bytes());
+        // Also include serialized PCG state for uniqueness
+        if let Ok(serialized) = bincode::serialize(&self.rng) {
+            bytes.extend_from_slice(&serialized);
+        }
+        bytes
+    }
+
     /// Save RNG state for checkpoint.
     ///
     /// Note: PCG internal state is not directly serializable, so we save
@@ -164,7 +182,9 @@ impl SimRng {
         self.stream = state.stream;
 
         // Recreate from seed and stream
-        let seed = self.master_seed.wrapping_add(self.stream.wrapping_mul(0x9E37_79B9_7F4A_7C15));
+        let seed = self
+            .master_seed
+            .wrapping_add(self.stream.wrapping_mul(0x9E37_79B9_7F4A_7C15));
         self.rng = Pcg64::seed_from_u64(seed);
 
         Ok(())
@@ -223,7 +243,10 @@ mod tests {
         let seq1: Vec<f64> = (0..100).map(|_| rng1.gen_f64()).collect();
         let seq2: Vec<f64> = (0..100).map(|_| rng2.gen_f64()).collect();
 
-        assert_ne!(seq1, seq2, "Different seeds must produce different sequences");
+        assert_ne!(
+            seq1, seq2,
+            "Different seeds must produce different sequences"
+        );
     }
 
     /// Property: Partitions are independent.
@@ -285,7 +308,10 @@ mod tests {
         // Mean should be close to 0
         assert!(mean.abs() < 0.1, "Mean {mean} too far from 0");
         // Variance should be close to 1
-        assert!((variance - 1.0).abs() < 0.1, "Variance {variance} too far from 1");
+        assert!(
+            (variance - 1.0).abs() < 0.1,
+            "Variance {variance} too far from 1"
+        );
     }
 
     /// Property: State save/restore preserves seed and stream info.
@@ -364,7 +390,10 @@ mod tests {
 
     #[test]
     fn test_rng_restore_error_clone() {
-        let err = RngRestoreError::SeedMismatch { expected: 42, found: 99 };
+        let err = RngRestoreError::SeedMismatch {
+            expected: 42,
+            found: 99,
+        };
         let cloned = err.clone();
         assert!(matches!(cloned, RngRestoreError::SeedMismatch { .. }));
 
@@ -431,7 +460,8 @@ mod tests {
         // With mean=0, std=10, variance should be 100
         let samples: Vec<f64> = (0..10000).map(|_| rng.gen_normal(0.0, 10.0)).collect();
         let mean: f64 = samples.iter().sum::<f64>() / samples.len() as f64;
-        let variance: f64 = samples.iter().map(|x| (x - mean).powi(2)).sum::<f64>() / samples.len() as f64;
+        let variance: f64 =
+            samples.iter().map(|x| (x - mean).powi(2)).sum::<f64>() / samples.len() as f64;
         // Variance should be close to 100 (std^2)
         assert!(
             (variance - 100.0).abs() < 15.0,
@@ -448,8 +478,15 @@ mod tests {
         let all_ones = samples.iter().all(|&x| (x - 1.0).abs() < 1e-10);
         assert!(!all_ones, "gen_normal should not return constant 1.0");
         // Should have variance
-        let unique_count = samples.iter().map(|x| (*x * 1e6) as i64).collect::<std::collections::HashSet<_>>().len();
-        assert!(unique_count > 50, "gen_normal should produce varied outputs");
+        let unique_count = samples
+            .iter()
+            .map(|x| (*x * 1e6) as i64)
+            .collect::<std::collections::HashSet<_>>()
+            .len();
+        assert!(
+            unique_count > 50,
+            "gen_normal should produce varied outputs"
+        );
     }
 
     /// Mutation test: partition must increment stream by n (catches += -> *= mutation)
@@ -459,7 +496,11 @@ mod tests {
         assert_eq!(rng.stream(), 0);
 
         let _ = rng.partition(4);
-        assert_eq!(rng.stream(), 4, "Stream should increment by partition count");
+        assert_eq!(
+            rng.stream(),
+            4,
+            "Stream should increment by partition count"
+        );
 
         let _ = rng.partition(3);
         assert_eq!(rng.stream(), 7, "Stream should be 4 + 3 = 7");
@@ -513,8 +554,10 @@ mod tests {
 
         // Calculate kurtosis - should be close to 3 for normal
         let mean: f64 = samples.iter().sum::<f64>() / samples.len() as f64;
-        let variance: f64 = samples.iter().map(|x| (x - mean).powi(2)).sum::<f64>() / samples.len() as f64;
-        let fourth_moment: f64 = samples.iter().map(|x| (x - mean).powi(4)).sum::<f64>() / samples.len() as f64;
+        let variance: f64 =
+            samples.iter().map(|x| (x - mean).powi(2)).sum::<f64>() / samples.len() as f64;
+        let fourth_moment: f64 =
+            samples.iter().map(|x| (x - mean).powi(4)).sum::<f64>() / samples.len() as f64;
         let kurtosis = fourth_moment / (variance * variance);
 
         // Normal distribution has kurtosis = 3. Allow some tolerance.

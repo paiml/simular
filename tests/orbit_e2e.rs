@@ -9,14 +9,12 @@
 //! - Tests verify invariant properties
 //! - Tests use metamorphic relations where oracle is unavailable
 
-use simular::orbit::prelude::*;
-use simular::orbit::physics::YoshidaIntegrator;
 use simular::orbit::metamorphic::{
-    run_all_metamorphic_tests,
-    test_deterministic_replay,
+    run_all_metamorphic_tests, test_angular_momentum_conservation, test_deterministic_replay,
     test_energy_conservation,
-    test_angular_momentum_conservation,
 };
+use simular::orbit::physics::YoshidaIntegrator;
+use simular::orbit::prelude::*;
 
 /// AC-1: Earth orbit completes in 365.25 +/- 0.01 simulation days
 ///
@@ -39,7 +37,9 @@ fn ac1_earth_orbital_period() {
 
     let mut current_state = state;
     for _ in 0..total_steps {
-        yoshida.step(&mut current_state, dt).expect("integration failed");
+        yoshida
+            .step(&mut current_state, dt)
+            .expect("integration failed");
     }
 
     // Get final Earth position
@@ -121,10 +121,7 @@ fn ac6_deterministic_trajectories() {
 
     // Run 100 steps and verify bit-identical
     let result = test_deterministic_replay(&state, 100, 3600.0);
-    assert!(
-        result.passed,
-        "AC-6 FAILED: Trajectories not bit-identical"
-    );
+    assert!(result.passed, "AC-6 FAILED: Trajectories not bit-identical");
 }
 
 /// AC-7: All metamorphic relations pass
@@ -210,7 +207,7 @@ fn ac9_jidoka_graceful_degradation() {
         OrbitBody::new(
             OrbitMass::from_kg(5.972e24),
             Position3D::from_meters(1e6, 0.0, 0.0), // Very close!
-            Velocity3D::from_mps(0.0, 1e6, 0.0), // Very fast!
+            Velocity3D::from_mps(0.0, 1e6, 0.0),    // Very fast!
         ),
     ];
 
@@ -318,16 +315,8 @@ fn nbody_inner_solar_system_stability() {
 
     // All bodies should have finite positions
     for (i, body) in state.bodies.iter().enumerate() {
-        assert!(
-            body.position.is_finite(),
-            "Body {} position not finite",
-            i
-        );
-        assert!(
-            body.velocity.is_finite(),
-            "Body {} velocity not finite",
-            i
-        );
+        assert!(body.position.is_finite(), "Body {} position not finite", i);
+        assert!(body.velocity.is_finite(), "Body {} velocity not finite", i);
     }
 }
 
@@ -402,12 +391,7 @@ fn render_camera_transform_invertible() {
     };
 
     // Test points at various distances (2D - projection ignores z)
-    let test_points: [(f64, f64); 4] = [
-        (0.0, 0.0),
-        (AU, 0.0),
-        (0.0, AU),
-        (-AU, -AU),
-    ];
+    let test_points: [(f64, f64); 4] = [(0.0, 0.0), (AU, 0.0), (0.0, AU), (-AU, -AU)];
 
     for (wx, wy) in test_points {
         let (sx, sy) = camera.world_to_screen(wx, wy);

@@ -7,10 +7,10 @@
 //!
 //! [19] Gamma et al., "Design Patterns," 1994.
 
-use serde::{Deserialize, Serialize};
-use crate::orbit::physics::NBodyState;
-use crate::orbit::jidoka::JidokaStatus;
 use crate::orbit::heijunka::HeijunkaStatus;
+use crate::orbit::jidoka::JidokaStatus;
+use crate::orbit::physics::NBodyState;
+use serde::{Deserialize, Serialize};
 
 /// RGBA color representation.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -163,8 +163,16 @@ impl Camera {
         let width_span = max_x - min_x;
         let height_span = max_y - min_y;
 
-        let zoom_x = if width_span > 0.0 { self.width / width_span * 0.9 } else { 1.0 };
-        let zoom_y = if height_span > 0.0 { self.height / height_span * 0.9 } else { 1.0 };
+        let zoom_x = if width_span > 0.0 {
+            self.width / width_span * 0.9
+        } else {
+            1.0
+        };
+        let zoom_y = if height_span > 0.0 {
+            self.height / height_span * 0.9
+        } else {
+            1.0
+        };
 
         self.zoom = zoom_x.min(zoom_y);
     }
@@ -286,7 +294,9 @@ pub fn render_state(
     let mut commands = Vec::new();
 
     // Clear screen
-    commands.push(RenderCommand::Clear { color: Color::BLACK });
+    commands.push(RenderCommand::Clear {
+        color: Color::BLACK,
+    });
 
     // Set camera
     commands.push(RenderCommand::SetCamera {
@@ -298,7 +308,8 @@ pub fn render_state(
     // Draw orbit trails
     for (i, trail) in trails.iter().enumerate() {
         if i < config.bodies.len() && config.bodies[i].show_orbit_trail {
-            let scaled_points: Vec<(f64, f64)> = trail.points()
+            let scaled_points: Vec<(f64, f64)> = trail
+                .points()
                 .iter()
                 .map(|(x, y)| (x / config.scale_factor, y / config.scale_factor))
                 .collect();
@@ -354,7 +365,8 @@ pub fn render_state(
     // Draw Jidoka status
     if config.show_jidoka_status {
         if let Some(status) = jidoka {
-            let status_color = if status.energy_ok && status.angular_momentum_ok && status.finite_ok {
+            let status_color = if status.energy_ok && status.angular_momentum_ok && status.finite_ok
+            {
                 Color::GREEN
             } else if status.warning_count > 0 {
                 Color::ORANGE
@@ -369,7 +381,11 @@ pub fn render_state(
                     "Jidoka: E={:.2e} L={:.2e} {}",
                     status.energy_error,
                     status.angular_momentum_error,
-                    if status.close_encounter_warning { "⚠ Close" } else { "OK" }
+                    if status.close_encounter_warning {
+                        "⚠ Close"
+                    } else {
+                        "OK"
+                    }
                 ),
                 color: status_color,
             });
@@ -407,7 +423,7 @@ pub fn render_state(
 mod tests {
     use super::*;
     use crate::orbit::physics::OrbitBody;
-    use crate::orbit::units::{OrbitMass, Position3D, Velocity3D, AU, SOLAR_MASS, EARTH_MASS, G};
+    use crate::orbit::units::{OrbitMass, Position3D, Velocity3D, AU, EARTH_MASS, G, SOLAR_MASS};
 
     fn create_test_state() -> NBodyState {
         let v_circular = (G * SOLAR_MASS / AU).sqrt();
@@ -550,9 +566,9 @@ mod tests {
         let commands = render_state(&state, &config, &trails, Some(&jidoka), None);
 
         // Should include Jidoka status text
-        let has_jidoka_text = commands.iter().any(|cmd| {
-            matches!(cmd, RenderCommand::DrawText { text, .. } if text.contains("Jidoka"))
-        });
+        let has_jidoka_text = commands.iter().any(
+            |cmd| matches!(cmd, RenderCommand::DrawText { text, .. } if text.contains("Jidoka")),
+        );
         assert!(has_jidoka_text);
     }
 

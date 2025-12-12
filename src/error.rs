@@ -36,7 +36,9 @@ pub enum SimError {
     },
 
     /// Constraint violation detected.
-    #[error("Jidoka: constraint '{name}' violated by {violation:.6e} (tolerance: {tolerance:.6e})")]
+    #[error(
+        "Jidoka: constraint '{name}' violated by {violation:.6e} (tolerance: {tolerance:.6e})"
+    )]
     ConstraintViolation {
         /// Name of the violated constraint.
         name: String,
