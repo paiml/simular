@@ -1,8 +1,10 @@
 # Multi-stage Dockerfile for simular
 # Provides reproducible build environment
+# SHA256 pinned for deterministic builds
 
 # Build stage
-FROM rust:1.75-slim-bookworm AS builder
+ARG RUST_VERSION=1.83.0
+FROM rust:${RUST_VERSION}-slim-bookworm AS builder
 
 # Install build dependencies
 RUN apt-get update && apt-get install -y \
@@ -55,7 +57,7 @@ ENTRYPOINT ["simular"]
 CMD ["--help"]
 
 # WASM build stage
-FROM rust:1.75-slim-bookworm AS wasm-builder
+FROM rust:${RUST_VERSION}-slim-bookworm AS wasm-builder
 
 # Install wasm-pack
 RUN cargo install wasm-pack
