@@ -1,0 +1,85 @@
+# Multi-stage Dockerfile for simular
+# Provides reproducible build environment
+
+# Build stage
+FROM rust:1.75-slim-bookworm AS builder
+
+# Install build dependencies
+RUN apt-get update && apt-get install -y \
+    pkg-config \
+    libssl-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create app directory
+WORKDIR /app
+
+# Copy manifests first for better caching
+COPY Cargo.toml Cargo.lock ./
+
+# Create dummy src for dependency caching
+RUN mkdir src && echo "fn main() {}" > src/main.rs
+
+# Build dependencies
+RUN cargo build --release
+RUN rm -rf src
+
+# Copy source code
+COPY src ./src
+COPY benches ./benches
+COPY examples ./examples
+
+# Build the actual application
+RUN touch src/main.rs && cargo build --release
+
+# Runtime stage
+FROM debian:bookworm-slim AS runtime
+
+# Install runtime dependencies
+RUN apt-get update && apt-get install -y \
+    ca-certificates \
+    libssl3 \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create non-root user
+RUN useradd -m -u 1000 simular
+USER simular
+
+# Copy binary from builder
+COPY --from=builder /app/target/release/simular /usr/local/bin/
+
+# Set working directory
+WORKDIR /home/simular
+
+# Default command
+ENTRYPOINT ["simular"]
+CMD ["--help"]
+
+# WASM build stage
+FROM rust:1.75-slim-bookworm AS wasm-builder
+
+# Install wasm-pack
+RUN cargo install wasm-pack
+
+# Install target
+RUN rustup target add wasm32-unknown-unknown
+
+WORKDIR /app
+
+# Copy manifests
+COPY Cargo.toml Cargo.lock ./
+
+# Copy source
+COPY src ./src
+
+# Build WASM
+RUN wasm-pack build --target web --features wasm
+
+# WASM output stage
+FROM scratch AS wasm
+COPY --from=wasm-builder /app/pkg /pkg
+
+# Labels
+LABEL org.opencontainers.image.title="simular"
+LABEL org.opencontainers.image.description="Unified Simulation Engine"
+LABEL org.opencontainers.image.source="https://github.com/paiml/simular"
+LABEL org.opencontainers.image.licenses="MIT"

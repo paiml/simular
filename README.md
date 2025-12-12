@@ -152,12 +152,22 @@ simular/
 | Integrator | Yoshida 4th-order symplectic |
 | Determinism | Bit-identical across platforms |
 
+## Contributing
+
+Contributions are welcome! Please see our [Contributing Guide](CONTRIBUTING.md) for:
+
+- Development setup
+- Coding standards (Toyota TPS, JPL Power of 10)
+- Testing requirements (95% coverage, 80% mutation score)
+- Pull request process
+
 ## Links
 
 - **Live Demo**: https://interactive.paiml.com/simular-orbit/
 - **Crates.io**: https://crates.io/crates/simular
 - **Documentation**: https://docs.rs/simular
 - **GitHub**: https://github.com/paiml/simular
+- **Changelog**: [CHANGELOG.md](CHANGELOG.md)
 
 ## License
 
