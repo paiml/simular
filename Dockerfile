@@ -84,6 +84,7 @@ COPY src ./src
 COPY benches ./benches
 COPY examples ./examples
 COPY tests ./tests
+COPY schemas ./schemas
 
 # Build WASM
 RUN wasm-pack build --target web --no-default-features --features wasm
