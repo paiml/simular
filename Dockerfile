@@ -59,11 +59,13 @@ CMD ["--help"]
 # WASM build stage
 FROM rust:${RUST_VERSION}-slim-bookworm AS wasm-builder
 
-# Install build dependencies (needed for wasm-pack)
+# Install build dependencies (needed for wasm-pack and zstd-sys)
 RUN apt-get update && apt-get install -y \
     pkg-config \
     libssl-dev \
     curl \
+    clang \
+    lld \
     && rm -rf /var/lib/apt/lists/*
 
 # Install wasm-pack (use pre-built binary for faster builds)
