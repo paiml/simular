@@ -1,6 +1,6 @@
 [package]
 name = "simular"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2021"
 authors = ["PAIML Engineering"]
 description = "Unified Simulation Engine for the Sovereign AI Stack"
@@ -83,8 +83,8 @@ z3 = { version = "0.12", optional = true }
 proptest = "1.5"
 criterion = { version = "0.5", features = ["html_reports"] }
 tempfile = "3.14"
-# Probar WASM testing framework (published as jugar-probar on crates.io)
-jugar-probar = "0.2.0"
+# Probar WASM testing framework (using local path for development)
+jugar-probar = { path = "../probar/crates/probar" }
 
 [features]
 default = ["schema-validation"]

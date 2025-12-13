@@ -34,6 +34,7 @@ COVERAGE_THRESHOLD := 95
 .PHONY: quality-report kaizen mutants mutants-fast mutants-check
 .PHONY: property-test property-test-fast property-test-full
 .PHONY: install-tools help release-check release release-tag examples
+.PHONY: serve-tsp serve-orbit serve
 .PHONY: quality-gates validate
 
 # Default target
@@ -514,6 +515,22 @@ examples: ## Run all examples
 		fi; \
 	done
 	@echo "✅ Examples complete"
+
+# ============================================================================
+# DEMO SERVERS
+# ============================================================================
+
+serve-tsp: ## Serve TSP WASM demo at http://localhost:8080/tsp.html
+	@echo "🌐 Serving TSP demo at http://localhost:8080/tsp.html"
+	@(sleep 2 && xdg-open http://localhost:8080/tsp.html 2>/dev/null || open http://localhost:8080/tsp.html 2>/dev/null || true) &
+	@cd web && npx serve -p 8080
+
+serve-orbit: ## Serve Orbit WASM demo at http://localhost:8080/index.html
+	@echo "🌐 Serving Orbit demo at http://localhost:8080/index.html"
+	@(sleep 2 && xdg-open http://localhost:8080/index.html 2>/dev/null || open http://localhost:8080/index.html 2>/dev/null || true) &
+	@cd web && npx serve -p 8080
+
+serve: serve-tsp ## Alias for serve-tsp
 
 # ============================================================================
 # RELEASE

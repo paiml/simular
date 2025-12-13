@@ -19,6 +19,11 @@
 #   [56] Held & Karp, "TSP and MST," Operations Research, 1970
 #   See: docs/specifications/simple-or-example.md (OR-001 Spec)
 
+# Per SIMULAR-DEMO-002: DemoEngine requires simulation.type
+simulation:
+  type: tsp
+  name: "20-City California TSP"
+
 meta:
   id: "TSP-CA-020"
   version: "2.0.0"

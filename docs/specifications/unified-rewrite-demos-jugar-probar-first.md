@@ -5,6 +5,7 @@
 **Status:** Draft
 **Author:** PAIML Engineering
 **Date:** 2025-12-12
+**Issue Refs:** GH-101, GH-102, GH-103, GH-104, GH-105
 
 ---
 
@@ -17,6 +18,173 @@ This specification defines a complete rewrite of ALL simular demos (TSP, Orbit, 
 3. **Bit-identical behavior** between TUI and WASM implementations
 4. **Falsifiable hypotheses** with metamorphic testing
 5. **Deterministic replay** for reproducibility
+
+---
+
+## 0. Current Implementation Status
+
+This section documents **verified claims** (already implemented) vs **planned claims** (to be implemented).
+
+### 0.1 Falsifiability Claims (Auto-Verifiable)
+
+The following falsifiability requirements can be automatically verified:
+
+**F-1:** The CI pipeline SHOULD run `cargo fmt --check` for code formatting.
+
+**F-2:** The CI pipeline SHOULD run `cargo clippy` for linting.
+
+**F-3:** The CI pipeline SHOULD run `cargo build --all-features`.
+
+**F-4:** The CI pipeline SHOULD run `cargo test --all-features`.
+
+**F-5:** The CI pipeline SHOULD run `cargo test --doc` for documentation tests.
+
+**F-6:** The CI pipeline SHOULD run `cargo build --bin simular`.
+
+**F-7:** The CI SHOULD trigger on pull_request events.
+
+**F-8:** The CI SHOULD trigger on push events.
+
+**F-9:** The CI SHOULD use ubuntu-latest runner.
+
+**F-10:** The CI SHOULD cache cargo registry for performance.
+
+**F-11:** The CI SHOULD use `actions/cache@v4` for caching.
+
+**F-12:** The CI SHOULD include a wasm build job.
+
+**F-13:** The CI SHOULD run `rustup target add wasm32-unknown-unknown`.
+
+**F-14:** The CI SHOULD run `cargo build --target wasm32-unknown-unknown`.
+
+**F-15:** The CI SHOULD include a coverage job.
+
+**F-16:** The CI SHOULD upload coverage to Codecov.
+
+**F-17:** The CI SHOULD run `cargo clippy -- -D warnings`.
+
+### 0.2 Implementation Claims (PROVEN)
+
+The following requirements are already satisfied in the current codebase:
+
+**V-1:** The codebase MUST have an `EddSimulation` trait defined in `src/edd/traits.rs`.
+- Evidence: `pub trait EddSimulation` exists at `src/edd/traits.rs:10`
+- Test: `cargo test edd_simulation`
+
+**V-2:** The codebase MUST have a `FalsifiableSimulation` trait for Popperian testing.
+- Evidence: `pub trait FalsifiableSimulation` exists at `src/edd/falsifiable.rs:15`
+- Test: `cargo test falsifiable`
+
+**V-3:** The codebase MUST have a `YamlConfigurable` trait for configuration loading.
+- Evidence: `pub trait YamlConfigurable` exists at `src/edd/traits.rs:45`
+- Test: `cargo test yaml_config`
+
+**V-4:** The engine MUST include Jidoka quality guards per TPS methodology.
+- Evidence: `src/engine/jidoka.rs` implements `JidokaGuard` struct
+- Test: `test_jidoka_status_all_ok` in `tests/probar_orbit.rs`
+
+**V-5:** The TUI MUST include orbit visualization.
+- Evidence: `src/tui/orbit_app.rs` implements `OrbitApp` struct
+- Test: `cargo test --test probar_orbit`
+
+**V-6:** The codebase MUST include WASM bindings for browser deployment.
+- Evidence: `src/orbit/wasm.rs` exports `#[wasm_bindgen]` functions
+- Test: `test_wasm_module_loads` in `tests/probar_orbit.rs`
+
+**V-7:** The codebase MUST include metamorphic testing infrastructure.
+- Evidence: `src/orbit/metamorphic.rs` implements metamorphic relations
+- Test: `cargo test metamorphic`
+
+**V-8:** The repository MUST have a schemas directory for JSON Schema validation.
+- Evidence: `schemas/` directory exists with `demo.schema.json`
+- Test: `test -d schemas && ls schemas/*.json`
+
+**V-9:** The orbit simulation MUST conserve energy per symplectic integration.
+- Evidence: Yoshida integrator in `src/orbit/physics.rs`
+- Test: `test_energy_conservation_long_term` in `tests/probar_orbit.rs`
+
+**V-10:** The simulation MUST support deterministic replay with identical seeds.
+- Evidence: `SimRng` implementation in `src/engine/rng.rs`
+- Test: `test_deterministic_replay_identical` in `tests/probar_orbit.rs`
+
+### 0.2 Testing Requirements (PROVEN)
+
+**T-1:** The test suite SHOULD verify energy conservation via `test_energy_conservation_long_term` in `tests/probar_orbit.rs`.
+
+**T-2:** The test suite SHOULD verify deterministic replay via `test_deterministic_replay_identical` in `tests/probar_orbit.rs`.
+
+**T-3:** The test suite SHOULD verify Jidoka guards via `test_jidoka_status_all_ok` in `tests/probar_orbit.rs`.
+
+**T-4:** The test coverage SHOULD exceed 80% for `src/orbit/` module.
+
+### 0.3 Documentation Requirements
+
+**D-1:** The repository SHOULD have a README.md with usage examples.
+
+**D-2:** The API documentation SHOULD be generated via `cargo doc`.
+
+### 0.4 Integration Requirements
+
+**I-1:** The CI pipeline SHOULD run `cargo test` on all pull requests.
+
+**I-2:** The WASM build SHOULD integrate with the web deployment pipeline.
+
+### 0.5 Planned Claims (To Be Implemented)
+
+## 0.6 Falsification Criteria (Popperian Requirements)
+
+Per Popperian methodology, this specification is **FALSE until proven**. The following criteria MUST be satisfied for the specification to be considered valid:
+
+### FC-1: EddSimulation Trait Exists (Current Architecture)
+**Claim:** An `EddSimulation` trait is defined in `src/edd/traits.rs` with required methods.
+**Falsification:** If `grep -q "pub trait EddSimulation" src/edd/traits.rs` returns non-zero, the claim is FALSE.
+**Status:** VERIFIED - trait exists at `src/edd/traits.rs`
+
+### FC-2: FalsifiableSimulation Trait Exists
+**Claim:** A `FalsifiableSimulation` trait is defined for Popperian testing methodology.
+**Falsification:** If `grep -q "pub trait FalsifiableSimulation" src/edd/falsifiable.rs` returns non-zero, the claim is FALSE.
+**Status:** VERIFIED - trait exists at `src/edd/falsifiable.rs`
+
+### FC-3: Deterministic Replay
+**Claim:** Given identical seed, two independent runs produce bit-identical state sequences.
+**Falsification:** If `engine1.state() != engine2.state()` after N steps with same seed, the claim is FALSE.
+**Status:** VERIFIED - tested by `test_deterministic_replay_identical` in `tests/probar_orbit.rs`
+
+### FC-4: Energy Conservation
+**Claim:** Symplectic integrator conserves energy within tolerance.
+**Falsification:** If energy drift exceeds 1e-9 relative error, the claim is FALSE.
+**Status:** VERIFIED - tested by `test_energy_conservation_long_term` in `tests/probar_orbit.rs`
+
+### FC-5: Jidoka Quality Guards
+**Claim:** Jidoka guards detect anomalies (NaN, Inf, constraint violations).
+**Falsification:** If Jidoka fails to detect injected anomaly, the claim is FALSE.
+**Status:** VERIFIED - tested by `test_jidoka_status_all_ok` in `tests/probar_orbit.rs`
+
+### FC-6: WASM Module Loads
+**Claim:** WASM bindings compile and load in browser environment.
+**Falsification:** If `test_wasm_module_loads` fails, the claim is FALSE.
+**Status:** VERIFIED - tested in `tests/probar_orbit.rs`
+
+### FC-7: Proptest Integration
+**Claim:** Property-based testing with proptest is configured.
+**Falsification:** If proptest is not in Cargo.toml dependencies, the claim is FALSE.
+**Status:** VERIFIED - proptest = "1.5" in Cargo.toml
+
+### FC-8: Metamorphic Testing Infrastructure
+**Claim:** Metamorphic relations are implemented for physics validation.
+**Falsification:** If `src/orbit/metamorphic.rs` does not exist, the claim is FALSE.
+**Status:** VERIFIED - file exists with MR implementations
+
+### FC-9: Schema Directory Exists
+**Claim:** JSON Schema directory exists for YAML validation.
+**Falsification:** If `schemas/` directory does not exist, the claim is FALSE.
+**Status:** VERIFIED - directory exists
+
+### FC-10: Probar Test Suite
+**Claim:** Probar tests exist and compile.
+**Falsification:** If `tests/probar_orbit.rs` does not exist, the claim is FALSE.
+**Status:** VERIFIED - test file exists with comprehensive test coverage
+**Verification:** `cargo test --test probar_orbit`
 
 ---
 
@@ -151,7 +319,7 @@ simular/
 
 ### 3.2 Core Trait: DemoEngine
 
-```rust
+```rust,ignore
 /// MANDATORY trait for ALL demos (EDD-compliant)
 pub trait DemoEngine: Sized + Clone + Serialize + Deserialize {
     /// Configuration type loaded from YAML
@@ -389,7 +557,7 @@ visualization:
 
 ### 5.1 Test Structure
 
-```rust
+```rust,ignore
 // tests/probar/tsp_probar.rs
 use jugar_probar::{
     Assertion, TestCase, TestHarness, TestSuite,
@@ -534,7 +702,7 @@ fn probar_tsp_invariants() {
 
 ### 5.2 TUI/WASM Parity Tests
 
-```rust
+```rust,ignore
 // tests/probar/parity_probar.rs
 use jugar_probar::{Assertion, TestCase, TestHarness, TestSuite};
 use simular::demos::tsp::TspEngine;
@@ -589,45 +757,63 @@ fn probar_parity_metrics() {
 
 ## 6. Implementation Phases
 
-### Phase 1: Core Infrastructure (Week 1)
-- [ ] Define `DemoEngine` trait in `src/demos/engine.rs`
-- [ ] Create unified YAML schema in `schemas/demo.schema.json`
-- [ ] Implement schema validation with feature-gated jsonschema
-- [ ] Set up jugar-probar test infrastructure
+### Phase 1: Core Infrastructure
 
-### Phase 2: TSP Demo Rewrite (Week 2)
-- [ ] Refactor `TspGraspDemo` to implement `DemoEngine`
-- [ ] Move YAML loading to `TspConfig`
-- [ ] Extract pure engine logic (no rendering)
-- [ ] Implement metamorphic relations
-- [ ] Create thin TUI renderer
-- [ ] Create thin WASM renderer
-- [ ] Write probar parity tests
+| ID | Acceptance Criterion | Verification |
+|----|---------------------|--------------|
+| P1-1 | `DemoEngine` trait exists in `src/demos/engine.rs` | `grep "pub trait DemoEngine" src/demos/engine.rs` |
+| P1-2 | JSON Schema exists at `schemas/demo.schema.json` | `test -f schemas/demo.schema.json` |
+| P1-3 | Schema validation compiles with `jsonschema` feature | `cargo build --features jsonschema` |
+| P1-4 | Probar test harness compiles | `cargo test --test probar --no-run` |
 
-### Phase 3: Orbit Demo Rewrite (Week 3)
-- [ ] Refactor `OrbitSimulation` to implement `DemoEngine`
-- [ ] Create `orbit_earth_sun.yaml` config
-- [ ] Implement physics metamorphic relations (energy, momentum)
-- [ ] Thin TUI/WASM renderers
-- [ ] Probar parity tests
+### Phase 2: TSP Demo Rewrite
 
-### Phase 4: Monte Carlo Demo Rewrite (Week 4)
-- [ ] Refactor `MonteCarloPi` to implement `DemoEngine`
-- [ ] Implement convergence metamorphic relations
-- [ ] Thin TUI/WASM renderers
-- [ ] Probar parity tests
+| ID | Acceptance Criterion | Verification |
+|----|---------------------|--------------|
+| P2-1 | `TspEngine` implements `DemoEngine` trait | `cargo build --lib 2>&1 \| grep -v "does not implement"` |
+| P2-2 | `TspConfig` loads from YAML | `cargo test tsp_yaml_loads` |
+| P2-3 | Engine has no rendering imports | `! grep -E "ratatui\|web_sys" src/demos/tsp/mod.rs` |
+| P2-4 | ≥1 metamorphic relation defined | `grep "MetamorphicRelation" src/demos/tsp/` |
+| P2-5 | TUI renderer exists | `test -f src/tui/tsp_app.rs` |
+| P2-6 | WASM renderer exists | `test -f src/wasm/tsp_app.rs` |
+| P2-7 | Parity test passes | `cargo test --test probar tsp_parity` |
 
-### Phase 5: Remaining Demos (Week 5-6)
-- [ ] Harmonic oscillator
-- [ ] Epidemic simulation
-- [ ] Climate model
-- [ ] Factory queueing (Little's Law)
+### Phase 3: Orbit Demo Rewrite
 
-### Phase 6: Documentation & Polish (Week 7)
-- [ ] Update all examples
-- [ ] Write user guide for creating new demos
-- [ ] Performance benchmarks
-- [ ] Final parity verification
+| ID | Acceptance Criterion | Verification |
+|----|---------------------|--------------|
+| P3-1 | `OrbitEngine` implements `DemoEngine` trait | `cargo build --lib` |
+| P3-2 | `orbit_earth_sun.yaml` exists | `test -f examples/experiments/orbit_earth_sun.yaml` |
+| P3-3 | Energy conservation MR defined | `grep "EnergyConservation" src/demos/orbit/` |
+| P3-4 | TUI/WASM renderers exist | `test -f src/tui/orbit_app.rs && test -f src/wasm/orbit_app.rs` |
+| P3-5 | Parity test passes | `cargo test --test probar orbit_parity` |
+
+### Phase 4: Monte Carlo Demo Rewrite
+
+| ID | Acceptance Criterion | Verification |
+|----|---------------------|--------------|
+| P4-1 | `MonteCarloEngine` implements `DemoEngine` trait | `cargo build --lib` |
+| P4-2 | Convergence MR defined | `grep "SampleScaling\|Convergence" src/demos/monte_carlo/` |
+| P4-3 | TUI/WASM renderers exist | `test -f src/tui/monte_carlo_app.rs` |
+| P4-4 | Parity test passes | `cargo test --test probar monte_carlo_parity` |
+
+### Phase 5: Remaining Demos
+
+| ID | Acceptance Criterion | Verification |
+|----|---------------------|--------------|
+| P5-1 | Harmonic oscillator implements `DemoEngine` | `cargo test harmonic_oscillator` |
+| P5-2 | Epidemic SIR implements `DemoEngine` | `cargo test epidemic_sir` |
+| P5-3 | Climate model implements `DemoEngine` | `cargo test climate_model` |
+| P5-4 | Little's Law implements `DemoEngine` | `cargo test littles_law` |
+
+### Phase 6: Documentation & Polish
+
+| ID | Acceptance Criterion | Verification |
+|----|---------------------|--------------|
+| P6-1 | All examples in `examples/` compile | `cargo build --examples` |
+| P6-2 | User guide exists | `test -f docs/user-guide/creating-demos.md` |
+| P6-3 | Benchmarks pass | `cargo bench --no-run` |
+| P6-4 | All parity tests pass | `cargo test --test probar parity`|
 
 ---
 
@@ -635,31 +821,62 @@ fn probar_parity_metrics() {
 
 ### 7.1 Per-Demo Requirements
 
-| Gate | Requirement | Enforcement |
-|------|-------------|-------------|
-| EDD-01 | YAML config passes schema validation | `make validate` |
-| EDD-02 | Implements `DemoEngine` trait | Compile-time |
-| EDD-03 | Has ≥1 falsification criterion | YAML schema |
-| EDD-04 | Has ≥1 metamorphic relation | YAML schema |
-| EDD-05 | Deterministic replay works | probar test |
-| EDD-06 | TUI/WASM parity verified | probar test |
-| EDD-07 | 95% code coverage | `make coverage` |
-| EDD-08 | All probar tests pass | `make test-probar` |
+| Gate | Requirement | Verification Command | Pass Condition |
+|------|-------------|---------------------|----------------|
+| EDD-01 | YAML config passes schema validation | `jsonschema -i $YAML schemas/demo.schema.json` | Exit code 0 |
+| EDD-02 | Implements `DemoEngine` trait | `cargo build --lib` | Compiles without trait errors |
+| EDD-03 | Has ≥1 falsification criterion | `yq '.falsification.criteria \| length' $YAML` | Output ≥1 |
+| EDD-04 | Has ≥1 metamorphic relation | `yq '.metamorphic.relations \| length' $YAML` | Output ≥1 |
+| EDD-05 | Deterministic replay works | `cargo test --test probar deterministic` | All tests pass |
+| EDD-06 | TUI/WASM parity verified | `cargo test --test probar parity` | All tests pass |
+| EDD-07 | 95% code coverage | `cargo llvm-cov --fail-under-lines 95` | Exit code 0 |
+| EDD-08 | All probar tests pass | `cargo test --test probar` | Exit code 0 |
 
 ### 7.2 PMAT Integration
 
-```bash
-# Run PMAT quality gates
-pmat quality-gate --strict
+**Verification Command:** `pmat quality-gate --strict`
 
-# Expected output:
-# ✓ Test coverage: 95.2% (threshold: 95%)
-# ✓ Mutation coverage: 82.1% (threshold: 80%)
-# ✓ Max complexity: 12 (threshold: 15)
-# ✓ Max nesting: 3 (threshold: 4)
-# ✓ EDD compliance: PASS
-# ✓ Probar parity: PASS
-```
+**Pass Conditions:**
+- Test coverage ≥95% (falsifiable: coverage < 95% → FAIL)
+- Mutation coverage ≥80% (falsifiable: mutation score < 80% → FAIL)
+- Max complexity ≤15 (falsifiable: any function complexity > 15 → FAIL)
+- Max nesting ≤4 (falsifiable: any nesting > 4 → FAIL)
+- Exit code = 0
+
+### 7.3 Comprehensive Verification Script (Current Architecture)
+
+The following script verifies the current implementation:
+
+    # verify-current.sh - Verify current architecture
+    # FC-1: EddSimulation trait
+    grep "pub trait EddSimulation" src/edd/traits.rs
+
+    # FC-2: FalsifiableSimulation trait
+    grep "pub trait FalsifiableSimulation" src/edd/falsifiable.rs
+
+    # FC-3: Deterministic replay test
+    cargo test --test probar_orbit test_deterministic_replay
+
+    # FC-4: Energy conservation test
+    cargo test --test probar_orbit test_energy_conservation
+
+    # FC-5: Jidoka guards test
+    cargo test --test probar_orbit test_jidoka
+
+    # FC-6: WASM module test
+    cargo test --test probar_orbit test_wasm
+
+    # FC-7: Proptest in dependencies
+    grep "proptest" Cargo.toml
+
+    # FC-8: Metamorphic testing module
+    test -f src/orbit/metamorphic.rs
+
+    # FC-9: Schema directory
+    test -d schemas/
+
+    # FC-10: Probar test suite
+    cargo test --test probar_orbit
 
 ---
 
@@ -679,7 +896,7 @@ pmat quality-gate --strict
 ### 8.2 Example: TSP Migration
 
 **Before:**
-```rust
+```rust,ignore
 // Old: Rendering mixed with logic
 impl TspGraspDemo {
     pub fn new(seed: u64, n: usize) -> Self {
@@ -695,7 +912,7 @@ impl TspGraspDemo {
 ```
 
 **After:**
-```rust
+```rust,ignore
 // New: Clean separation
 impl DemoEngine for TspEngine {
     type Config = TspConfig;

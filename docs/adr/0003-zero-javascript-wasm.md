@@ -95,5 +95,5 @@ pub fn init_tsp_app() -> Result<(), JsValue> {
 
 ## References
 
-- [wasm-bindgen Guide](https://rustwasm.github.io/wasm-bindgen/)
-- [web-sys API](https://rustwasm.github.io/wasm-bindgen/api/web_sys/)
+- [wasm-bindgen Guide](https://rustwasm.github.io/docs/wasm-bindgen/)
+- [web-sys API](https://docs.rs/web-sys/latest/web_sys/)

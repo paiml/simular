@@ -38,6 +38,8 @@ pub mod kepler_orbit;
 pub mod kingmans_hockey;
 pub mod littles_law_factory;
 pub mod monte_carlo_pi;
+pub mod orbit_engine;
+pub mod tsp_engine;
 pub mod tsp_grasp;
 pub mod tsp_instance;
 
@@ -62,6 +64,8 @@ pub use kepler_orbit::KeplerOrbitDemo;
 pub use kingmans_hockey::KingmanHockeyDemo;
 pub use littles_law_factory::LittlesLawFactoryDemo;
 pub use monte_carlo_pi::MonteCarloPlDemo;
+pub use orbit_engine::{OrbitConfig, OrbitalEngine, OrbitalState, OrbitalStepResult};
+pub use tsp_engine::{TspConfig, TspEngine, TspState, TspStepResult};
 pub use tsp_grasp::TspGraspDemo;
 pub use tsp_instance::{
     Coords, TspAlgorithmConfig, TspCity, TspInstanceError, TspInstanceYaml, TspMeta, TspParams,

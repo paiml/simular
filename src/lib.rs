@@ -52,6 +52,7 @@ pub mod replay;
 pub mod scenarios;
 #[cfg(feature = "tui")]
 pub mod tui;
+pub mod renderers;
 pub mod visualization;
 
 /// Prelude for convenient imports
