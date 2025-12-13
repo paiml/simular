@@ -172,7 +172,7 @@ if let Ok(result) = scheduler.execute_frame(&mut state) {
 Run the interactive terminal UI:
 
 ```bash
-cargo run --bin orbit-tui --features tui
+cargo run --features tui --bin orbit-tui
 ```
 
 Controls:
@@ -181,9 +181,17 @@ Controls:
 - **+/-**: Adjust time scale
 - **Q**: Quit
 
-## WASM Target
+## WASM Demo
 
-Build for web browsers:
+Run the interactive web demo:
+
+```bash
+make serve-orbit
+```
+
+This serves the demo at `http://localhost:8080/index.html` and auto-opens your browser.
+
+### Building WASM from Source
 
 ```bash
 cargo build --lib --target wasm32-unknown-unknown --features wasm --release
