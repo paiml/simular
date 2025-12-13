@@ -250,3 +250,43 @@ roadmap:
   estimated_effort: null
   labels: []
   notes: null
+- id: GH-5
+  github_issue: 5
+  item_type: task
+  title: 'Implement Demo Architecture v2: Probar-First'
+  status: completed
+  priority: medium
+  assigned_to: null
+  created: 2025-12-13T08:34:25.674350956+00:00
+  updated: 2025-12-13T09:14:49.458856840+00:00
+  spec: null
+  acceptance_criteria:
+  - Create `src/demos/engine.rs` with DemoEngine trait
+  - Create `tests/probar_demos.rs` with parity test
+  - Create `examples/experiments/orbit_earth_sun.yaml`
+  - 'Implement `OrbitalEngine: impl DemoEngine`'
+  - 'Implement `TspEngine: impl DemoEngine`'
+  - Create generic renderers
+  - Remove hardcoded `KeplerConfig::earth_sun()` calls
+  - Verify probar parity tests pass
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels: []
+  notes: null
+- id: 'PROBAR-100: 100% GUI and pixel coverage for all demos'
+  github_issue: null
+  item_type: task
+  title: 'New task: PROBAR-100: 100% GUI and pixel coverage for all demos'
+  status: completed
+  priority: medium
+  assigned_to: null
+  created: 2025-12-13T12:39:54.256594925+00:00
+  updated: 2025-12-13T12:42:06.450370314+00:00
+  spec: null
+  acceptance_criteria: []
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels: []
+  notes: null

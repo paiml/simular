@@ -1532,9 +1532,7 @@ dependencies = [
 
 [[package]]
 name = "jugar-probar"
-version = "0.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6ae822b699b6df850c16a893cfe72ad44ae28e8f84a9b5e18fb4c021da063eb9"
+version = "0.3.0"
 dependencies = [
  "base64",
  "chrono",
@@ -2748,7 +2746,7 @@ dependencies = [
 
 [[package]]
 name = "simular"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "axum",
  "bincode",

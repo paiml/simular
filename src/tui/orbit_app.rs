@@ -3,10 +3,14 @@
 //! This module contains the testable state and logic for the orbit TUI demo.
 //! Terminal I/O is handled by the binary, but all state management lives here.
 
+use crate::demos::{DemoEngine, OrbitalEngine};
 use crate::orbit::physics::YoshidaIntegrator;
 use crate::orbit::prelude::*;
 use crate::orbit::render::OrbitTrail;
 use crossterm::event::KeyCode;
+
+/// Embedded default Earth-Sun YAML configuration.
+const DEFAULT_ORBIT_YAML: &str = include_str!("../../examples/experiments/orbit_earth_sun.yaml");
 
 /// Application state for the orbit TUI demo.
 pub struct OrbitApp {
@@ -36,9 +40,29 @@ pub struct OrbitApp {
 
 impl OrbitApp {
     /// Create a new orbit application with default Earth-Sun configuration.
+    ///
+    /// Uses the embedded `orbit_earth_sun.yaml` configuration.
     #[must_use]
     pub fn new() -> Self {
-        let config = KeplerConfig::earth_sun();
+        // Load from embedded YAML for YAML-first architecture
+        Self::from_yaml(DEFAULT_ORBIT_YAML)
+            .unwrap_or_else(|_| Self::from_config(KeplerConfig::default()))
+    }
+
+    /// Create from YAML configuration string.
+    ///
+    /// # Errors
+    ///
+    /// Returns error if YAML parsing fails.
+    pub fn from_yaml(yaml: &str) -> Result<Self, crate::demos::DemoError> {
+        let engine = OrbitalEngine::from_yaml(yaml)?;
+        let config = engine.kepler_config();
+        Ok(Self::from_config(config))
+    }
+
+    /// Create from a specific `KeplerConfig`.
+    #[must_use]
+    pub fn from_config(config: KeplerConfig) -> Self {
         let state = config.build(1e6);
 
         let mut jidoka = OrbitJidokaGuard::new(OrbitJidokaConfig::default());

@@ -133,4 +133,3 @@ make coverage
 ## References
 
 - [EDD Specification](../specifications/EDD-equation-driven-development-spec.md) - Section 9.4 PMAT Compliance
-- [Plan File](../../.claude/plans/velvety-gathering-kitten.md)

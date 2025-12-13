@@ -25,10 +25,14 @@
 
 use wasm_bindgen::prelude::*;
 
+use crate::demos::{DemoEngine, OrbitalEngine};
 use crate::orbit::jidoka::{JidokaResponse, OrbitJidokaConfig, OrbitJidokaGuard};
 use crate::orbit::physics::{NBodyState, YoshidaIntegrator};
 use crate::orbit::scenarios::KeplerConfig;
 use crate::orbit::units::{OrbitTime, AU};
+
+/// Embedded default Earth-Sun YAML configuration.
+const DEFAULT_ORBIT_YAML: &str = include_str!("../../examples/experiments/orbit_earth_sun.yaml");
 
 /// WASM-exported orbit simulation state.
 #[wasm_bindgen]
@@ -48,10 +52,22 @@ impl OrbitSimulation {
         Self::earth_sun()
     }
 
-    /// Create Earth-Sun system.
+    /// Create Earth-Sun system from YAML configuration.
     #[wasm_bindgen]
     pub fn earth_sun() -> Self {
-        let config = KeplerConfig::earth_sun();
+        // Load from embedded YAML for YAML-first architecture
+        Self::from_config(&Self::load_default_config())
+    }
+
+    /// Load the default configuration from embedded YAML.
+    fn load_default_config() -> KeplerConfig {
+        OrbitalEngine::from_yaml(DEFAULT_ORBIT_YAML)
+            .map(|e| e.kepler_config())
+            .unwrap_or_default()
+    }
+
+    /// Create from a specific configuration.
+    fn from_config(config: &KeplerConfig) -> Self {
         let state = config.build(1e6);
 
         let mut jidoka = OrbitJidokaGuard::new(OrbitJidokaConfig::default());
@@ -162,7 +178,7 @@ impl OrbitSimulation {
     /// Reset the simulation to initial state.
     #[wasm_bindgen]
     pub fn reset(&mut self) {
-        let config = KeplerConfig::earth_sun();
+        let config = Self::load_default_config();
         self.state = config.build(1e6);
         self.jidoka = OrbitJidokaGuard::new(OrbitJidokaConfig::default());
         self.jidoka.initialize(&self.state);
