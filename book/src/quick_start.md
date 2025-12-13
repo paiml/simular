@@ -6,7 +6,7 @@ Get running with Simular in 5 minutes.
 
 ```toml
 [dependencies]
-simular = "0.1"
+simular = "0.2"
 ```
 
 ## Your First Simulation: Pi Estimation
@@ -132,6 +132,37 @@ cargo run --example reproducibility
 
 # Jidoka guards
 cargo run --example jidoka_guards
+
+# TSP GRASP demo
+cargo run --example tsp_grasp_demo
+
+# Orbit demo
+cargo run --example orbit_demo
+
+# EDD demos
+cargo run --example edd_yaml_loader
+cargo run --example edd_operations
+cargo run --example edd_falsification
+```
+
+## Interactive TUI Demos
+
+```bash
+# TSP GRASP TUI
+cargo run --features tui --bin tsp-tui
+
+# Orbit TUI
+cargo run --features tui --bin orbit-tui
+```
+
+## WASM Demos
+
+```bash
+# Serve TSP WASM demo (auto-opens browser)
+make serve-tsp
+
+# Serve Orbit WASM demo (auto-opens browser)
+make serve-orbit
 ```
 
 ## Key Concepts

@@ -22,7 +22,7 @@ Add to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-simular = "0.1"
+simular = "0.2"
 ```
 
 ## Quick Example

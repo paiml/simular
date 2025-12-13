@@ -179,17 +179,20 @@ The demo exports WebAssembly bindings for interactive visualization in web brows
 ### Running the WASM Demo
 
 ```bash
+make serve-tsp
+```
+
+This serves the demo at `http://localhost:8080/tsp.html` and auto-opens your browser.
+
+#### Building from Source
+
+```bash
 # Build WASM package
 wasm-pack build --target web --no-default-features --features wasm
 
 # Copy to web directory
 cp pkg/* web/pkg/
-
-# Serve locally
-cd web && python3 -m http.server 8080
 ```
-
-Then open `http://localhost:8080/tsp.html` in your browser.
 
 ### Features
 
