@@ -122,7 +122,7 @@ impl CheckpointManager {
     /// Check if a checkpoint should be created at this step.
     #[must_use]
     pub const fn should_checkpoint(&self, step: u64) -> bool {
-        step.is_multiple_of(self.interval)
+        step % self.interval == 0
     }
 
     /// Create and store a checkpoint.
@@ -463,7 +463,7 @@ impl StreamingCheckpointManager {
     /// Check if checkpoint should be created at this step.
     #[must_use]
     pub const fn should_checkpoint(&self, step: u64) -> bool {
-        step.is_multiple_of(self.interval)
+        step % self.interval == 0
     }
 
     /// Create checkpoint with streaming serialization (zero intermediate allocation).

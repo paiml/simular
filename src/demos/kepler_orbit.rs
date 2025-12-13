@@ -437,7 +437,7 @@ impl EddDemo for KeplerOrbitDemo {
         }
 
         // Record for visualization
-        if self.step_count.is_multiple_of(10) {
+        if self.step_count % 10 == 0 {
             self.record_position();
         }
     }
