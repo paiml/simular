@@ -35,6 +35,7 @@
     clippy::missing_const_for_fn,  // Many functions can't be const in stable Rust
     clippy::needless_range_loop,   // Sometimes range loops are clearer
     clippy::manual_midpoint,       // Manual midpoint is intentional in numerical code
+    clippy::manual_is_multiple_of, // is_multiple_of is unstable in Rust 1.85
 )]
 
 pub mod cli;

@@ -248,7 +248,7 @@ impl TspAppState {
         if self.running {
             self.frame_count += 1;
             // Step every 3rd frame (~20 iterations/sec at 60fps)
-            if self.frame_count.is_multiple_of(3) {
+            if self.frame_count % 3 == 0 {
                 self.step();
             }
         }

@@ -342,7 +342,7 @@ impl EddDemo for LittlesLawFactoryDemo {
         }
 
         // Periodically record history
-        if self.total_departures.is_multiple_of(10) {
+        if self.total_departures % 10 == 0 {
             self.record_history();
         }
     }
