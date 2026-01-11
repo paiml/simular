@@ -427,7 +427,7 @@
                 <h3>Governing Equations</h3>
                 <div class="equation-display">
                     <div class="equation-name">Tour Length</div>
-                    <div class="equation-formula">L(π) = Σ d(πᵢ, πᵢ₊₁)</div>
+                    <div class="equation-formula">L(pi) = Sum d(pi_i, pi_i+1)</div>
                     <div class="equation-value" id="eq-tour">L = --</div>
                 </div>
                 <div class="equation-display">
@@ -471,7 +471,7 @@
             <div class="panel">
                 <h3>Controls</h3>
                 <div class="controls">
-                    <button id="btn-play" style="background: var(--accent); color: var(--bg-primary);">▶ Play</button>
+                    <button id="btn-play" style="background: var(--accent); color: var(--bg-primary);">Play</button>
                     <button id="btn-step">Step</button>
                     <button id="btn-run10">Run 10</button>
                     <button id="btn-run100">Run 100</button>
@@ -482,24 +482,16 @@
                     <input type="range" id="slider-n" min="5" max="50" value="25" style="width: 80px;">
                     <span id="val-n">25</span>
                 </div>
-                <div class="stat-row">
-                    <span class="stat-label">Method</span>
-                    <select id="select-method">
-                        <option value="0">Randomized Greedy</option>
-                        <option value="1">Nearest Neighbor</option>
-                        <option value="2">Random</option>
-                    </select>
-                </div>
             </div>
 
             <div class="panel">
                 <h3>Falsification Status</h3>
                 <div class="stat-row">
-                    <span class="stat-label">Gap ≤ 20%</span>
+                    <span class="stat-label">Gap &lt;= 20%</span>
                     <span class="stat-value" id="fals-gap">--</span>
                 </div>
                 <div class="stat-row">
-                    <span class="stat-label">CV ≤ 5%</span>
+                    <span class="stat-label">CV &lt;= 5%</span>
                     <span class="stat-value" id="fals-cv">--</span>
                 </div>
                 <div class="stat-row">
@@ -510,11 +502,13 @@
         </div>
     </main>
 
-    <!-- EMC YAML View -->
+    <!-- EMC YAML View (placeholder - populated by WASM) -->
     <main id="view-emc">
         <div class="yaml-container">
             <div class="yaml-header">docs/emc/optimization/tsp_grasp.emc.yaml</div>
-            <div class="yaml-content" id="emc-yaml"></div>
+            <div class="yaml-content" id="emc-yaml">
+                <pre>Loading EMC configuration...</pre>
+            </div>
         </div>
 
         <div class="sidebar">
@@ -537,54 +531,10 @@
                     <span class="stat-value ok">production</span>
                 </div>
             </div>
-
-            <div class="panel">
-                <h3>Verification Tests</h3>
-                <div class="stat-row">
-                    <span class="stat-label">TSP-001</span>
-                    <span class="stat-value">Valid Permutation</span>
-                </div>
-                <div class="stat-row">
-                    <span class="stat-label">TSP-002</span>
-                    <span class="stat-value">Above Lower Bound</span>
-                </div>
-                <div class="stat-row">
-                    <span class="stat-label">TSP-003</span>
-                    <span class="stat-value">2-Opt Monotonicity</span>
-                </div>
-                <div class="stat-row">
-                    <span class="stat-label">TSP-004</span>
-                    <span class="stat-value">Deterministic Replay</span>
-                </div>
-                <div class="stat-row">
-                    <span class="stat-label">TSP-005</span>
-                    <span class="stat-value">Greedy vs Random</span>
-                </div>
-            </div>
-
-            <div class="panel">
-                <h3>Falsification Criteria</h3>
-                <div class="stat-row">
-                    <span class="stat-label">TSP-FC-001</span>
-                    <span class="stat-value error">Invalid Tour</span>
-                </div>
-                <div class="stat-row">
-                    <span class="stat-label">TSP-FC-002</span>
-                    <span class="stat-value error">Below Lower Bound</span>
-                </div>
-                <div class="stat-row">
-                    <span class="stat-label">TSP-FC-003</span>
-                    <span class="stat-value error">2-Opt Increases</span>
-                </div>
-                <div class="stat-row">
-                    <span class="stat-label">TSP-FC-004</span>
-                    <span class="stat-value warn">Excessive Gap</span>
-                </div>
-            </div>
         </div>
     </main>
 
-    <!-- Probar Tests View -->
+    <!-- Probar Tests View (placeholder) -->
     <main id="view-probar">
         <div class="test-suite">
             <div class="test-header">
@@ -592,38 +542,34 @@
                 <span class="test-count" id="probar-count">0/7 passed</span>
             </div>
             <div class="test-list" id="test-list">
-                <div class="test-item" data-test="valid-perm">
+                <div class="test-item">
                     <span class="test-icon pending">?</span>
                     <span>Tour visits all cities exactly once</span>
                 </div>
-                <div class="test-item" data-test="closed-tour">
+                <div class="test-item">
                     <span class="test-icon pending">?</span>
                     <span>Tour forms closed loop</span>
                 </div>
-                <div class="test-item" data-test="monotonic">
+                <div class="test-item">
                     <span class="test-icon pending">?</span>
                     <span>Best tour monotonically improves</span>
                 </div>
-                <div class="test-item" data-test="2opt-valid">
+                <div class="test-item">
                     <span class="test-icon pending">?</span>
                     <span>2-opt only improves or maintains</span>
                 </div>
-                <div class="test-item" data-test="above-lb">
+                <div class="test-item">
                     <span class="test-icon pending">?</span>
-                    <span>Tour length ≥ lower bound</span>
+                    <span>Tour length &gt;= lower bound</span>
                 </div>
-                <div class="test-item" data-test="deterministic">
+                <div class="test-item">
                     <span class="test-icon pending">?</span>
                     <span>Same seed produces same result</span>
                 </div>
-                <div class="test-item" data-test="finite">
+                <div class="test-item">
                     <span class="test-icon pending">?</span>
                     <span>All values are finite</span>
                 </div>
-            </div>
-            <div style="padding: 0.5rem;">
-                <button id="btn-run-tests" style="border-color: var(--probar); color: var(--probar);">Run All Tests</button>
-                <button id="btn-fuzz" style="border-color: var(--probar); color: var(--probar);">Fuzz (10 runs)</button>
             </div>
         </div>
 
@@ -653,434 +599,18 @@
                     </div>
                 </div>
             </div>
-
-            <div class="panel" style="border-color: var(--probar);">
-                <h3 style="color: var(--probar);">Assertion Log</h3>
-                <div class="log-container" id="log"></div>
-            </div>
         </div>
     </main>
 
     <footer>
-        <span>Simular v0.1.0 | EDD Compliant | Probar Testing</span>
+        <span>Simular v0.2.0 | Zero-JS Architecture | EDD Compliant | Probar Testing</span>
         <div>
             <a href="index.html">Orbit</a> |
             <a href="tsp.html">TSP</a>
         </div>
     </footer>
 
-    <script type="module">
-        import init, { WasmTspGrasp } from './pkg/simular.js?v=2';
-
-        let tsp = null;
-        let canvas, ctx, sparkCanvas, sparkCtx;
-        let convergence = [];
-        let prevBest = Infinity;
-        let currentSeed = 42;
-        let running = false;
-        let frameCount = 0;
-
-        // EMC YAML content
-        const emcYaml = `emc_version: "1.0"
-emc_id: "EMC-OPT-003"
-
-identity:
-  name: "TSP GRASP with 2-Opt"
-  version: "1.0.0"
-  status: "production"
-
-governing_equation:
-  latex: "L(\\\\pi) = \\\\sum_{i=1}^{n-1} d(\\\\pi_i, \\\\pi_{i+1}) + d(\\\\pi_n, \\\\pi_1)"
-  plain_text: "L(π) = Σ d(π(i), π(i+1)) + d(π(n), π(1))"
-  description: |
-    The Traveling Salesman Problem (TSP) seeks the minimum-length
-    Hamiltonian cycle through n cities. GRASP constructs solutions
-    using randomized greedy, then improves via 2-opt local search.
-
-supporting_equations:
-  - name: "2-Opt Delta"
-    latex: "\\\\Delta = d(i,j) + d(i+1,j+1) - d(i,i+1) - d(j,j+1)"
-  - name: "BHH Estimate"
-    latex: "E[L] \\\\approx 0.7124 \\\\cdot \\\\sqrt{n \\\\cdot A}"
-  - name: "1-Tree Lower Bound"
-    latex: "LB = MST + min_v(e_1(v) + e_2(v))"
-
-verification_tests:
-  tests:
-    - id: "TSP-001"
-      name: "Valid Permutation"
-      description: "Tour visits all n cities exactly once"
-    - id: "TSP-002"
-      name: "Above Lower Bound"
-      description: "Best tour length ≥ 1-tree lower bound"
-    - id: "TSP-003"
-      name: "2-Opt Monotonicity"
-      description: "2-opt never increases tour length"
-    - id: "TSP-004"
-      name: "Deterministic Replay"
-      description: "Same seed produces identical results"
-
-falsification_criteria:
-  criteria:
-    - id: "TSP-FC-001"
-      name: "Invalid Tour"
-      condition: "Tour does not visit all cities exactly once"
-      severity: "critical"
-    - id: "TSP-FC-002"
-      name: "Below Lower Bound"
-      condition: "best_tour_length < lower_bound - ε"
-      severity: "critical"
-    - id: "TSP-FC-003"
-      name: "2-Opt Increases Length"
-      condition: "tour_length_after > tour_length_before"
-      severity: "critical"
-    - id: "TSP-FC-004"
-      name: "Excessive Gap"
-      condition: "(best - lb) / lb > 0.20"
-      severity: "major"`;
-
-        // Tab switching
-        document.querySelectorAll('.tab').forEach(tab => {
-            tab.addEventListener('click', () => {
-                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-                document.querySelectorAll('main').forEach(m => m.classList.remove('active'));
-                tab.classList.add('active');
-                document.getElementById(`view-${tab.dataset.view}`).classList.add('active');
-            });
-        });
-
-        // Logging
-        function log(type, msg) {
-            const el = document.getElementById('log');
-            const entry = document.createElement('div');
-            entry.className = `log-entry ${type}`;
-            entry.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
-            el.appendChild(entry);
-            el.scrollTop = el.scrollHeight;
-        }
-
-        // Syntax highlight YAML
-        function highlightYaml(yaml) {
-            return yaml
-                .replace(/^(\s*)([\w_]+):/gm, '$1<span class="yaml-key">$2</span>:')
-                .replace(/"([^"]+)"/g, '<span class="yaml-string">"$1"</span>')
-                .replace(/: (\d+\.?\d*)/g, ': <span class="yaml-number">$1</span>')
-                .replace(/#.*/g, '<span class="yaml-comment">$&</span>');
-        }
-
-        async function main() {
-            try {
-                await init();
-                log('pass', 'WASM module loaded');
-
-                canvas = document.getElementById('tsp-canvas');
-                ctx = canvas.getContext('2d');
-                sparkCanvas = document.getElementById('sparkline');
-                sparkCtx = sparkCanvas.getContext('2d');
-
-                resizeCanvas();
-                window.addEventListener('resize', resizeCanvas);
-
-                createTsp(25);
-                setupControls();
-
-                document.getElementById('loading').style.display = 'none';
-                document.getElementById('emc-yaml').innerHTML = `<pre>${highlightYaml(emcYaml)}</pre>`;
-
-                render();
-                updateStats();
-                checkInvariants();
-
-            } catch (e) {
-                console.error(e);
-                log('fail', `Load error: ${e.message}`);
-            }
-        }
-
-        function createTsp(n) {
-            if (tsp) tsp.free();
-            currentSeed = Math.floor(Math.random() * 1000000);
-            tsp = new WasmTspGrasp(currentSeed, n);
-            convergence = [];
-            prevBest = Infinity;
-            log('info', `Created TSP: n=${n}, seed=${currentSeed}`);
-        }
-
-        function resizeCanvas() {
-            const container = canvas.parentElement;
-            canvas.width = container.clientWidth;
-            canvas.height = container.clientHeight;
-            sparkCanvas.width = sparkCanvas.parentElement.clientWidth;
-            sparkCanvas.height = 24;
-        }
-
-        function setupControls() {
-            // Play/Pause button - real-time convergence like TUI
-            document.getElementById('btn-play').onclick = () => {
-                running = !running;
-                const btn = document.getElementById('btn-play');
-                btn.textContent = running ? '⏸ Pause' : '▶ Play';
-                btn.style.background = running ? 'var(--accent-warn)' : 'var(--accent)';
-            };
-
-            document.getElementById('btn-step').onclick = () => { tsp.graspIteration(); afterStep(); };
-            document.getElementById('btn-run10').onclick = () => { tsp.runGrasp(10); afterStep(); };
-            document.getElementById('btn-run100').onclick = () => { tsp.runGrasp(100); afterStep(); };
-            document.getElementById('btn-reset').onclick = () => {
-                running = false;
-                document.getElementById('btn-play').textContent = '▶ Play';
-                document.getElementById('btn-play').style.background = 'var(--accent)';
-                createTsp(parseInt(document.getElementById('slider-n').value));
-                render(); updateStats(); checkInvariants();
-            };
-
-            document.getElementById('slider-n').oninput = (e) => {
-                document.getElementById('val-n').textContent = e.target.value;
-            };
-            document.getElementById('slider-n').onchange = (e) => {
-                createTsp(parseInt(e.target.value));
-                render(); updateStats();
-            };
-
-            document.getElementById('select-method').onchange = (e) => {
-                tsp.setConstructionMethod(parseInt(e.target.value));
-            };
-
-            document.getElementById('btn-run-tests').onclick = runTests;
-            document.getElementById('btn-fuzz').onclick = runFuzz;
-
-            // Animation loop - runs at 60fps, steps every 3rd frame (~20 iter/sec)
-            function animate() {
-                if (running) {
-                    frameCount++;
-                    if (frameCount % 3 === 0) {
-                        tsp.graspIteration();
-                        afterStep();
-                    }
-                }
-                requestAnimationFrame(animate);
-            }
-            requestAnimationFrame(animate);
-        }
-
-        function afterStep() {
-            const best = tsp.getBestTourLength();
-            convergence.push(best);
-            if (convergence.length > 100) convergence.shift();
-            prevBest = best;
-            render(); updateStats(); checkInvariants();
-        }
-
-        function render() {
-            if (!tsp) return;
-            const w = canvas.width, h = canvas.height;
-            const pad = 40, scale = Math.min(w, h) - pad * 2;
-
-            ctx.fillStyle = '#0f0f23';
-            ctx.fillRect(0, 0, w, h);
-
-            const cities = tsp.getCities();
-            const tour = tsp.getBestTour();
-
-            if (tour.length > 0) {
-                ctx.strokeStyle = '#4ecdc4';
-                ctx.lineWidth = 2;
-                ctx.beginPath();
-                tour.forEach((idx, i) => {
-                    const x = pad + cities[idx][0] * scale;
-                    const y = pad + cities[idx][1] * scale;
-                    i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
-                });
-                ctx.lineTo(pad + cities[tour[0]][0] * scale, pad + cities[tour[0]][1] * scale);
-                ctx.stroke();
-            }
-
-            cities.forEach((c, i) => {
-                const x = pad + c[0] * scale, y = pad + c[1] * scale;
-                ctx.fillStyle = '#ffd93d';
-                ctx.beginPath();
-                ctx.arc(x, y, 5, 0, Math.PI * 2);
-                ctx.fill();
-                ctx.fillStyle = '#888';
-                ctx.font = '9px monospace';
-                ctx.fillText(i, x + 7, y + 3);
-            });
-
-            renderSparkline();
-        }
-
-        function renderSparkline() {
-            const w = sparkCanvas.width, h = sparkCanvas.height;
-            sparkCtx.fillStyle = '#0f0f23';
-            sparkCtx.fillRect(0, 0, w, h);
-            if (convergence.length < 2) return;
-
-            const min = Math.min(...convergence), max = Math.max(...convergence);
-            const range = max - min || 1;
-
-            sparkCtx.strokeStyle = '#4ecdc4';
-            sparkCtx.lineWidth = 1;
-            sparkCtx.beginPath();
-            convergence.forEach((v, i) => {
-                const x = (i / (convergence.length - 1)) * w;
-                const y = h - ((v - min) / range) * (h - 4) - 2;
-                i === 0 ? sparkCtx.moveTo(x, y) : sparkCtx.lineTo(x, y);
-            });
-            sparkCtx.stroke();
-        }
-
-        function updateStats() {
-            if (!tsp) return;
-            const n = tsp.getN();
-            const best = tsp.getBestTourLength();
-            const lb = tsp.getLowerBound();
-            const gap = tsp.getOptimalityGap();
-            const restarts = tsp.getRestarts();
-            const twoOpt = tsp.getTwoOptImprovements();
-            const cv = tsp.getRestartCv();
-
-            document.getElementById('stat-n').textContent = n;
-            document.getElementById('stat-best').textContent = best.toFixed(4);
-            document.getElementById('stat-lb').textContent = lb.toFixed(4);
-            document.getElementById('stat-gap').textContent = (gap * 100).toFixed(1) + '%';
-            document.getElementById('stat-restarts').textContent = restarts;
-            document.getElementById('stat-2opt').textContent = twoOpt;
-
-            document.getElementById('eq-tour').textContent = `L = ${best.toFixed(4)}`;
-            document.getElementById('eq-lb').textContent = `LB = ${lb.toFixed(4)}`;
-
-            const gapOk = gap <= 0.20;
-            const cvOk = cv <= 0.05 || restarts < 2;
-
-            document.getElementById('fals-gap').textContent = (gap * 100).toFixed(1) + '%';
-            document.getElementById('fals-gap').className = `stat-value ${gapOk ? 'ok' : 'error'}`;
-
-            document.getElementById('fals-cv').textContent = (cv * 100).toFixed(1) + '%';
-            document.getElementById('fals-cv').className = `stat-value ${cvOk ? 'ok' : 'warn'}`;
-
-            const verified = gapOk && cvOk;
-            document.getElementById('fals-status').textContent = verified ? 'VERIFIED' : 'PENDING';
-            document.getElementById('fals-status').className = `stat-value ${verified ? 'ok' : 'warn'}`;
-        }
-
-        function checkInvariants() {
-            if (!tsp) return;
-            const tour = tsp.getTour();
-            const n = tsp.getN();
-            const best = tsp.getBestTourLength();
-            const lb = tsp.getLowerBound();
-
-            const validPerm = tour.length === n && new Set(tour).size === n;
-            const finite = Number.isFinite(best) && best > 0;
-            const aboveLb = best >= lb - 1e-10;
-
-            setIndicator('inv-perm', validPerm);
-            setIndicator('inv-triangle', true);
-            setIndicator('inv-positive', best > 0);
-            setIndicator('inv-finite', finite);
-            setIndicator('inv-bound', aboveLb);
-        }
-
-        function setIndicator(id, ok) {
-            document.getElementById(id).className = `indicator ${ok ? 'ok' : 'error'}`;
-        }
-
-        function setTestResult(name, pass) {
-            const item = document.querySelector(`[data-test="${name}"]`);
-            if (item) {
-                const icon = item.querySelector('.test-icon');
-                icon.className = `test-icon ${pass ? 'pass' : 'fail'}`;
-                icon.textContent = pass ? '✓' : '✗';
-            }
-        }
-
-        function runTests() {
-            log('info', 'Running test suite...');
-            let passed = 0;
-
-            // Test 1: Valid permutation
-            const tour = tsp.getTour();
-            const n = tsp.getN();
-            const t1 = tour.length === n && new Set(tour).size === n;
-            setTestResult('valid-perm', t1);
-            if (t1) passed++;
-            log(t1 ? 'pass' : 'fail', `[valid-perm] ${t1 ? 'PASS' : 'FAIL'}`);
-
-            // Test 2: Closed tour
-            const t2 = tour.length > 0;
-            setTestResult('closed-tour', t2);
-            if (t2) passed++;
-            log(t2 ? 'pass' : 'fail', `[closed-tour] ${t2 ? 'PASS' : 'FAIL'}`);
-
-            // Test 3: Monotonic
-            const t3 = prevBest === Infinity || tsp.getBestTourLength() <= prevBest + 1e-10;
-            setTestResult('monotonic', t3);
-            if (t3) passed++;
-            log(t3 ? 'pass' : 'fail', `[monotonic] ${t3 ? 'PASS' : 'FAIL'}`);
-
-            // Test 4: 2-opt valid
-            const t4 = tsp.getTourLength() >= tsp.getBestTourLength() - 1e-10;
-            setTestResult('2opt-valid', t4);
-            if (t4) passed++;
-            log(t4 ? 'pass' : 'fail', `[2opt-valid] ${t4 ? 'PASS' : 'FAIL'}`);
-
-            // Test 5: Above lower bound
-            const t5 = tsp.getBestTourLength() >= tsp.getLowerBound() - 1e-10;
-            setTestResult('above-lb', t5);
-            if (t5) passed++;
-            log(t5 ? 'pass' : 'fail', `[above-lb] ${t5 ? 'PASS' : 'FAIL'}`);
-
-            // Test 6: Deterministic
-            const tsp1 = new WasmTspGrasp(currentSeed, 10);
-            const tsp2 = new WasmTspGrasp(currentSeed, 10);
-            tsp1.runGrasp(5);
-            tsp2.runGrasp(5);
-            const t6 = Math.abs(tsp1.getBestTourLength() - tsp2.getBestTourLength()) < 1e-10;
-            tsp1.free();
-            tsp2.free();
-            setTestResult('deterministic', t6);
-            if (t6) passed++;
-            log(t6 ? 'pass' : 'fail', `[deterministic] ${t6 ? 'PASS' : 'FAIL'}`);
-
-            // Test 7: Finite
-            const t7 = Number.isFinite(tsp.getBestTourLength());
-            setTestResult('finite', t7);
-            if (t7) passed++;
-            log(t7 ? 'pass' : 'fail', `[finite] ${t7 ? 'PASS' : 'FAIL'}`);
-
-            document.getElementById('probar-count').textContent = `${passed}/7 passed`;
-            log('info', `Tests complete: ${passed}/7 passed`);
-        }
-
-        function runFuzz() {
-            log('info', 'Running fuzz tests...');
-            let failures = 0;
-
-            for (let i = 0; i < 10; i++) {
-                const n = Math.floor(Math.random() * 20) + 5;
-                const fuzz = new WasmTspGrasp(Math.floor(Math.random() * 1000000), n);
-                fuzz.runGrasp(10);
-
-                const tour = fuzz.getTour();
-                if (tour.length !== n || new Set(tour).size !== n) {
-                    failures++;
-                    log('fail', `[fuzz ${i}] Invalid tour at n=${n}`);
-                }
-                if (fuzz.getBestTourLength() < fuzz.getLowerBound() - 1e-10) {
-                    failures++;
-                    log('fail', `[fuzz ${i}] Below LB at n=${n}`);
-                }
-                fuzz.free();
-            }
-
-            if (failures === 0) {
-                log('pass', 'Fuzz: 10/10 passed');
-            } else {
-                log('fail', `Fuzz: ${10 - failures}/10 passed`);
-            }
-        }
-
-        main();
-    </script>
+    <!-- ONE LINE OF JAVASCRIPT - All logic in Rust/WASM -->
+    <script type="module">import init, { initTspApp } from './pkg/simular.js'; init().then(initTspApp);</script>
 </body>
 </html>
