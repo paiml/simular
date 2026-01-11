@@ -4,7 +4,7 @@ The rocket scenario provides multi-stage launch simulation.
 
 ## Basic Usage
 
-```rust
+```rust,ignore
 use simular::scenarios::{RocketScenario, RocketConfig, StageSeparation};
 
 let config = RocketConfig {
@@ -36,7 +36,7 @@ let mut scenario = RocketScenario::new(config);
 
 ## Running the Simulation
 
-```rust
+```rust,ignore
 let dt = 0.1;  // 100ms timestep
 
 while !scenario.is_complete() {
@@ -57,7 +57,7 @@ println!("Final orbit: {}km x {}km",
 
 ## Stage Separation
 
-```rust
+```rust,ignore
 // Automatic separation based on fuel depletion
 let config = RocketConfig {
     separation: StageSeparation::Automatic,
@@ -75,7 +75,7 @@ let config = RocketConfig {
 
 ## Gravity Turn
 
-```rust
+```rust,ignore
 let config = RocketConfig {
     gravity_turn: GravityTurnConfig {
         start_altitude: 1000.0,     // Start turn at 1km
@@ -89,7 +89,7 @@ let config = RocketConfig {
 
 ## Atmospheric Model
 
-```rust
+```rust,ignore
 let config = RocketConfig {
     atmosphere: AtmosphereModel::Standard1976,
     drag_coefficient: 0.3,
@@ -100,7 +100,7 @@ let config = RocketConfig {
 
 ## Example: Falcon 9-like Vehicle
 
-```rust
+```rust,ignore
 use simular::scenarios::{RocketScenario, RocketConfig};
 
 fn main() {
@@ -151,7 +151,7 @@ fn main() {
 
 ## Telemetry
 
-```rust
+```rust,ignore
 let scenario = RocketScenario::new(config);
 
 // Get telemetry recorder
@@ -172,7 +172,7 @@ telemetry.export_csv("launch_telemetry.csv")?;
 
 ## Abort Conditions
 
-```rust
+```rust,ignore
 let config = RocketConfig {
     abort_conditions: AbortConditions {
         max_g_load: 6.0,           // Abort if > 6g

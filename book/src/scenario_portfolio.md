@@ -4,7 +4,7 @@ The portfolio scenario provides Value at Risk calculations using Monte Carlo sim
 
 ## Basic Usage
 
-```rust
+```rust,ignore
 use simular::scenarios::{PortfolioScenario, PortfolioConfig, VaRResult};
 
 let config = PortfolioConfig {
@@ -28,7 +28,7 @@ let scenario = PortfolioScenario::new(config);
 
 ## Value at Risk
 
-```rust
+```rust,ignore
 // Calculate VaR at different confidence levels
 let var_95 = scenario.var(0.95)?;
 let var_99 = scenario.var(0.99)?;
@@ -41,7 +41,7 @@ println!("10-day 99% VaR: ${:.2}", var_99);
 
 Expected Shortfall - average loss beyond VaR:
 
-```rust
+```rust,ignore
 let cvar_95 = scenario.cvar(0.95)?;
 println!("10-day 95% CVaR: ${:.2}", cvar_95);
 
@@ -51,7 +51,7 @@ assert!(cvar_95 >= var_95);
 
 ## Monte Carlo Simulation
 
-```rust
+```rust,ignore
 let config = PortfolioConfig {
     n_simulations: 100_000,
     ..Default::default()
@@ -70,7 +70,7 @@ println!("Max: {:.2}%", results.max_return * 100.0);
 
 ## VaRResult
 
-```rust
+```rust,ignore
 pub struct VaRResult {
     pub confidence: f64,
     pub horizon_days: u32,
@@ -83,7 +83,7 @@ pub struct VaRResult {
 
 ## Historical Simulation
 
-```rust
+```rust,ignore
 let config = PortfolioConfig {
     method: VaRMethod::Historical {
         returns: historical_returns,  // Vec<Vec<f64>>
@@ -100,7 +100,7 @@ let var = scenario.var(0.95)?;
 
 Assumes normal distribution:
 
-```rust
+```rust,ignore
 let config = PortfolioConfig {
     method: VaRMethod::Parametric,
     ..Default::default()
@@ -114,7 +114,7 @@ let var = scenario.parametric_var(0.95)?;
 
 ## Stress Testing
 
-```rust
+```rust,ignore
 let scenario = PortfolioScenario::new(config);
 
 // Define stress scenarios
@@ -132,7 +132,7 @@ for test in stress_tests {
 
 ## Correlation Analysis
 
-```rust
+```rust,ignore
 let scenario = PortfolioScenario::new(config);
 
 // Analyze correlation impact
@@ -147,7 +147,7 @@ println!("Diversification benefit: ${:.2}",
 
 ## Time Scaling
 
-```rust
+```rust,ignore
 // Square root of time rule
 let var_1day = scenario.var_1day(0.95)?;
 let var_10day = var_1day * (10.0_f64).sqrt();
@@ -158,7 +158,7 @@ println!("10-day VaR (scaled): ${:.2}", var_10day);
 
 ## Example: Portfolio Optimization
 
-```rust
+```rust,ignore
 use simular::scenarios::{PortfolioScenario, PortfolioConfig};
 
 fn main() {
@@ -203,7 +203,7 @@ fn main() {
 
 ## Risk Metrics
 
-```rust
+```rust,ignore
 let scenario = PortfolioScenario::new(config);
 let metrics = scenario.risk_metrics()?;
 

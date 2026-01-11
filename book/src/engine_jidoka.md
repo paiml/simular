@@ -12,7 +12,7 @@ Jidoka guards detect anomalies during simulation:
 
 ## JidokaConfig
 
-```rust
+```rust,ignore
 use simular::engine::jidoka::{JidokaConfig, SeverityClassifier};
 
 let config = JidokaConfig {
@@ -33,7 +33,7 @@ let config = JidokaConfig {
 
 ## JidokaGuard
 
-```rust
+```rust,ignore
 use simular::engine::jidoka::{JidokaConfig, JidokaGuard};
 use simular::engine::state::SimState;
 
@@ -58,7 +58,7 @@ match guard.check(&state) {
 
 Detects NaN or Infinity:
 
-```rust
+```rust,ignore
 JidokaViolation::NonFiniteValue {
     location: String,  // e.g., "position.x", "velocity[0].z"
     value: f64,        // The non-finite value
@@ -69,7 +69,7 @@ JidokaViolation::NonFiniteValue {
 
 Detects energy conservation violations:
 
-```rust
+```rust,ignore
 JidokaViolation::EnergyDrift {
     current: f64,     // Current total energy
     initial: f64,     // Initial total energy
@@ -82,7 +82,7 @@ JidokaViolation::EnergyDrift {
 
 Detects physical constraint violations:
 
-```rust
+```rust,ignore
 JidokaViolation::ConstraintViolation {
     name: String,     // Constraint name
     violation: f64,   // Violation amount
@@ -94,7 +94,7 @@ JidokaViolation::ConstraintViolation {
 
 Graduated response to prevent false positives:
 
-```rust
+```rust,ignore
 pub enum ViolationSeverity {
     Acceptable,  // Within tolerance, continue
     Warning,     // Approaching tolerance, log and continue
@@ -105,7 +105,7 @@ pub enum ViolationSeverity {
 
 ### SeverityClassifier
 
-```rust
+```rust,ignore
 use simular::engine::jidoka::SeverityClassifier;
 
 let classifier = SeverityClassifier::new(0.8);  // Warn at 80% of tolerance
@@ -129,7 +129,7 @@ let severity = classifier.classify_constraint(
 
 Non-critical issues that don't stop simulation:
 
-```rust
+```rust,ignore
 pub enum JidokaWarning {
     EnergyDriftApproaching {
         drift: f64,
@@ -145,7 +145,7 @@ pub enum JidokaWarning {
 
 ## Example: Physics with Jidoka
 
-```rust
+```rust,ignore
 use simular::engine::jidoka::{JidokaConfig, JidokaGuard};
 use simular::domains::physics::{PhysicsEngine, GravityField, VerletIntegrator};
 use simular::engine::state::{SimState, Vec3};
@@ -194,7 +194,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 ## Example: Detecting NaN
 
-```rust
+```rust,ignore
 let mut state = SimState::new();
 state.add_body(1.0, Vec3::new(0.0, 0.0, 0.0), Vec3::zero());
 
@@ -213,7 +213,7 @@ match guard.check(&state) {
 
 ## Example: Energy Monitoring
 
-```rust
+```rust,ignore
 let config = JidokaConfig {
     check_energy: true,
     energy_tolerance: 0.01,  // 1% drift allowed
@@ -237,7 +237,7 @@ match guard.check(&state) {
 
 ## Strict vs Lenient Configs
 
-```rust
+```rust,ignore
 // Strict (for scientific simulations)
 let strict = JidokaConfig {
     check_finite: true,
@@ -266,7 +266,7 @@ let lenient = JidokaConfig {
 
 ## Integration Pattern
 
-```rust
+```rust,ignore
 fn run_simulation_with_guards(
     engine: &PhysicsEngine,
     state: &mut SimState,

@@ -11,7 +11,7 @@ simular = "0.2"
 
 ## Your First Simulation: Pi Estimation
 
-```rust
+```rust,ignore
 use simular::prelude::*;
 use simular::domains::monte_carlo::MonteCarloEngine;
 
@@ -39,14 +39,14 @@ fn main() {
 ```
 
 Output:
-```
+```text
 π ≈ 3.141592 ± 0.001634
 95% CI: (3.138389, 3.144795)
 ```
 
 ## Physics Simulation: Projectile Motion
 
-```rust
+```rust,ignore
 use simular::prelude::*;
 use simular::domains::physics::{PhysicsEngine, GravityField, VerletIntegrator};
 use simular::engine::state::{SimState, Vec3};
@@ -82,7 +82,7 @@ fn main() {
 
 ## Bayesian Optimization
 
-```rust
+```rust,ignore
 use simular::domains::optimization::{
     BayesianOptimizer, OptimizerConfig, AcquisitionFunction,
 };

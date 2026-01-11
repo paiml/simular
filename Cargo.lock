@@ -322,6 +322,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "bitvec"
+version = "1.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1bc2832c24239b0141d5674bb9174f9d68a8b5b3f2753311927c172ca46f7e9c"
+dependencies = [
+ "funty",
+ "radium",
+ "tap",
+ "wyz",
+]
+
+[[package]]
 name = "blake3"
 version = "1.8.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -938,6 +950,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "funty"
+version = "2.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e6d5a32815ae3f33302d95fdcb2ce17862f8c65363dcfd29360480ba1001fc9c"
+
+[[package]]
 name = "futures-channel"
 version = "0.3.31"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1532,9 +1550,10 @@ dependencies = [
 
 [[package]]
 name = "jugar-probar"
-version = "0.3.0"
+version = "1.0.0"
 dependencies = [
  "base64",
+ "bincode",
  "chrono",
  "crossterm",
  "gif 0.13.3",
@@ -1543,12 +1562,43 @@ dependencies = [
  "mp4",
  "notify",
  "png 0.17.16",
- "ratatui",
+ "proc-macro2",
  "regex",
  "serde",
  "serde_json",
  "serde_yaml",
  "sha2",
+ "syn",
+ "thiserror 2.0.17",
+ "tracing",
+ "tracing-subscriber",
+ "uuid",
+ "wasm-bindgen",
+ "web-sys",
+]
+
+[[package]]
+name = "jugar-probar"
+version = "1.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "45cd85d7d35b0a51df297130b938d0c7a62be8fb07f1451dde89c235de8f4416"
+dependencies = [
+ "base64",
+ "bincode",
+ "chrono",
+ "gif 0.13.3",
+ "image",
+ "js-sys",
+ "mp4",
+ "notify",
+ "png 0.17.16",
+ "proc-macro2",
+ "regex",
+ "serde",
+ "serde_json",
+ "serde_yaml",
+ "sha2",
+ "syn",
  "thiserror 2.0.17",
  "tracing",
  "tracing-subscriber",
@@ -1943,6 +1993,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "num_cpus"
+version = "1.17.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "91df4bbde75afed763b708b7eee1e8e7651e02d97f6d5dd763e89367e957b23b"
+dependencies = [
+ "hermit-abi",
+ "libc",
+]
+
+[[package]]
 name = "once_cell"
 version = "1.21.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2098,6 +2158,29 @@ dependencies = [
 ]
 
 [[package]]
+name = "presentar-core"
+version = "0.2.0"
+dependencies = [
+ "jugar-probar 1.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "serde",
+ "serde_json",
+ "trueno",
+]
+
+[[package]]
+name = "presentar-terminal"
+version = "0.2.0"
+dependencies = [
+ "bitvec",
+ "compact_str",
+ "crossterm",
+ "presentar-core",
+ "thiserror 2.0.17",
+ "unicode-segmentation",
+ "unicode-width 0.2.0",
+]
+
+[[package]]
 name = "proc-macro-error-attr2"
 version = "2.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2210,6 +2293,12 @@ name = "r-efi"
 version = "5.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "69cdb34c158ceb288df11e18b4bd39de994f6657d83847bdffdbd7f346754b0f"
+
+[[package]]
+name = "radium"
+version = "0.7.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "dc33ff2d4973d518d823d61aa239014831e521c75da58e3df4840d3f47749d09"
 
 [[package]]
 name = "rand"
@@ -2760,9 +2849,11 @@ dependencies = [
  "indexmap",
  "js-sys",
  "jsonschema",
- "jugar-probar",
+ "jugar-probar 1.0.0",
  "memmap2",
  "num-traits",
+ "presentar-core",
+ "presentar-terminal",
  "proptest",
  "rand 0.8.5",
  "rand_pcg",
@@ -2875,6 +2966,12 @@ dependencies = [
  "quote",
  "syn",
 ]
+
+[[package]]
+name = "tap"
+version = "1.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "55937e1799185b12863d447f42597ed69d9928686b8d88a1df17376a097d8369"
 
 [[package]]
 name = "tempfile"
@@ -3172,6 +3269,17 @@ dependencies = [
  "tracing-core",
  "tracing-log",
  "tracing-serde",
+]
+
+[[package]]
+name = "trueno"
+version = "0.11.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4a0756605a19a0b79f5dca9b61fba7e428c497abe9ebeac2ef91b39d90b6da91"
+dependencies = [
+ "anyhow",
+ "num_cpus",
+ "thiserror 2.0.17",
 ]
 
 [[package]]
@@ -3763,6 +3871,15 @@ name = "writeable"
 version = "0.6.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9edde0db4769d2dc68579893f2306b26c6ecfbe0ef499b013d731b7b9247e0b9"
+
+[[package]]
+name = "wyz"
+version = "0.5.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "05f360fc0b24296329c78fda852a1e9ae82de9cf7b27dae4b7f62f118f77b9ed"
+dependencies = [
+ "tap",
+]
 
 [[package]]
 name = "y4m"

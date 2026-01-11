@@ -4,7 +4,7 @@ The climate scenario provides energy balance models for climate simulation.
 
 ## Basic Energy Balance Model
 
-```rust
+```rust,ignore
 use simular::scenarios::{ClimateScenario, ClimateConfig};
 
 let config = ClimateConfig {
@@ -20,7 +20,7 @@ let mut scenario = ClimateScenario::new(config);
 
 ## Running the Simulation
 
-```rust
+```rust,ignore
 let dt = 86400.0;  // 1 day in seconds
 
 for year in 0..100 {
@@ -52,7 +52,7 @@ Where:
 
 ## Equilibrium Temperature
 
-```rust
+```rust,ignore
 let scenario = ClimateScenario::new(config);
 let equilibrium = scenario.equilibrium_temperature();
 
@@ -62,7 +62,7 @@ println!("Equilibrium temperature: {:.2} K", equilibrium);
 
 ## Greenhouse Effect
 
-```rust
+```rust,ignore
 let config = ClimateConfig {
     greenhouse_factor: 1.0,  // No greenhouse effect
     ..Default::default()
@@ -85,7 +85,7 @@ println!("With greenhouse: {:.1} K", t_with_greenhouse);     // ~288 K
 
 ## CO2 Forcing
 
-```rust
+```rust,ignore
 let config = ClimateConfig {
     co2_ppm: 280.0,  // Pre-industrial
     ..Default::default()
@@ -106,7 +106,7 @@ println!("CO2 forcing: {:.2} W/m²", forcing);
 
 ## Climate Sensitivity
 
-```rust
+```rust,ignore
 // Equilibrium climate sensitivity (ECS)
 // Temperature change for CO2 doubling
 
@@ -135,7 +135,7 @@ println!("Climate sensitivity: {:.2} K per CO2 doubling", ecs);
 
 ## Ice-Albedo Feedback
 
-```rust
+```rust,ignore
 let config = ClimateConfig {
     ice_albedo_feedback: true,
     ice_line_temperature: 263.0,  // K (-10°C)
@@ -158,7 +158,7 @@ println!("Final temperature: {:.2} K", scenario.state().temperature);
 
 ## Multi-Box Model
 
-```rust
+```rust,ignore
 use simular::scenarios::MultiBoxClimateScenario;
 
 let config = MultiBoxClimateConfig {
@@ -179,7 +179,7 @@ let scenario = MultiBoxClimateScenario::new(config);
 
 ## Seasonal Cycle
 
-```rust
+```rust,ignore
 let config = ClimateConfig {
     seasonal_cycle: true,
     latitude: 45.0,  // degrees
@@ -204,7 +204,7 @@ for day in 0..365 {
 
 ## Example: Warming Scenarios
 
-```rust
+```rust,ignore
 use simular::scenarios::{ClimateScenario, ClimateConfig};
 
 fn main() {

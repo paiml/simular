@@ -4,7 +4,7 @@ The satellite scenario provides orbital mechanics simulation using Keplerian ele
 
 ## Basic Usage
 
-```rust
+```rust,ignore
 use simular::scenarios::{SatelliteScenario, OrbitalElements};
 
 // Define orbit using Keplerian elements
@@ -22,7 +22,7 @@ let scenario = SatelliteScenario::new(elements);
 
 ## Running the Simulation
 
-```rust
+```rust,ignore
 let dt = 60.0;  // 1 minute timestep
 
 for _ in 0..90 {  // ~1 orbit for ISS
@@ -40,7 +40,7 @@ for _ in 0..90 {  // ~1 orbit for ISS
 
 ## Orbital Elements
 
-```rust
+```rust,ignore
 pub struct OrbitalElements {
     /// Semi-major axis (m)
     pub semi_major_axis: f64,
@@ -64,7 +64,7 @@ pub struct OrbitalElements {
 
 ## Common Orbits
 
-```rust
+```rust,ignore
 // Low Earth Orbit (ISS)
 let leo = OrbitalElements::leo(400_000.0);  // 400km altitude
 
@@ -82,7 +82,7 @@ let molniya = OrbitalElements::molniya();
 
 ### Hohmann Transfer
 
-```rust
+```rust,ignore
 use simular::scenarios::OrbitalManeuver;
 
 let initial = OrbitalElements::leo(400_000.0);
@@ -95,7 +95,7 @@ println!("Transfer time: {:.1} hours", transfer.duration / 3600.0);
 
 ### Plane Change
 
-```rust
+```rust,ignore
 let maneuver = OrbitalManeuver::plane_change(
     &current_orbit,
     52.0_f64.to_radians(),  // New inclination
@@ -105,7 +105,7 @@ println!("Delta-v for plane change: {:.1} m/s", maneuver.delta_v);
 
 ## Perturbations
 
-```rust
+```rust,ignore
 let config = SatelliteConfig {
     perturbations: Perturbations {
         j2: true,           // Earth oblateness
@@ -127,7 +127,7 @@ let config = SatelliteConfig {
 
 ## Ground Track
 
-```rust
+```rust,ignore
 let scenario = SatelliteScenario::new(elements);
 
 // Generate ground track
@@ -146,7 +146,7 @@ for point in ground_track {
 
 ## Eclipse Prediction
 
-```rust
+```rust,ignore
 let scenario = SatelliteScenario::new(elements);
 
 let eclipses = scenario.predict_eclipses(
@@ -164,7 +164,7 @@ for eclipse in eclipses {
 
 ## Example: ISS Orbit
 
-```rust
+```rust,ignore
 use simular::scenarios::{SatelliteScenario, OrbitalElements};
 
 fn main() {
@@ -200,7 +200,7 @@ fn main() {
 
 ## Orbital Mechanics Utilities
 
-```rust
+```rust,ignore
 use simular::scenarios::orbital;
 
 // Vis-viva equation

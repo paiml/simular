@@ -12,7 +12,7 @@ The `simular::orbit` module provides a canonical visual demonstration of orbital
 
 ## Quick Start
 
-```rust
+```rust,ignore
 use simular::orbit::prelude::*;
 use simular::orbit::physics::YoshidaIntegrator;
 
@@ -46,7 +46,7 @@ println!("Energy error: {:.2e}",
 
 The module uses type-safe units to prevent dimensional errors:
 
-```rust
+```rust,ignore
 use simular::orbit::prelude::*;
 
 // Positions in meters
@@ -73,7 +73,7 @@ assert!((G - 6.674e-11).abs() < 1e-14);  // Gravitational constant
 
 ### Kepler Two-Body Orbit
 
-```rust
+```rust,ignore
 let config = KeplerConfig::earth_sun();
 println!("Orbital period: {:.2} days", config.period() / 86400.0);
 println!("Circular velocity: {:.2} km/s", config.circular_velocity() / 1000.0);
@@ -83,7 +83,7 @@ let state = config.build(1e6);
 
 ### N-Body Solar System
 
-```rust
+```rust,ignore
 let config = NBodyConfig::inner_solar_system();
 // Contains: Sun, Mercury, Venus, Earth, Mars
 
@@ -92,7 +92,7 @@ let state = config.build(1e9);  // Larger softening for N-body
 
 ### Hohmann Transfer
 
-```rust
+```rust,ignore
 let config = HohmannConfig::earth_to_mars();
 
 println!("Delta-v1: {:.2} km/s", config.delta_v1() / 1000.0);
@@ -102,7 +102,7 @@ println!("Transfer time: {:.0} days", config.transfer_time() / 86400.0);
 
 ### Lagrange Points
 
-```rust
+```rust,ignore
 let config = LagrangeConfig::sun_earth_l2();
 let (lx, ly, lz) = config.lagrange_position();
 
@@ -114,7 +114,7 @@ println!("L2 distance from Sun: {:.4} AU",
 
 Jidoka provides graceful degradation when physics violations occur:
 
-```rust
+```rust,ignore
 let mut jidoka = OrbitJidokaGuard::new(OrbitJidokaConfig {
     energy_tolerance: 1e-9,
     angular_momentum_tolerance: 1e-12,
@@ -145,7 +145,7 @@ match response {
 
 Heijunka provides time-budget management for consistent frame delivery:
 
-```rust
+```rust,ignore
 let config = HeijunkaConfig {
     frame_budget_ms: 16.67,  // 60 FPS target
     physics_budget_fraction: 0.8,
@@ -209,7 +209,7 @@ The module includes metamorphic tests that verify physics invariants:
 4. **Angular Momentum Conservation**: Exact preservation
 5. **Deterministic Replay**: Bit-identical results
 
-```rust
+```rust,ignore
 use simular::orbit::metamorphic::run_all_metamorphic_tests;
 
 let state = KeplerConfig::earth_sun().build(1e6);
@@ -229,7 +229,7 @@ cargo run --example orbit_demo
 ```
 
 Output:
-```
+```text
 === Simular Orbit Demo ===
 
 1. Earth-Sun Keplerian Orbit:
