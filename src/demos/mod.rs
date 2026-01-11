@@ -43,7 +43,7 @@ pub mod tsp_engine;
 pub mod tsp_grasp;
 pub mod tsp_instance;
 
-// WASM module: DOM operations require unwrap/expect - if elements don't exist, app can't run.
+// WASM modules: DOM operations require unwrap/expect - if elements don't exist, app can't run.
 #[cfg(feature = "wasm")]
 #[allow(clippy::unwrap_used)]
 #[allow(clippy::expect_used)]
@@ -53,6 +53,16 @@ pub mod tsp_instance;
 #[allow(clippy::redundant_closure_for_method_calls)]
 #[allow(clippy::manual_let_else)]
 pub mod tsp_wasm_app;
+
+#[cfg(feature = "wasm")]
+#[allow(clippy::unwrap_used)]
+#[allow(clippy::expect_used)]
+#[allow(clippy::missing_panics_doc)]
+#[allow(clippy::missing_errors_doc)]
+#[allow(clippy::cast_lossless)]
+#[allow(clippy::redundant_closure_for_method_calls)]
+#[allow(clippy::manual_let_else)]
+pub mod orbit_wasm_app;
 
 // Re-exports for convenience
 pub use engine::{
