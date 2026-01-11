@@ -355,10 +355,13 @@ impl Default for SimulationMetrics {
 mod tests {
     use super::*;
 
+    // ====== EnergySparkline tests ======
+
     #[test]
     fn test_energy_sparkline_creation() {
         let sparkline = EnergySparkline::new();
         assert!(sparkline.is_empty());
+        assert_eq!(sparkline.len(), 0);
     }
 
     #[test]
@@ -380,9 +383,79 @@ mod tests {
     }
 
     #[test]
+    fn test_energy_sparkline_render() {
+        let mut sparkline = EnergySparkline::new();
+        for i in 0..10 {
+            sparkline.push(-1e30 + (i as f64) * 1e20);
+        }
+        let chars = sparkline.render();
+        assert!(!chars.is_empty());
+    }
+
+    #[test]
+    fn test_energy_sparkline_range_empty() {
+        let sparkline = EnergySparkline::new();
+        let (min, max) = sparkline.range();
+        assert_eq!(min, 0.0);
+        assert_eq!(max, 0.0);
+    }
+
+    #[test]
+    fn test_energy_sparkline_range_with_values() {
+        let mut sparkline = EnergySparkline::new();
+        sparkline.push(-1e30);
+        sparkline.push(-1e30 * 1.001); // Some drift
+        sparkline.push(-1e30 * 0.999); // Some negative drift
+
+        let (min, max) = sparkline.range();
+        assert!(min <= max);
+    }
+
+    #[test]
+    fn test_energy_sparkline_current_empty() {
+        let sparkline = EnergySparkline::new();
+        assert!(sparkline.current().is_none());
+    }
+
+    #[test]
+    fn test_energy_sparkline_simd() {
+        let sparkline = EnergySparkline::new();
+        let simd = sparkline.simd_instruction_set();
+        assert!(simd.vector_width() >= 1);
+    }
+
+    #[test]
+    fn test_energy_sparkline_reset() {
+        let mut sparkline = EnergySparkline::new();
+        sparkline.push(-1e30);
+        sparkline.push(-1e30 * 1.001);
+        assert_eq!(sparkline.len(), 2);
+
+        sparkline.reset();
+        assert!(sparkline.is_empty());
+        assert!(sparkline.current().is_none());
+    }
+
+    #[test]
+    fn test_energy_sparkline_zero_initial() {
+        // Test the else branch when initial energy is zero/epsilon
+        let mut sparkline = EnergySparkline::new();
+        sparkline.push(0.0);
+        sparkline.push(1.0);
+
+        let current = sparkline.current();
+        assert!(current.is_some());
+        // Should be 0.0 because initial was 0.0 (near epsilon)
+        assert_eq!(current.unwrap(), 0.0);
+    }
+
+    // ====== MomentumSparkline tests ======
+
+    #[test]
     fn test_momentum_sparkline_creation() {
         let sparkline = MomentumSparkline::new();
         assert!(sparkline.is_empty());
+        assert_eq!(sparkline.len(), 0);
     }
 
     #[test]
@@ -390,12 +463,91 @@ mod tests {
         let mut sparkline = MomentumSparkline::new();
         sparkline.push(1e40);
         assert_eq!(sparkline.len(), 1);
+        assert!(!sparkline.is_empty());
     }
+
+    #[test]
+    fn test_momentum_sparkline_render() {
+        let mut sparkline = MomentumSparkline::new();
+        for i in 0..10 {
+            sparkline.push(1e40 + (i as f64) * 1e30);
+        }
+        let chars = sparkline.render();
+        assert!(!chars.is_empty());
+    }
+
+    #[test]
+    fn test_momentum_sparkline_range_empty() {
+        let sparkline = MomentumSparkline::new();
+        let (min, max) = sparkline.range();
+        assert_eq!(min, 0.0);
+        assert_eq!(max, 0.0);
+    }
+
+    #[test]
+    fn test_momentum_sparkline_range_with_values() {
+        let mut sparkline = MomentumSparkline::new();
+        sparkline.push(1e40);
+        sparkline.push(1e40 * 1.001);
+        sparkline.push(1e40 * 0.999);
+
+        let (min, max) = sparkline.range();
+        assert!(min <= max);
+    }
+
+    #[test]
+    fn test_momentum_sparkline_current_empty() {
+        let sparkline = MomentumSparkline::new();
+        assert!(sparkline.current().is_none());
+    }
+
+    #[test]
+    fn test_momentum_sparkline_current_with_values() {
+        let mut sparkline = MomentumSparkline::new();
+        sparkline.push(1e40);
+        sparkline.push(1e40 * 1.001);
+
+        let current = sparkline.current();
+        assert!(current.is_some());
+    }
+
+    #[test]
+    fn test_momentum_sparkline_simd() {
+        let sparkline = MomentumSparkline::new();
+        let simd = sparkline.simd_instruction_set();
+        assert!(simd.vector_width() >= 1);
+    }
+
+    #[test]
+    fn test_momentum_sparkline_reset() {
+        let mut sparkline = MomentumSparkline::new();
+        sparkline.push(1e40);
+        sparkline.push(1e40 * 1.001);
+        assert_eq!(sparkline.len(), 2);
+
+        sparkline.reset();
+        assert!(sparkline.is_empty());
+        assert!(sparkline.current().is_none());
+    }
+
+    #[test]
+    fn test_momentum_sparkline_zero_initial() {
+        let mut sparkline = MomentumSparkline::new();
+        sparkline.push(0.0);
+        sparkline.push(100.0);
+
+        let current = sparkline.current();
+        assert!(current.is_some());
+        assert_eq!(current.unwrap(), 0.0);
+    }
+
+    // ====== FrameBudgetTrend tests ======
 
     #[test]
     fn test_frame_budget_trend_creation() {
         let trend = FrameBudgetTrend::new();
         assert!(trend.is_empty());
+        assert_eq!(trend.len(), 0);
     }
 
     #[test]
@@ -403,7 +555,87 @@ mod tests {
         let mut trend = FrameBudgetTrend::new();
         trend.push(0.5); // 50% utilization
         assert_eq!(trend.len(), 1);
+        assert!(!trend.is_empty());
     }
+
+    #[test]
+    fn test_frame_budget_trend_render() {
+        let mut trend = FrameBudgetTrend::new();
+        for i in 0..10 {
+            trend.push(0.3 + (i as f64) * 0.05);
+        }
+        let chars = trend.render();
+        assert!(!chars.is_empty());
+    }
+
+    #[test]
+    fn test_frame_budget_trend_average_empty() {
+        let trend = FrameBudgetTrend::new();
+        assert_eq!(trend.average(), 0.0);
+    }
+
+    #[test]
+    fn test_frame_budget_trend_average_with_values() {
+        let mut trend = FrameBudgetTrend::new();
+        trend.push(0.5); // 50%
+        trend.push(0.7); // 70%
+        trend.push(0.8); // 80%
+
+        let avg = trend.average();
+        // Average of 50, 70, 80 = 66.67
+        assert!((avg - 66.67).abs() < 1.0);
+    }
+
+    #[test]
+    fn test_frame_budget_trend_direction() {
+        let mut trend = FrameBudgetTrend::new();
+        // Push increasing values to get an upward trend
+        for i in 0..10 {
+            trend.push(0.3 + (i as f64) * 0.05);
+        }
+        let _direction = trend.trend();
+        // Just verify it returns a direction
+    }
+
+    #[test]
+    fn test_frame_budget_trend_simd() {
+        let trend = FrameBudgetTrend::new();
+        let simd = trend.simd_instruction_set();
+        assert!(simd.vector_width() >= 1);
+    }
+
+    #[test]
+    fn test_frame_budget_trend_reset() {
+        let mut trend = FrameBudgetTrend::new();
+        trend.push(0.5);
+        trend.push(0.7);
+        assert_eq!(trend.len(), 2);
+
+        trend.reset();
+        assert!(trend.is_empty());
+        assert_eq!(trend.average(), 0.0);
+    }
+
+    #[test]
+    fn test_frame_budget_trend_history_overflow() {
+        let mut trend = FrameBudgetTrend::new();
+        // Push more than SPARKLINE_HISTORY values
+        for i in 0..70 {
+            trend.push((i as f64) * 0.01);
+        }
+        // Should be capped at SPARKLINE_HISTORY (60)
+        assert_eq!(trend.len(), SPARKLINE_HISTORY);
+    }
+
+    #[test]
+    fn test_frame_budget_trend_clamp() {
+        let mut trend = FrameBudgetTrend::new();
+        // Test clamping at 200%
+        trend.push(3.0); // Should clamp to 200%
+        assert_eq!(trend.len(), 1);
+    }
+
+    // ====== SimulationMetrics tests ======
 
     #[test]
     fn test_simulation_metrics_creation() {
@@ -427,6 +659,7 @@ mod tests {
     fn test_simulation_metrics_reset() {
         let mut metrics = SimulationMetrics::new();
         metrics.update(-1e30, 1e40, 0.5);
+        metrics.update(-1e30 * 1.001, 1e40 * 1.001, 0.6);
         metrics.reset();
 
         assert!(metrics.energy.is_empty());
@@ -435,7 +668,7 @@ mod tests {
     }
 
     #[test]
-    fn test_simd_detection() {
+    fn test_simulation_metrics_simd() {
         let metrics = SimulationMetrics::new();
         let simd = metrics.simd_instruction_set();
         // Should detect something (at least Scalar)
@@ -443,20 +676,55 @@ mod tests {
     }
 
     #[test]
-    fn test_energy_sparkline_render() {
-        let mut sparkline = EnergySparkline::new();
-        for i in 0..10 {
-            sparkline.push(-1e30 + (i as f64) * 1e20);
+    fn test_simulation_metrics_multiple_updates() {
+        let mut metrics = SimulationMetrics::new();
+
+        for i in 0..20 {
+            let energy = -1e30 * (1.0 + (i as f64) * 0.0001);
+            let momentum = 1e40 * (1.0 + (i as f64) * 0.0001);
+            let util = 0.3 + (i as f64) * 0.02;
+            metrics.update(energy, momentum, util);
         }
-        let chars = sparkline.render();
-        assert!(!chars.is_empty());
+
+        assert_eq!(metrics.energy.len(), 20);
+        assert_eq!(metrics.momentum.len(), 20);
+        assert_eq!(metrics.frame_budget.len(), 20);
+
+        // Verify ranges are populated
+        let (e_min, e_max) = metrics.energy.range();
+        assert!(e_min <= e_max);
+
+        let (m_min, m_max) = metrics.momentum.range();
+        assert!(m_min <= m_max);
+
+        let avg = metrics.frame_budget.average();
+        assert!(avg > 0.0);
     }
+
+    // ====== Default trait tests ======
 
     #[test]
     fn test_defaults() {
-        let _ = EnergySparkline::default();
-        let _ = MomentumSparkline::default();
-        let _ = FrameBudgetTrend::default();
-        let _ = SimulationMetrics::default();
+        let energy = EnergySparkline::default();
+        assert!(energy.is_empty());
+
+        let momentum = MomentumSparkline::default();
+        assert!(momentum.is_empty());
+
+        let frame = FrameBudgetTrend::default();
+        assert!(frame.is_empty());
+
+        let metrics = SimulationMetrics::default();
+        assert!(metrics.energy.is_empty());
+    }
+
+    // ====== TrendDirection re-export test ======
+
+    #[test]
+    fn test_trend_direction_variants() {
+        // Verify the re-export works
+        let _up = TrendDirection::Up;
+        let _down = TrendDirection::Down;
+        let _flat = TrendDirection::Flat;
     }
 }
