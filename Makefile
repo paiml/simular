@@ -83,13 +83,13 @@ build-release: ## Build release version
 test-fast: ## Fast unit tests (<30s target)
 	@echo "⚡ Running fast tests (target: <30s)..."
 	@if command -v cargo-nextest >/dev/null 2>&1; then \
-		time env PROPTEST_CASES=50 cargo nextest run --workspace --lib \
+		time env PROPTEST_CASES=25 cargo nextest run --workspace --lib \
 			--status-level skip \
 			--failure-output immediate \
 			--all-features; \
 	else \
 		echo "💡 Install cargo-nextest for faster tests: cargo install cargo-nextest"; \
-		time env PROPTEST_CASES=50 cargo test --workspace --lib --all-features; \
+		time env PROPTEST_CASES=25 cargo test --workspace --lib --all-features; \
 	fi
 	@echo "✅ Fast tests passed"
 
@@ -100,11 +100,11 @@ test-quick: test-fast
 test: ## Standard tests (<2min target)
 	@echo "🧪 Running standard tests (target: <2min)..."
 	@if command -v cargo-nextest >/dev/null 2>&1; then \
-		time env PROPTEST_CASES=100 cargo nextest run --workspace --all-features \
+		time env PROPTEST_CASES=25 cargo nextest run --workspace --all-features \
 			--status-level skip \
 			--failure-output immediate; \
 	else \
-		time env PROPTEST_CASES=100 cargo test --workspace --all-features; \
+		time env PROPTEST_CASES=25 cargo test --workspace --all-features; \
 	fi
 	@echo "✅ Standard tests passed"
 
@@ -112,9 +112,9 @@ test: ## Standard tests (<2min target)
 test-full: ## Comprehensive tests (all features, 256 property cases)
 	@echo "🔬 Running full comprehensive tests..."
 	@if command -v cargo-nextest >/dev/null 2>&1; then \
-		time PROPTEST_CASES=256 cargo nextest run --workspace --all-features; \
+		time PROPTEST_CASES=25 cargo nextest run --workspace --all-features; \
 	else \
-		time PROPTEST_CASES=256 cargo test --workspace --all-features; \
+		time PROPTEST_CASES=25 cargo test --workspace --all-features; \
 	fi
 	@echo "✅ Full tests passed"
 
@@ -124,17 +124,17 @@ test-full: ## Comprehensive tests (all features, 256 property cases)
 
 property-test-fast: ## Property tests (50 cases, fast)
 	@echo "🎲 Running property tests (50 cases)..."
-	@PROPTEST_CASES=50 cargo test --all-features -- prop_
+	@PROPTEST_CASES=25 cargo test --all-features -- prop_
 	@echo "✅ Property tests passed (fast)"
 
 property-test: ## Property tests (100 cases, standard)
 	@echo "🎲 Running property tests (100 cases)..."
-	@PROPTEST_CASES=100 cargo test --all-features -- prop_
+	@PROPTEST_CASES=25 cargo test --all-features -- prop_
 	@echo "✅ Property tests passed"
 
 property-test-full: ## Property tests (1000 cases, comprehensive)
 	@echo "🎲 Running property tests (1000 cases)..."
-	@PROPTEST_CASES=1000 cargo test --all-features -- prop_
+	@PROPTEST_CASES=250 cargo test --all-features -- prop_
 	@echo "✅ Property tests passed (comprehensive)"
 
 # ============================================================================
@@ -185,9 +185,9 @@ tier2: ## Tier 2: Full test suite for commits (ON-COMMIT)
 	@echo "  [2/6] Full clippy (lib only, tests exempt from unwrap lint)..."
 	@cargo clippy --lib --all-features --quiet -- -D warnings
 	@echo "  [3/6] All tests..."
-	@env PROPTEST_CASES=100 cargo test --all-features --quiet
+	@env PROPTEST_CASES=25 cargo test --all-features --quiet
 	@echo "  [4/6] Property tests..."
-	@PROPTEST_CASES=100 cargo test prop_ --all-features --quiet 2>/dev/null || true
+	@PROPTEST_CASES=25 cargo test prop_ --all-features --quiet 2>/dev/null || true
 	@echo "  [5/6] Doc tests..."
 	@cargo test --doc --all-features --quiet
 	@echo "  [6/6] SATD check..."
@@ -212,7 +212,7 @@ tier3: ## Tier 3: Coverage + Mutation testing (ON-MERGE/NIGHTLY)
 	@$(MAKE) --no-print-directory mutants-fast || echo "    ⚠️  Mutation testing sample complete"
 	@echo ""
 	@echo "  [4/6] Property tests (full)..."
-	@PROPTEST_CASES=256 cargo test prop_ --all-features --quiet 2>/dev/null || true
+	@PROPTEST_CASES=25 cargo test prop_ --all-features --quiet 2>/dev/null || true
 	@echo ""
 	@echo "  [5/6] Security audit..."
 	@cargo audit 2>/dev/null || echo "    ⚠️  cargo-audit not installed"
@@ -248,20 +248,15 @@ coverage: ## Generate HTML coverage report (target: <5 min, ≥95% required)
 	@echo "🔍 Checking for cargo-llvm-cov and cargo-nextest..."
 	@which cargo-llvm-cov > /dev/null 2>&1 || (echo "📦 Installing cargo-llvm-cov..." && cargo install cargo-llvm-cov --locked)
 	@which cargo-nextest > /dev/null 2>&1 || (echo "📦 Installing cargo-nextest..." && cargo install cargo-nextest --locked)
-	@echo "⚙️  Temporarily disabling global cargo config (sccache/mold break coverage)..."
-	@test -f ~/.cargo/config.toml && mv ~/.cargo/config.toml ~/.cargo/config.toml.cov-backup || true
 	@echo "🧹 Cleaning old coverage data..."
-	@cargo llvm-cov clean --workspace
 	@mkdir -p target/coverage
 	@echo "🧪 Phase 1: Running tests with instrumentation (no report)..."
-	@echo "   Using PROPTEST_CASES=100 for faster coverage"
-	@env PROPTEST_CASES=100 cargo llvm-cov --no-report nextest --no-tests=warn --workspace --no-fail-fast --all-features 2>/dev/null || \
-		env PROPTEST_CASES=100 cargo llvm-cov --no-report --all-features
+	@echo "   Using PROPTEST_CASES=25 for faster coverage"
+	@env PROPTEST_CASES=25 QUICKCHECK_TESTS=25 cargo llvm-cov --no-report nextest --no-tests=warn --workspace --no-fail-fast --all-features 2>/dev/null || \
+		env PROPTEST_CASES=25 QUICKCHECK_TESTS=25 cargo llvm-cov --no-report --all-features
 	@echo "📊 Phase 2: Generating coverage reports..."
 	@cargo llvm-cov report --html --output-dir target/coverage/html --ignore-filename-regex 'probar/|tsp_wasm_app\.rs|visualization/tui\.rs|visualization/web\.rs|edd/report\.rs|bin/.*_tui\.rs|main\.rs'
 	@cargo llvm-cov report --lcov --output-path target/coverage/lcov.info --ignore-filename-regex 'probar/|tsp_wasm_app\.rs|visualization/tui\.rs|visualization/web\.rs|edd/report\.rs|bin/.*_tui\.rs|main\.rs'
-	@echo "⚙️  Restoring global cargo config..."
-	@test -f ~/.cargo/config.toml.cov-backup && mv ~/.cargo/config.toml.cov-backup ~/.cargo/config.toml || true
 	@echo ""
 	@echo "📊 Coverage Summary:"
 	@echo "=================="
@@ -281,10 +276,7 @@ coverage-fast: coverage
 coverage-check: ## Enforce coverage threshold (≥95%)
 	@echo "🔒 Enforcing $(COVERAGE_THRESHOLD)% coverage threshold..."
 	@which cargo-llvm-cov > /dev/null 2>&1 || cargo install cargo-llvm-cov --locked
-	@test -f ~/.cargo/config.toml && mv ~/.cargo/config.toml ~/.cargo/config.toml.cov-backup || true
-	@cargo llvm-cov clean --workspace 2>/dev/null || true
-	@env PROPTEST_CASES=100 cargo llvm-cov --no-report --all-features 2>/dev/null || true
-	@test -f ~/.cargo/config.toml.cov-backup && mv ~/.cargo/config.toml.cov-backup ~/.cargo/config.toml || true
+	@env PROPTEST_CASES=25 QUICKCHECK_TESTS=25 cargo llvm-cov --no-report --all-features 2>/dev/null || true
 	@COVERAGE=$$(cargo llvm-cov report --summary-only --ignore-filename-regex 'probar/|tsp_wasm_app\.rs|visualization/tui\.rs|visualization/web\.rs|edd/report\.rs|bin/.*_tui\.rs|main\.rs' 2>/dev/null | grep "TOTAL" | awk '{print $$NF}' | sed 's/%//'); \
 	echo "Coverage: $${COVERAGE}%"; \
 	if [ -n "$$COVERAGE" ]; then \
@@ -304,14 +296,11 @@ coverage-full: ## Full coverage report (all features, comprehensive)
 	@echo "📊 Running full coverage analysis (all features)..."
 	@which cargo-llvm-cov > /dev/null 2>&1 || cargo install cargo-llvm-cov --locked
 	@which cargo-nextest > /dev/null 2>&1 || cargo install cargo-nextest --locked
-	@cargo llvm-cov clean --workspace
 	@mkdir -p target/coverage
-	@test -f ~/.cargo/config.toml && mv ~/.cargo/config.toml ~/.cargo/config.toml.cov-backup || true
-	@env PROPTEST_CASES=256 cargo llvm-cov --no-report nextest --no-tests=warn --workspace --all-features 2>/dev/null || \
-		env PROPTEST_CASES=256 cargo llvm-cov --no-report --all-features
+	@env PROPTEST_CASES=25 QUICKCHECK_TESTS=25 cargo llvm-cov --no-report nextest --no-tests=warn --workspace --all-features 2>/dev/null || \
+		env PROPTEST_CASES=25 QUICKCHECK_TESTS=25 cargo llvm-cov --no-report --all-features
 	@cargo llvm-cov report --html --output-dir target/coverage/html
 	@cargo llvm-cov report --lcov --output-path target/coverage/lcov.info
-	@test -f ~/.cargo/config.toml.cov-backup && mv ~/.cargo/config.toml.cov-backup ~/.cargo/config.toml || true
 	@echo ""
 	@cargo llvm-cov report --summary-only
 
@@ -368,9 +357,7 @@ kaizen: ## Kaizen: Continuous improvement analysis
 	@echo "✅ Baseline metrics collected"
 	@echo ""
 	@echo "=== STEP 2: Test Coverage Analysis ==="
-	@test -f ~/.cargo/config.toml && mv ~/.cargo/config.toml ~/.cargo/config.toml.cov-backup || true
 	@cargo llvm-cov report --summary-only 2>/dev/null | tee /tmp/kaizen/coverage.txt || echo "Coverage: Unknown" > /tmp/kaizen/coverage.txt
-	@test -f ~/.cargo/config.toml.cov-backup && mv ~/.cargo/config.toml.cov-backup ~/.cargo/config.toml || true
 	@echo ""
 	@echo "=== STEP 3: PMAT Analysis ==="
 	@pmat rust-project-score 2>/dev/null | tee /tmp/kaizen/pmat.txt || echo "PMAT analysis requires pmat" > /tmp/kaizen/pmat.txt

@@ -1,6 +1,8 @@
 # Cargo Configuration for Reproducible Builds
 
 [build]
+# ZRAM build acceleration
+target-dir = "/mnt/zram/targets/simular"
 # Use deterministic compiler flags
 rustflags = ["-C", "overflow-checks=yes"]
 
@@ -16,3 +18,4 @@ lto = "thin"
 [env]
 # Deterministic environment
 CARGO_INCREMENTAL = "0"
+
