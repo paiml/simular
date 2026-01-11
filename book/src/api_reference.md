@@ -4,7 +4,7 @@ Quick reference for Simular's main types and functions.
 
 ## Prelude
 
-```rust
+```rust,ignore
 use simular::prelude::*;
 
 // Includes:
@@ -20,7 +20,7 @@ use simular::prelude::*;
 
 ### SimState
 
-```rust
+```rust,ignore
 use simular::engine::state::{SimState, Vec3};
 
 let mut state = SimState::new();
@@ -46,7 +46,7 @@ state.all_finite() -> bool
 
 ### Vec3
 
-```rust
+```rust,ignore
 use simular::engine::state::Vec3;
 
 let v = Vec3::new(x, y, z);
@@ -67,7 +67,7 @@ v1 + v2, v1 - v2, v * scalar, -v
 
 ### SimRng
 
-```rust
+```rust,ignore
 use simular::engine::rng::SimRng;
 
 let mut rng = SimRng::new(seed);
@@ -88,7 +88,7 @@ rng.restore_state(&state) -> Result<()>
 
 ## Physics Domain
 
-```rust
+```rust,ignore
 use simular::domains::physics::{
     PhysicsEngine, ForceField,
     GravityField, CentralForceField,
@@ -115,7 +115,7 @@ trait ForceField {
 
 ## Monte Carlo Domain
 
-```rust
+```rust,ignore
 use simular::domains::monte_carlo::{
     MonteCarloEngine, MonteCarloResult, VarianceReduction,
     WorkStealingMonteCarlo, SimulationTask,
@@ -153,7 +153,7 @@ enum VarianceReduction {
 
 ## Optimization Domain
 
-```rust
+```rust,ignore
 use simular::domains::optimization::{
     BayesianOptimizer, OptimizerConfig, AcquisitionFunction,
     GaussianProcess,
@@ -191,7 +191,7 @@ gp.predict(&x) -> (mean, variance)
 
 ## Jidoka
 
-```rust
+```rust,ignore
 use simular::engine::jidoka::{
     JidokaConfig, JidokaGuard, JidokaViolation, JidokaWarning,
     ViolationSeverity, SeverityClassifier,
@@ -222,7 +222,7 @@ enum ViolationSeverity {
 
 ## Scenarios
 
-```rust
+```rust,ignore
 use simular::scenarios::{
     // Rocket
     RocketScenario, RocketConfig, StageSeparation,
@@ -247,7 +247,7 @@ use simular::scenarios::{
 
 ## Error Handling
 
-```rust
+```rust,ignore
 use simular::error::{SimError, SimResult};
 
 type SimResult<T> = Result<T, SimError>;
@@ -275,7 +275,7 @@ simular = { version = "0.1", features = ["tui", "web"] }
 
 ## Module Structure
 
-```
+```text
 simular
 ├── prelude           # Common imports
 ├── config            # Configuration

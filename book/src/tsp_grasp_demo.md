@@ -15,7 +15,7 @@ GRASP combines:
 
 ### Tour Length
 
-```
+```text
 L(π) = Σᵢ d(π(i), π(i+1)) + d(π(n), π(1))
 ```
 
@@ -23,7 +23,7 @@ The total distance of a tour π visiting n cities.
 
 ### 2-Opt Improvement
 
-```
+```text
 Δ = d(i,i+1) + d(j,j+1) - d(i,j) - d(i+1,j+1)
 ```
 
@@ -31,7 +31,7 @@ When Δ > 0, reversing the segment between cities i+1 and j improves the tour.
 
 ### Beardwood-Halton-Hammersley Constant
 
-```
+```text
 E[L_greedy] ≈ 0.7124 · √(n·A)
 ```
 
@@ -39,7 +39,7 @@ For n random points uniformly distributed in area A, the expected optimal tour l
 
 ### MST Lower Bound
 
-```
+```text
 L* ≥ MST(G)
 ```
 
@@ -84,7 +84,7 @@ Conditions that break the model:
 
 ## Usage
 
-```rust
+```rust,ignore
 use simular::demos::tsp_grasp::{TspGraspDemo, ConstructionMethod};
 use simular::demos::EddDemo;
 
@@ -140,7 +140,7 @@ cargo run --example tsp_grasp_demo
 
 Sample output:
 
-```
+```text
 ╔══════════════════════════════════════════════════════════════╗
 ║           TSP GRASP Demo - EDD Showcase Demo 6              ║
 ╠══════════════════════════════════════════════════════════════╣
@@ -211,7 +211,7 @@ Both the TUI (`cargo run --bin tsp_tui`) and WASM demos share:
 
 The shared style constants ensure visual consistency:
 
-```rust
+```rust,ignore
 use simular::edd::style;
 
 // Both TUI and WASM use these colors

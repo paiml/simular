@@ -2,11 +2,17 @@
 //!
 //! This module contains the testable state and logic for the orbit TUI demo.
 //! Terminal I/O is handled by the binary, but all state management lives here.
+//!
+//! # `ComputeBlocks` Integration (SIMULAR-CB-001)
+//!
+//! Uses SIMD-optimized `SparklineBlock` and `LoadTrendBlock` from presentar-terminal
+//! for energy/momentum conservation visualization and frame budget trends.
 
 use crate::demos::{DemoEngine, OrbitalEngine};
 use crate::orbit::physics::YoshidaIntegrator;
 use crate::orbit::prelude::*;
 use crate::orbit::render::OrbitTrail;
+use crate::tui::compute_blocks::SimulationMetrics;
 use crossterm::event::KeyCode;
 
 /// Embedded default Earth-Sun YAML configuration.
@@ -36,6 +42,8 @@ pub struct OrbitApp {
     pub frame_count: u64,
     /// Whether the app should quit.
     pub should_quit: bool,
+    /// SIMD-optimized simulation metrics (`ComputeBlocks` from presentar-terminal)
+    pub metrics: SimulationMetrics,
 }
 
 impl OrbitApp {
@@ -94,6 +102,7 @@ impl OrbitApp {
             sim_time_days: 0.0,
             frame_count: 0,
             should_quit: false,
+            metrics: SimulationMetrics::new(),
         }
     }
 
@@ -104,6 +113,7 @@ impl OrbitApp {
         self.jidoka.initialize(&self.state);
         self.sim_time_days = 0.0;
         self.frame_count = 0;
+        self.metrics.reset();
 
         for trail in &mut self.trails {
             trail.clear();
@@ -134,6 +144,12 @@ impl OrbitApp {
         if response.should_pause() || response.should_halt() {
             self.paused = true;
         }
+
+        // Update ComputeBlock metrics (SIMD-optimized sparklines)
+        let energy = self.state.total_energy();
+        let momentum = self.state.angular_momentum_magnitude();
+        let heijunka_status = self.heijunka.status();
+        self.metrics.update(energy, momentum, heijunka_status.utilization);
 
         self.frame_count += 1;
     }

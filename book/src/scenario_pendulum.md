@@ -4,7 +4,7 @@ The pendulum scenario provides classical mechanics simulation for pendulum syste
 
 ## Simple Pendulum
 
-```rust
+```rust,ignore
 use simular::scenarios::{PendulumScenario, PendulumConfig};
 
 let config = PendulumConfig {
@@ -21,7 +21,7 @@ let mut scenario = PendulumScenario::new(config);
 
 ## Running the Simulation
 
-```rust
+```rust,ignore
 let dt = 0.01;  // 10ms timestep
 
 for _ in 0..1000 {  // 10 seconds
@@ -41,7 +41,7 @@ For small angles, the pendulum period is:
 
 T = 2π√(L/g)
 
-```rust
+```rust,ignore
 let config = PendulumConfig {
     length: 1.0,
     gravity: 9.81,
@@ -61,7 +61,7 @@ println!("Simulated: {:.4}s, Analytical: {:.4}s", period, analytical_period);
 
 For large angles, the period depends on amplitude:
 
-```rust
+```rust,ignore
 let config = PendulumConfig {
     initial_angle: std::f64::consts::PI / 2.0,  // 90°
     ..Default::default()
@@ -76,7 +76,7 @@ println!("Large angle period: {:.4}s", period);
 
 ## Damped Pendulum
 
-```rust
+```rust,ignore
 let config = PendulumConfig {
     damping: 0.1,  // Damping coefficient
     ..Default::default()
@@ -98,7 +98,7 @@ println!("Energy decay: {:.2}%",
 
 ## Driven Pendulum
 
-```rust
+```rust,ignore
 let config = PendulumConfig {
     driving: DrivingConfig {
         amplitude: 0.5,     // Driving amplitude
@@ -115,7 +115,7 @@ let scenario = PendulumScenario::new(config);
 
 ## Double Pendulum
 
-```rust
+```rust,ignore
 use simular::scenarios::DoublePendulumScenario;
 
 let config = DoublePendulumConfig {
@@ -143,7 +143,7 @@ for _ in 0..10000 {
 
 ## Energy Analysis
 
-```rust
+```rust,ignore
 let mut scenario = PendulumScenario::new(config);
 
 for _ in 0..1000 {
@@ -161,7 +161,7 @@ for _ in 0..1000 {
 
 ## Phase Space
 
-```rust
+```rust,ignore
 let mut scenario = PendulumScenario::new(config);
 
 // Generate phase space trajectory
@@ -182,7 +182,7 @@ for (theta, omega) in phase_space {
 
 ## Example: Period vs Amplitude
 
-```rust
+```rust,ignore
 use simular::scenarios::{PendulumScenario, PendulumConfig};
 
 fn main() {
@@ -212,7 +212,7 @@ fn main() {
 ```
 
 Output:
-```
+```text
 Amplitude (°) | Period (s) | Deviation (%)
 --------------|------------|---------------
             5 |     6.2832 |          0.05

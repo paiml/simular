@@ -85,6 +85,7 @@ mod tui {
                 Constraint::Min(10),
                 Constraint::Length(3),
                 Constraint::Length(5),
+                Constraint::Length(4), // ComputeBlock sparklines
             ])
             .split(f.area());
 
@@ -92,6 +93,7 @@ mod tui {
         render_orbit_canvas(f, chunks[1], app);
         render_status(f, chunks[2], app);
         render_status_panel(f, chunks[3], app);
+        render_sparklines(f, chunks[4], app);
     }
 
     fn render_title(f: &mut Frame, area: Rect, app: &OrbitApp) {
@@ -268,6 +270,85 @@ mod tui {
                 heijunka_status.used_ms, heijunka_status.budget_ms, heijunka_status.quality,
             ));
         f.render_widget(heijunka_widget, chunks[1]);
+    }
+
+    fn render_sparklines(f: &mut Frame, area: Rect, app: &OrbitApp) {
+        let chunks = Layout::default()
+            .direction(Direction::Horizontal)
+            .constraints([
+                Constraint::Percentage(33),
+                Constraint::Percentage(34),
+                Constraint::Percentage(33),
+            ])
+            .split(area);
+
+        // Energy conservation sparkline (ComputeBlock)
+        let energy_chars: String = app.metrics.energy.render().into_iter().collect();
+        let (e_min, e_max) = app.metrics.energy.range();
+        let energy_widget = Paragraph::new(vec![
+            Line::from(vec![
+                Span::styled("Energy Drift ", Style::default().fg(Color::Gray)),
+                Span::styled(
+                    format!("[{e_min:.1}..{e_max:.1} ppm]"),
+                    Style::default().fg(Color::DarkGray),
+                ),
+            ]),
+            Line::from(Span::styled(energy_chars, Style::default().fg(Color::Cyan))),
+        ])
+        .block(
+            Block::default()
+                .borders(Borders::ALL)
+                .title(format!("SIMD: {}", app.metrics.simd_instruction_set().name())),
+        );
+        f.render_widget(energy_widget, chunks[0]);
+
+        // Angular momentum conservation sparkline (ComputeBlock)
+        let momentum_chars: String = app.metrics.momentum.render().into_iter().collect();
+        let (m_min, m_max) = app.metrics.momentum.range();
+        let momentum_widget = Paragraph::new(vec![
+            Line::from(vec![
+                Span::styled("L Drift ", Style::default().fg(Color::Gray)),
+                Span::styled(
+                    format!("[{m_min:.1}..{m_max:.1} ppm]"),
+                    Style::default().fg(Color::DarkGray),
+                ),
+            ]),
+            Line::from(Span::styled(
+                momentum_chars,
+                Style::default().fg(Color::Magenta),
+            )),
+        ])
+        .block(Block::default().borders(Borders::ALL).title("Momentum"));
+        f.render_widget(momentum_widget, chunks[1]);
+
+        // Frame budget trend (ComputeBlock)
+        let budget_chars: String = app.metrics.frame_budget.render().into_iter().collect();
+        let avg = app.metrics.frame_budget.average();
+        let trend = app.metrics.frame_budget.trend();
+        let trend_arrow = match trend {
+            simular::tui::compute_blocks::TrendDirection::Up => "↑",
+            simular::tui::compute_blocks::TrendDirection::Down => "↓",
+            simular::tui::compute_blocks::TrendDirection::Flat => "→",
+        };
+        let budget_widget = Paragraph::new(vec![
+            Line::from(vec![
+                Span::styled("Budget ", Style::default().fg(Color::Gray)),
+                Span::styled(
+                    format!("{avg:.0}% {trend_arrow}"),
+                    Style::default().fg(if avg <= 100.0 {
+                        Color::Green
+                    } else {
+                        Color::Red
+                    }),
+                ),
+            ]),
+            Line::from(Span::styled(
+                budget_chars,
+                Style::default().fg(Color::Yellow),
+            )),
+        ])
+        .block(Block::default().borders(Borders::ALL).title("Heijunka"));
+        f.render_widget(budget_widget, chunks[2]);
     }
 
     #[cfg(test)]

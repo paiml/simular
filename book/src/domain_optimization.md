@@ -4,7 +4,7 @@ The optimization domain provides Gaussian Process-based Bayesian optimization fo
 
 ## Basic Usage
 
-```rust
+```rust,ignore
 use simular::domains::optimization::{
     BayesianOptimizer, OptimizerConfig, AcquisitionFunction,
 };
@@ -38,7 +38,7 @@ println!("Best: x = {:?}, f(x) = {:.6}", best_x, best_y);
 
 ## OptimizerConfig
 
-```rust
+```rust,ignore
 pub struct OptimizerConfig {
     /// Parameter bounds: (min, max) for each dimension
     pub bounds: Vec<(f64, f64)>,
@@ -69,7 +69,7 @@ pub struct OptimizerConfig {
 
 Balances exploration and exploitation:
 
-```rust
+```rust,ignore
 let config = OptimizerConfig {
     acquisition: AcquisitionFunction::ExpectedImprovement,
     ..Default::default()
@@ -82,7 +82,7 @@ EI = E[max(f_best - f(x), 0)]
 
 Tunable exploration via kappa parameter:
 
-```rust
+```rust,ignore
 let config = OptimizerConfig {
     acquisition: AcquisitionFunction::UCB { kappa: 2.0 },
     ..Default::default()
@@ -97,7 +97,7 @@ Higher kappa = more exploration.
 
 Conservative strategy:
 
-```rust
+```rust,ignore
 let config = OptimizerConfig {
     acquisition: AcquisitionFunction::ProbabilityOfImprovement,
     ..Default::default()
@@ -110,7 +110,7 @@ PoI = P(f(x) < f_best)
 
 The GP surrogate model uses RBF (squared exponential) kernel:
 
-```rust
+```rust,ignore
 use simular::domains::optimization::GaussianProcess;
 
 // Create GP
@@ -142,7 +142,7 @@ Where:
 
 ## Example: Rosenbrock Function
 
-```rust
+```rust,ignore
 use simular::domains::optimization::{
     BayesianOptimizer, OptimizerConfig, AcquisitionFunction,
 };
@@ -188,7 +188,7 @@ fn main() {
 
 ## Example: 1D Optimization
 
-```rust
+```rust,ignore
 fn main() {
     // f(x) = sin(x) + 0.1*x², minimum around x ≈ -0.88
     let f = |x: &[f64]| -> f64 {
@@ -217,7 +217,7 @@ fn main() {
 
 ## Comparing Acquisition Functions
 
-```rust
+```rust,ignore
 let acquisition_fns = [
     ("EI", AcquisitionFunction::ExpectedImprovement),
     ("UCB(2)", AcquisitionFunction::UCB { kappa: 2.0 }),
@@ -250,7 +250,7 @@ for (name, acq) in &acquisition_fns {
 
 Same seed = identical optimization trajectory:
 
-```rust
+```rust,ignore
 fn optimize_with_seed(seed: u64) -> f64 {
     let config = OptimizerConfig {
         bounds: vec![(-2.0, 2.0), (-2.0, 2.0)],

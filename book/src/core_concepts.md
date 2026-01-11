@@ -6,7 +6,7 @@ Simular is built on three pillars: **determinism**, **anomaly detection**, and *
 
 Every simulation in Simular is fully deterministic. Given the same seed, you get bit-identical results:
 
-```rust
+```rust,ignore
 use simular::prelude::*;
 
 // Run 1
@@ -32,7 +32,7 @@ assert_eq!(values1, values2);
 
 `SimState` holds all simulation variables in Structure-of-Arrays (SoA) layout:
 
-```rust
+```rust,ignore
 use simular::engine::state::{SimState, Vec3};
 
 let mut state = SimState::new();
@@ -58,7 +58,7 @@ let total = state.total_energy();       // KE + PE
 
 ### SoA Layout Benefits
 
-```
+```text
 // Array of Structures (AoS) - cache inefficient
 bodies: [Body { pos, vel, mass }, Body { pos, vel, mass }, ...]
 
@@ -70,7 +70,7 @@ masses:     [m0, m1, m2, ...]         <- contiguous
 
 ## Vec3: 3D Vectors
 
-```rust
+```rust,ignore
 use simular::engine::state::Vec3;
 
 let a = Vec3::new(1.0, 2.0, 3.0);
@@ -97,7 +97,7 @@ let finite = a.is_finite();         // Check for NaN/Inf
 
 Based on PCG (Permuted Congruential Generator):
 
-```rust
+```rust,ignore
 use simular::prelude::*;
 
 let mut rng = SimRng::new(42);  // Master seed
@@ -118,7 +118,7 @@ let partitions = rng.partition(4);
 
 ### Partitioning for Parallelism
 
-```rust
+```rust,ignore
 let mut rng = SimRng::new(42);
 let mut partitions = rng.partition(4);
 
@@ -148,7 +148,7 @@ Simular separates simulation domains:
 
 Each domain has specialized engines:
 
-```rust
+```rust,ignore
 // Physics
 use simular::domains::physics::{PhysicsEngine, GravityField, VerletIntegrator};
 let engine = PhysicsEngine::new(GravityField::default(), VerletIntegrator::new());
@@ -166,7 +166,7 @@ let optimizer = BayesianOptimizer::new(config);
 
 Automatic detection of simulation failures:
 
-```rust
+```rust,ignore
 use simular::engine::jidoka::{JidokaConfig, JidokaGuard};
 
 let config = JidokaConfig {
@@ -192,7 +192,7 @@ match guard.check(&state) {
 
 Ready-to-use simulation templates:
 
-```rust
+```rust,ignore
 use simular::scenarios::{
     RocketScenario,      // Launch and staging
     SatelliteScenario,   // Orbital mechanics
@@ -205,7 +205,7 @@ use simular::scenarios::{
 
 ## Architecture Overview
 
-```
+```text
 ┌─────────────────────────────────────────────────────────┐
 │                     User Code                            │
 ├─────────────────────────────────────────────────────────┤

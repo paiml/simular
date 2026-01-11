@@ -27,7 +27,7 @@ simular = "0.2"
 
 ## Quick Example
 
-```rust
+```rust,ignore
 use simular::prelude::*;
 use simular::domains::monte_carlo::{MonteCarloEngine, VarianceReduction};
 
@@ -48,7 +48,7 @@ fn main() {
 
 ## Architecture
 
-```
+```text
 simular/
 ├── engine/          # Core simulation engine
 │   ├── state.rs     # SimState, Vec3

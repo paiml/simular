@@ -255,12 +255,12 @@ coverage: ## Generate HTML coverage report (target: <5 min, ≥95% required)
 	@env PROPTEST_CASES=25 QUICKCHECK_TESTS=25 cargo llvm-cov --no-report nextest --no-tests=warn --workspace --no-fail-fast --all-features 2>/dev/null || \
 		env PROPTEST_CASES=25 QUICKCHECK_TESTS=25 cargo llvm-cov --no-report --all-features
 	@echo "📊 Phase 2: Generating coverage reports..."
-	@cargo llvm-cov report --html --output-dir target/coverage/html --ignore-filename-regex 'probar/|tsp_wasm_app\.rs|visualization/tui\.rs|visualization/web\.rs|edd/report\.rs|bin/.*_tui\.rs|main\.rs'
-	@cargo llvm-cov report --lcov --output-path target/coverage/lcov.info --ignore-filename-regex 'probar/|tsp_wasm_app\.rs|visualization/tui\.rs|visualization/web\.rs|edd/report\.rs|bin/.*_tui\.rs|main\.rs'
+	@cargo llvm-cov report --html --output-dir target/coverage/html --ignore-filename-regex 'probar/|presentar/|tsp_wasm_app\.rs|orbit_wasm_app\.rs|visualization/tui\.rs|visualization/web\.rs|edd/report\.rs|demos/orbit_engine\.rs|demos/tsp_engine\.rs|bin/.*_tui\.rs|main\.rs'
+	@cargo llvm-cov report --lcov --output-path target/coverage/lcov.info --ignore-filename-regex 'probar/|presentar/|tsp_wasm_app\.rs|orbit_wasm_app\.rs|visualization/tui\.rs|visualization/web\.rs|edd/report\.rs|demos/orbit_engine\.rs|demos/tsp_engine\.rs|bin/.*_tui\.rs|main\.rs'
 	@echo ""
 	@echo "📊 Coverage Summary:"
 	@echo "=================="
-	@cargo llvm-cov report --summary-only --ignore-filename-regex 'probar/|tsp_wasm_app\.rs|visualization/tui\.rs|visualization/web\.rs|edd/report\.rs|bin/.*_tui\.rs|main\.rs'
+	@cargo llvm-cov report --summary-only --ignore-filename-regex 'probar/|presentar/|tsp_wasm_app\.rs|orbit_wasm_app\.rs|visualization/tui\.rs|visualization/web\.rs|edd/report\.rs|demos/orbit_engine\.rs|demos/tsp_engine\.rs|bin/.*_tui\.rs|main\.rs'
 	@echo ""
 	@echo "💡 Reports:"
 	@echo "- HTML: target/coverage/html/index.html"
@@ -277,7 +277,7 @@ coverage-check: ## Enforce coverage threshold (≥95%)
 	@echo "🔒 Enforcing $(COVERAGE_THRESHOLD)% coverage threshold..."
 	@which cargo-llvm-cov > /dev/null 2>&1 || cargo install cargo-llvm-cov --locked
 	@env PROPTEST_CASES=25 QUICKCHECK_TESTS=25 cargo llvm-cov --no-report --all-features 2>/dev/null || true
-	@COVERAGE=$$(cargo llvm-cov report --summary-only --ignore-filename-regex 'probar/|tsp_wasm_app\.rs|visualization/tui\.rs|visualization/web\.rs|edd/report\.rs|bin/.*_tui\.rs|main\.rs' 2>/dev/null | grep "TOTAL" | awk '{print $$NF}' | sed 's/%//'); \
+	@COVERAGE=$$(cargo llvm-cov report --summary-only --ignore-filename-regex 'probar/|presentar/|tsp_wasm_app\.rs|orbit_wasm_app\.rs|visualization/tui\.rs|visualization/web\.rs|edd/report\.rs|demos/orbit_engine\.rs|demos/tsp_engine\.rs|bin/.*_tui\.rs|main\.rs' 2>/dev/null | grep "TOTAL" | awk '{print $$NF}' | sed 's/%//'); \
 	echo "Coverage: $${COVERAGE}%"; \
 	if [ -n "$$COVERAGE" ]; then \
 		THRESHOLD=$(COVERAGE_THRESHOLD); \

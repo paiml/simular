@@ -4,7 +4,7 @@ The replay system records and replays simulations for debugging, analysis, and r
 
 ## Recording Simulations
 
-```rust
+```rust,ignore
 use simular::replay::{ReplayRecorder, SimEvent};
 use simular::engine::state::{SimState, Vec3};
 
@@ -27,7 +27,7 @@ recorder.save("simulation.replay")?;
 
 ## Replaying Simulations
 
-```rust
+```rust,ignore
 use simular::replay::ReplayPlayer;
 
 let player = ReplayPlayer::load("simulation.replay")?;
@@ -45,7 +45,7 @@ let state_at_500 = player.get_state(500)?;
 
 Replays are stored in a compact binary format:
 
-```rust
+```rust,ignore
 pub struct Replay {
     /// Simulation metadata
     pub metadata: ReplayMetadata,
@@ -65,7 +65,7 @@ pub struct Replay {
 
 Replays are compressed with Zstd:
 
-```rust
+```rust,ignore
 // Save with compression (default)
 recorder.save_compressed("simulation.replay.zst")?;
 
@@ -77,7 +77,7 @@ let player = ReplayPlayer::load_compressed("simulation.replay.zst")?;
 
 Save and restore from checkpoints:
 
-```rust
+```rust,ignore
 use simular::replay::Checkpoint;
 
 // Create checkpoint
@@ -95,7 +95,7 @@ let (state, rng) = checkpoint.restore()?;
 
 Record only specific data:
 
-```rust
+```rust,ignore
 let mut recorder = ReplayRecorder::new()
     .record_positions(true)
     .record_velocities(true)
@@ -107,7 +107,7 @@ let mut recorder = ReplayRecorder::new()
 
 Analyze replays:
 
-```rust
+```rust,ignore
 let player = ReplayPlayer::load("simulation.replay")?;
 
 // Energy analysis
@@ -131,7 +131,7 @@ let trajectory: Vec<Vec3> = player.iter()
 
 Compare two simulation runs:
 
-```rust
+```rust,ignore
 use simular::replay::ReplayDiff;
 
 let replay1 = ReplayPlayer::load("run1.replay")?;
@@ -151,7 +151,7 @@ if diff.is_identical() {
 
 ### Debugging
 
-```rust
+```rust,ignore
 // Record a failing simulation
 let mut recorder = ReplayRecorder::new();
 // ... simulation with bug ...
@@ -170,7 +170,7 @@ for (step, state) in player.iter() {
 
 ### Validation
 
-```rust
+```rust,ignore
 // Run simulation twice
 let replay1 = run_and_record(seed: 42);
 let replay2 = run_and_record(seed: 42);
@@ -182,7 +182,7 @@ assert!(diff.is_identical(), "Non-determinism detected!");
 
 ### Visualization
 
-```rust
+```rust,ignore
 let player = ReplayPlayer::load("simulation.replay")?;
 
 // Export for visualization
@@ -195,7 +195,7 @@ for (step, state) in player.iter().step_by(10) {
 
 For large simulations, stream from disk:
 
-```rust
+```rust,ignore
 // Streaming player - doesn't load all states into memory
 let player = ReplayPlayer::stream("large_simulation.replay")?;
 

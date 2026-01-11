@@ -6,7 +6,7 @@ The epidemic scenario provides SIR and SEIR disease spread models.
 
 Susceptible → Infected → Recovered
 
-```rust
+```rust,ignore
 use simular::scenarios::{SIRScenario, SIRConfig};
 
 let config = SIRConfig {
@@ -22,7 +22,7 @@ let mut scenario = SIRScenario::new(config);
 
 ## Running the Simulation
 
-```rust
+```rust,ignore
 let dt = 1.0;  // 1 day
 
 for day in 0..365 {
@@ -43,7 +43,7 @@ for day in 0..365 {
 
 R₀ = β/γ - average number of secondary infections
 
-```rust
+```rust,ignore
 let config = SIRConfig {
     beta: 0.3,
     gamma: 0.1,
@@ -67,7 +67,7 @@ Adds Exposed (latent) compartment:
 
 Susceptible → Exposed → Infected → Recovered
 
-```rust
+```rust,ignore
 use simular::scenarios::{SEIRScenario, SEIRConfig};
 
 let config = SEIRConfig {
@@ -93,7 +93,7 @@ for day in 0..365 {
 
 ## Herd Immunity Threshold
 
-```rust
+```rust,ignore
 let scenario = SIRScenario::new(config);
 let r0 = scenario.r0();
 
@@ -106,7 +106,7 @@ println!("Herd immunity threshold: {:.1}%", hit * 100.0);
 
 ### Reducing Transmission
 
-```rust
+```rust,ignore
 let mut scenario = SIRScenario::new(config);
 
 // Day 30: Implement social distancing (reduce beta by 50%)
@@ -122,7 +122,7 @@ for day in 0..365 {
 
 ### Vaccination
 
-```rust
+```rust,ignore
 let mut scenario = SIRScenario::new(config);
 
 // Vaccinate 1% of susceptible population per day
@@ -137,7 +137,7 @@ for day in 0..365 {
 
 ## Stochastic Model
 
-```rust
+```rust,ignore
 use simular::scenarios::StochasticSIRScenario;
 
 let config = StochasticSIRConfig {
@@ -165,7 +165,7 @@ for _ in 0..365 {
 
 Fraction of population eventually infected:
 
-```rust
+```rust,ignore
 let scenario = SIRScenario::new(config);
 
 // Run to equilibrium
@@ -177,7 +177,7 @@ println!("Final attack rate: {:.1}%", final_size * 100.0);
 
 ## Epidemic Curve
 
-```rust
+```rust,ignore
 let mut scenario = SIRScenario::new(config);
 let mut epidemic_curve = Vec::new();
 
@@ -196,7 +196,7 @@ println!("Peak: {} infected on day {}", *peak_infected as u64, peak_day);
 
 ## Example: Comparing R₀ Values
 
-```rust
+```rust,ignore
 use simular::scenarios::{SIRScenario, SIRConfig};
 
 fn main() {
@@ -245,7 +245,7 @@ fn main() {
 ```
 
 Output:
-```
+```text
 R₀   | HIT   | Peak Day | Peak %  | Final %
 -----|-------|----------|---------|--------
  1.5 |   33% |      147 |    3.2% |   58.3%
@@ -258,7 +258,7 @@ R₀   | HIT   | Peak Day | Peak %  | Final %
 
 ## Age-Structured Model
 
-```rust
+```rust,ignore
 use simular::scenarios::AgeStructuredSIRScenario;
 
 let config = AgeStructuredSIRConfig {

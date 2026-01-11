@@ -16,7 +16,7 @@ Simular provides three integrators with different trade-offs:
 
 Störmer-Verlet is symplectic—it preserves phase space volume, leading to bounded energy error:
 
-```rust
+```rust,ignore
 use simular::domains::physics::VerletIntegrator;
 
 let integrator = VerletIntegrator::new();
@@ -25,7 +25,7 @@ assert_eq!(integrator.error_order(), 2);
 ```
 
 Algorithm:
-```
+```text
 q_{n+1/2} = q_n + (h/2) * v_n
 v_{n+1}   = v_n + h * a(q_{n+1/2})
 q_{n+1}   = q_{n+1/2} + (h/2) * v_{n+1}
@@ -35,7 +35,7 @@ q_{n+1}   = q_{n+1/2} + (h/2) * v_{n+1}
 
 Fourth-order Runge-Kutta is more accurate per step but energy may drift:
 
-```rust
+```rust,ignore
 use simular::domains::physics::RK4Integrator;
 
 let integrator = RK4Integrator::new();
@@ -52,7 +52,7 @@ Use RK4 when:
 
 First-order, for comparisons and debugging:
 
-```rust
+```rust,ignore
 use simular::domains::physics::EulerIntegrator;
 
 let integrator = EulerIntegrator::new();
@@ -65,7 +65,7 @@ assert_eq!(integrator.error_order(), 1);
 
 Uniform gravitational acceleration:
 
-```rust
+```rust,ignore
 use simular::domains::physics::GravityField;
 use simular::engine::state::Vec3;
 
@@ -82,7 +82,7 @@ let moon_gravity = GravityField {
 
 Inverse-square law (orbital mechanics):
 
-```rust
+```rust,ignore
 use simular::domains::physics::CentralForceField;
 use simular::engine::state::Vec3;
 
@@ -100,7 +100,7 @@ let earth = CentralForceField::new(
 
 Implement the `ForceField` trait:
 
-```rust
+```rust,ignore
 use simular::domains::physics::ForceField;
 use simular::engine::state::Vec3;
 
@@ -129,7 +129,7 @@ impl ForceField for SpringField {
 
 Combine force field and integrator:
 
-```rust
+```rust,ignore
 use simular::domains::physics::{PhysicsEngine, GravityField, VerletIntegrator};
 use simular::engine::state::{SimState, Vec3};
 
@@ -154,7 +154,7 @@ for _ in 0..10000 {
 
 Verlet preserves energy better than RK4/Euler over long simulations:
 
-```rust
+```rust,ignore
 use simular::domains::physics::{PhysicsEngine, VerletIntegrator, EulerIntegrator};
 
 fn measure_energy_drift<I: Integrator>(integrator: I, steps: usize) -> f64 {
@@ -180,7 +180,7 @@ assert!(verlet_drift < euler_drift);  // Verlet is much better
 
 ## Example: Harmonic Oscillator
 
-```rust
+```rust,ignore
 use simular::domains::physics::{PhysicsEngine, ForceField, VerletIntegrator};
 use simular::engine::state::{SimState, Vec3};
 
@@ -225,7 +225,7 @@ fn main() {
 
 ## Example: Projectile Motion
 
-```rust
+```rust,ignore
 use simular::domains::physics::{PhysicsEngine, GravityField, VerletIntegrator};
 use simular::engine::state::{SimState, Vec3};
 

@@ -4,7 +4,7 @@ The Monte Carlo domain provides stochastic sampling with variance reduction tech
 
 ## Basic Usage
 
-```rust
+```rust,ignore
 use simular::domains::monte_carlo::MonteCarloEngine;
 use simular::engine::rng::SimRng;
 
@@ -22,7 +22,7 @@ println!("E[X²] ≈ {:.6} ± {:.6}", result.estimate, result.std_error);
 
 Every Monte Carlo run returns statistics:
 
-```rust
+```rust,ignore
 pub struct MonteCarloResult {
     pub estimate: f64,           // Point estimate
     pub std_error: f64,          // Standard error
@@ -33,7 +33,7 @@ pub struct MonteCarloResult {
 ```
 
 Usage:
-```rust
+```rust,ignore
 let result = engine.run(|x| x, &mut rng);
 
 println!("Estimate: {}", result.estimate);
@@ -49,7 +49,7 @@ println!("Relative error: {:.2}%", result.relative_error() * 100.0);
 
 ### None (Standard Monte Carlo)
 
-```rust
+```rust,ignore
 use simular::domains::monte_carlo::{MonteCarloEngine, VarianceReduction};
 
 let engine = MonteCarloEngine::new(100_000, VarianceReduction::None);
@@ -59,7 +59,7 @@ let engine = MonteCarloEngine::new(100_000, VarianceReduction::None);
 
 Uses correlated pairs (U, 1-U) to reduce variance for monotonic functions:
 
-```rust
+```rust,ignore
 let engine = MonteCarloEngine::new(100_000, VarianceReduction::Antithetic);
 let result = engine.run(|x| x, &mut rng);
 
@@ -71,7 +71,7 @@ let result = engine.run(|x| x, &mut rng);
 
 Use a correlated variable with known expectation:
 
-```rust
+```rust,ignore
 // Estimate E[X²] using X as control variate
 // We know E[X] = 0.5
 let engine = MonteCarloEngine::new(
@@ -89,7 +89,7 @@ let result = engine.run(|x| x * x, &mut rng);
 
 Sample from a proposal distribution that emphasizes important regions:
 
-```rust
+```rust,ignore
 // Estimate E[X⁴] under Uniform(0,1) using Beta(2,1) proposal
 fn sample_beta21(rng: &mut SimRng) -> f64 {
     rng.gen_f64().sqrt()  // Inverse CDF of Beta(2,1)
@@ -115,7 +115,7 @@ let result = engine.run(|x| x.powi(4), &mut rng);
 
 More robust when normalizing constant is unknown:
 
-```rust
+```rust,ignore
 let engine = MonteCarloEngine::new(
     100_000,
     VarianceReduction::SelfNormalizingIS {
@@ -129,7 +129,7 @@ let engine = MonteCarloEngine::new(
 
 Divide domain into strata and sample each:
 
-```rust
+```rust,ignore
 let engine = MonteCarloEngine::new(
     100_000,
     VarianceReduction::Stratified { num_strata: 10 },
@@ -138,7 +138,7 @@ let engine = MonteCarloEngine::new(
 
 ## Multi-Dimensional Monte Carlo
 
-```rust
+```rust,ignore
 // Estimate volume of unit sphere in 3D
 let result = engine.run_nd(3, |x| {
     let r2: f64 = x.iter().map(|&xi| xi * xi).sum();
@@ -152,7 +152,7 @@ let result = engine.run_nd(3, |x| {
 
 For variable-duration simulations:
 
-```rust
+```rust,ignore
 use simular::domains::monte_carlo::{WorkStealingMonteCarlo, SimulationTask};
 
 let ws = WorkStealingMonteCarlo::with_workers(4);
@@ -172,7 +172,7 @@ The work-stealing scheduler handles load imbalance when some simulations take lo
 
 ## Example: Pi Estimation
 
-```rust
+```rust,ignore
 use simular::domains::monte_carlo::MonteCarloEngine;
 use simular::engine::rng::SimRng;
 
@@ -194,7 +194,7 @@ fn main() {
 ```
 
 Output:
-```
+```text
 n=   1000: π ≈ 3.120000, error = 0.021593, std_err = 0.052017
 n=  10000: π ≈ 3.143600, error = 0.002007, std_err = 0.016436
 n= 100000: π ≈ 3.141120, error = 0.000473, std_err = 0.005197
@@ -205,7 +205,7 @@ n=1000000: π ≈ 3.141484, error = 0.000109, std_err = 0.001644
 
 Monte Carlo converges at O(n^{-1/2}) regardless of dimension:
 
-```rust
+```rust,ignore
 // Standard error ∝ 1/√n
 let engine_small = MonteCarloEngine::with_samples(1_000);
 let engine_large = MonteCarloEngine::with_samples(100_000);

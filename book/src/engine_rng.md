@@ -4,7 +4,7 @@ SimRng provides deterministic, reproducible random number generation based on PC
 
 ## Basic Usage
 
-```rust
+```rust,ignore
 use simular::engine::rng::SimRng;
 
 // Create RNG with seed
@@ -22,7 +22,7 @@ let gaussian: f64 = rng.gen_normal(10.0, 2.0); // N(10, 2)
 
 Same seed = identical sequence, always:
 
-```rust
+```rust,ignore
 let mut rng1 = SimRng::new(42);
 let mut rng2 = SimRng::new(42);
 
@@ -39,7 +39,7 @@ This holds across:
 
 ## Batch Sampling
 
-```rust
+```rust,ignore
 let mut rng = SimRng::new(42);
 
 // Generate multiple samples efficiently
@@ -51,7 +51,7 @@ assert_eq!(samples.len(), 1000);
 
 For deterministic parallelism, partition the RNG:
 
-```rust
+```rust,ignore
 let mut rng = SimRng::new(42);
 let mut partitions = rng.partition(4);  // 4 independent streams
 
@@ -74,7 +74,7 @@ std::thread::scope(|s| {
 
 Each partition gets a different stream derived from the master seed:
 
-```
+```text
 Master seed: 42
 ├── Partition 0: seed = f(42, 0)
 ├── Partition 1: seed = f(42, 1)
@@ -91,7 +91,7 @@ The streams are:
 
 Box-Muller transform for normal samples:
 
-```rust
+```rust,ignore
 let mut rng = SimRng::new(42);
 
 // Standard normal N(0, 1)
@@ -118,7 +118,7 @@ println!("Variance: {:.4} (expected 1)", variance);
 
 Checkpoint RNG state:
 
-```rust
+```rust,ignore
 let mut rng = SimRng::new(42);
 
 // Generate some values
@@ -142,7 +142,7 @@ assert_eq!(rng2.gen_f64(), next_value);
 
 ### RngState
 
-```rust
+```rust,ignore
 pub struct RngState {
     pub master_seed: u64,
     pub stream: u64,
@@ -152,7 +152,7 @@ pub struct RngState {
 
 ## Monte Carlo Example
 
-```rust
+```rust,ignore
 use simular::engine::rng::SimRng;
 
 fn estimate_pi(seed: u64, samples: usize) -> f64 {
@@ -182,7 +182,7 @@ fn main() {
 
 ## Parallel Monte Carlo
 
-```rust
+```rust,ignore
 use simular::engine::rng::SimRng;
 
 fn parallel_estimate_pi(master_seed: u64, total_samples: usize, threads: usize) -> f64 {

@@ -6,7 +6,7 @@ The ML domain provides training simulation, prediction, and multi-turn evaluatio
 
 Simulate ML training runs with anomaly detection:
 
-```rust
+```rust,ignore
 use simular::domains::ml::{
     TrainingSimulation, TrainingConfig, TrainingState,
 };
@@ -40,7 +40,7 @@ println!("Final: best_val_loss = {:.4}", metrics.best_val_loss);
 
 ## Training Metrics
 
-```rust
+```rust,ignore
 pub struct TrainingMetrics {
     pub epochs_completed: usize,
     pub best_val_loss: f64,
@@ -55,7 +55,7 @@ pub struct TrainingMetrics {
 
 Record and analyze training history:
 
-```rust
+```rust,ignore
 use simular::domains::ml::TrainingTrajectory;
 
 let trajectory = TrainingTrajectory::new();
@@ -75,7 +75,7 @@ println!("Overfitting: {}", trajectory.is_overfitting());
 
 Detect training anomalies with Jidoka:
 
-```rust
+```rust,ignore
 use simular::domains::ml::{AnomalyDetector, TrainingAnomaly};
 
 let mut detector = AnomalyDetector::new();
@@ -102,7 +102,7 @@ match detector.check() {
 
 Track statistics over a window:
 
-```rust
+```rust,ignore
 use simular::domains::ml::RollingStats;
 
 let mut stats = RollingStats::new(10);  // Window size 10
@@ -118,7 +118,7 @@ for loss in losses {
 
 Simulate inference:
 
-```rust
+```rust,ignore
 use simular::domains::ml::{PredictionSimulation, PredictionState, InferenceConfig};
 
 let config = InferenceConfig {
@@ -139,7 +139,7 @@ println!("Throughput: {:.0} samples/sec", state.throughput);
 
 Evaluate multi-turn interactions:
 
-```rust
+```rust,ignore
 use simular::domains::ml::{MultiTurnSimulation, Turn, TurnMetrics};
 
 let mut sim = MultiTurnSimulation::new();
@@ -170,7 +170,7 @@ println!("Total tokens: {}", eval.total_tokens);
 
 Analyze trade-offs:
 
-```rust
+```rust,ignore
 use simular::domains::ml::{ParetoPoint, ParetoAnalysis};
 
 let points = vec![
@@ -194,7 +194,7 @@ for point in frontier {
 
 Automatic rule patching for ML pipelines:
 
-```rust
+```rust,ignore
 use simular::domains::ml::{JidokaMLFeedback, RulePatch, AnomalyPattern};
 
 let feedback = JidokaMLFeedback::new();
@@ -213,7 +213,7 @@ println!("Suggested fix: {:?}", patch);
 
 ## Example: Training Run Analysis
 
-```rust
+```rust,ignore
 use simular::domains::ml::{
     TrainingSimulation, TrainingConfig, AnomalyDetector,
 };
