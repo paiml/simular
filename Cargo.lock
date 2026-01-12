@@ -1551,6 +1551,8 @@ dependencies = [
 [[package]]
 name = "jugar-probar"
 version = "1.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "45cd85d7d35b0a51df297130b938d0c7a62be8fb07f1451dde89c235de8f4416"
 dependencies = [
  "base64",
  "bincode",
@@ -1563,36 +1565,7 @@ dependencies = [
  "notify",
  "png 0.17.16",
  "proc-macro2",
- "regex",
- "serde",
- "serde_json",
- "serde_yaml",
- "sha2",
- "syn",
- "thiserror 2.0.17",
- "tracing",
- "tracing-subscriber",
- "uuid",
- "wasm-bindgen",
- "web-sys",
-]
-
-[[package]]
-name = "jugar-probar"
-version = "1.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "45cd85d7d35b0a51df297130b938d0c7a62be8fb07f1451dde89c235de8f4416"
-dependencies = [
- "base64",
- "bincode",
- "chrono",
- "gif 0.13.3",
- "image",
- "js-sys",
- "mp4",
- "notify",
- "png 0.17.16",
- "proc-macro2",
+ "ratatui",
  "regex",
  "serde",
  "serde_json",
@@ -2159,9 +2132,11 @@ dependencies = [
 
 [[package]]
 name = "presentar-core"
-version = "0.2.0"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "07e6ea04e52f472f4e8fe9b5c313cb45189ae4704834fd03f17ecee25f50c56b"
 dependencies = [
- "jugar-probar 1.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "jugar-probar",
  "serde",
  "serde_json",
  "trueno",
@@ -2169,7 +2144,9 @@ dependencies = [
 
 [[package]]
 name = "presentar-terminal"
-version = "0.2.0"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1c8251b78c0bc27b3ae24c268b212bc3c9a70e034695a0f701430b5582c274dd"
 dependencies = [
  "bitvec",
  "compact_str",
@@ -2182,7 +2159,9 @@ dependencies = [
 
 [[package]]
 name = "presentar-test"
-version = "0.2.0"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "aa716a4f0a309b2244a28bb3b18a42cd28989d57f5f2dfd5fe58c60a1b9807d5"
 dependencies = [
  "presentar-core",
  "presentar-test-macros",
@@ -2192,7 +2171,9 @@ dependencies = [
 
 [[package]]
 name = "presentar-test-macros"
-version = "0.2.0"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1e48d0b62a6efcf5f73328ad21576ee390c7f349a77d72deefce6b92da22b984"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -2863,7 +2844,7 @@ dependencies = [
 
 [[package]]
 name = "simular"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "axum",
  "bincode",
@@ -2877,7 +2858,7 @@ dependencies = [
  "indexmap",
  "js-sys",
  "jsonschema",
- "jugar-probar 1.0.0",
+ "jugar-probar",
  "memmap2",
  "num-traits",
  "presentar-core",

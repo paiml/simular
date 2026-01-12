@@ -1,6 +1,6 @@
 [package]
 name = "simular"
-version = "0.2.0"
+version = "0.3.0"
 edition = "2021"
 authors = ["PAIML Engineering"]
 description = "Unified Simulation Engine for the Sovereign AI Stack"
@@ -47,8 +47,8 @@ axum = { version = "0.7", features = ["ws"], optional = true }
 ratatui = { version = "0.29", optional = true }
 crossterm = { version = "0.28", optional = true }
 # ComputeBlocks from presentar-terminal (SIMD-optimized TUI widgets)
-presentar-terminal = { path = "../presentar/crates/presentar-terminal", optional = true }
-presentar-core = { path = "../presentar/crates/presentar-core", optional = true }
+presentar-terminal = { version = "0.3", optional = true }
+presentar-core = { version = "0.3", optional = true }
 
 # WASM (optional)
 wasm-bindgen = { version = "0.2", optional = true }
@@ -86,10 +86,10 @@ z3 = { version = "0.12", optional = true }
 proptest = "1.5"
 criterion = { version = "0.5", features = ["html_reports"] }
 tempfile = "3.14"
-# Probar WASM testing framework (using local path for development)
-jugar-probar = { path = "../probar/crates/probar" }
+# Probar WASM testing framework
+jugar-probar = "1.0"
 # Presentar TUI testing framework (SPEC-024 Section 12 & 13)
-presentar-test = { path = "../presentar/crates/presentar-test" }
+presentar-test = "0.3"
 
 [features]
 default = ["schema-validation"]
