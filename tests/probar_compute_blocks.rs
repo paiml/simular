@@ -73,7 +73,11 @@ fn probar_frame_budget_trend_renders_to_buffer() {
 
     let chars = trend.render();
     let result = Assertion::is_true(!chars.is_empty(), "Trend should render characters");
-    assert!(result.passed, "Frame budget trend render: {}", result.message);
+    assert!(
+        result.passed,
+        "Frame budget trend render: {}",
+        result.message
+    );
 }
 
 // ============================================================================
@@ -128,23 +132,25 @@ fn probar_energy_drift_tracking_accuracy() {
     // Push initial energy
     sparkline.push(initial_energy);
 
-    // Push with 1 ppm drift
+    // Push with 1 ppm drift (more negative = negative drift)
+    // -1e30 * 1.000001 = -1.000001e30, drift = -1 ppm
     let drifted_energy = initial_energy * 1.000001;
     sparkline.push(drifted_energy);
 
     let (min, max) = sparkline.range();
 
-    // First value should be ~0 (no drift from initial)
-    // Second value should be ~1 (1 ppm = 1e6 * 1e-6 = 1)
+    // First value: 0 ppm (no drift from initial)
+    // Second value: -1 ppm (energy became more negative)
+    // So min=-1, max=0
     let result = Assertion::is_true(
-        (min - 0.0).abs() < 0.1,
-        &format!("Min drift {} should be near 0", min),
+        (f64::from(min) + 1.0).abs() < 0.1,
+        &format!("Min drift {} should be near -1 ppm", min),
     );
     assert!(result.passed, "Energy drift min: {}", result.message);
 
     let result = Assertion::is_true(
-        (max - 1.0).abs() < 0.1,
-        &format!("Max drift {} should be near 1 ppm", max),
+        (f64::from(max) - 0.0).abs() < 0.1,
+        &format!("Max drift {} should be near 0", max),
     );
     assert!(result.passed, "Energy drift max: {}", result.message);
 }
@@ -369,7 +375,11 @@ fn probar_frame_budget_history_bounded() {
         trend.len() <= 60,
         &format!("History length {} should be <= 60", trend.len()),
     );
-    assert!(result.passed, "Frame budget history bound: {}", result.message);
+    assert!(
+        result.passed,
+        "Frame budget history bound: {}",
+        result.message
+    );
 }
 
 // ============================================================================

@@ -438,7 +438,10 @@ impl SEIRScenario {
         let new_r = r + dt / 6.0 * (k1_r + 2.0 * k2_r + 2.0 * k3_r + k4_r);
 
         // Jidoka: Check for non-physical values
-        if new_s < 0.0 || new_e < 0.0 && /* ~ changed by cargo-mutants ~ */ new_i < 0.0 || new_r < 0.0 {
+        if new_s < 0.0
+            || new_e < 0.0 && /* ~ changed by cargo-mutants ~ */ new_i < 0.0
+            || new_r < 0.0
+        {
             return Err(SimError::jidoka(format!(
                 "Non-physical state: S={new_s}, E={new_e}, I={new_i}, R={new_r}"
             )));

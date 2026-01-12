@@ -6,8 +6,8 @@
 //! This is "dogfooding" - using our own tools on our own codebase.
 
 use jugar_probar::pixel_coverage::{
-    ColorPalette, CombinedCoverageReport, LineCoverageReport, PngHeatmap, PixelCoverageTracker,
-    PixelRegion,
+    ColorPalette, CombinedCoverageReport, LineCoverageReport, PixelCoverageTracker, PixelRegion,
+    PngHeatmap,
 };
 use simular::edd::gui_coverage::GuiCoverage;
 
@@ -32,10 +32,7 @@ fn tsp_layout() -> Vec<(&'static str, PixelRegion)> {
             PixelRegion::new(0, 40, TUI_WIDTH / 2, 100),
         ),
         // City plot (left side, main content)
-        (
-            "city_plot",
-            PixelRegion::new(0, 140, TUI_WIDTH / 2, 300),
-        ),
+        ("city_plot", PixelRegion::new(0, 140, TUI_WIDTH / 2, 300)),
         // Convergence graph (right side)
         (
             "convergence_graph",

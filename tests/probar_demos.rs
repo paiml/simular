@@ -96,12 +96,8 @@ fn create_engine_from_yaml(yaml: &str) -> Result<Box<dyn DemoEngineObject>, Demo
         .ok_or_else(|| DemoError::Validation("Missing simulation.type".to_string()))?;
 
     match demo_type {
-        "orbit" => {
-            OrbitalEngine::from_yaml(yaml).map(|e| Box::new(e) as Box<dyn DemoEngineObject>)
-        }
-        "tsp" => {
-            TspEngine::from_yaml(yaml).map(|e| Box::new(e) as Box<dyn DemoEngineObject>)
-        }
+        "orbit" => OrbitalEngine::from_yaml(yaml).map(|e| Box::new(e) as Box<dyn DemoEngineObject>),
+        "tsp" => TspEngine::from_yaml(yaml).map(|e| Box::new(e) as Box<dyn DemoEngineObject>),
         "monte_carlo" => Err(DemoError::Validation(
             "MonteCarloEngine not yet implemented - TODO: impl DemoEngine".to_string(),
         )),
@@ -118,7 +114,11 @@ fn create_engine_from_yaml(yaml: &str) -> Result<Box<dyn DemoEngineObject>, Demo
 fn test_orbit_yaml_loading() {
     let yaml = include_str!("../examples/experiments/orbit_earth_sun.yaml");
     let result = create_engine_from_yaml(yaml);
-    assert!(result.is_ok(), "Orbit YAML failed to load: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "Orbit YAML failed to load: {:?}",
+        result.err()
+    );
 }
 
 /// TSP YAML MUST load successfully.
@@ -126,7 +126,11 @@ fn test_orbit_yaml_loading() {
 fn test_tsp_yaml_loading() {
     let yaml = include_str!("../examples/experiments/bay_area_tsp.yaml");
     let result = create_engine_from_yaml(yaml);
-    assert!(result.is_ok(), "TSP YAML failed to load: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "TSP YAML failed to load: {:?}",
+        result.err()
+    );
 }
 
 /// TSP deterministic replay test.
@@ -377,10 +381,7 @@ fn test_no_hardcoded_configs_documented() {
     // See: .github/workflows/ci.yml
 
     // For now, this is a marker that the check exists
-    assert!(
-        true,
-        "Hardcoded config check is performed in CI via grep"
-    );
+    assert!(true, "Hardcoded config check is performed in CI via grep");
 }
 
 // =============================================================================
