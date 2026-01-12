@@ -295,11 +295,10 @@ mod tui {
             ]),
             Line::from(Span::styled(energy_chars, Style::default().fg(Color::Cyan))),
         ])
-        .block(
-            Block::default()
-                .borders(Borders::ALL)
-                .title(format!("SIMD: {}", app.metrics.simd_instruction_set().name())),
-        );
+        .block(Block::default().borders(Borders::ALL).title(format!(
+            "SIMD: {}",
+            app.metrics.simd_instruction_set().name()
+        )));
         f.render_widget(energy_widget, chunks[0]);
 
         // Angular momentum conservation sparkline (ComputeBlock)

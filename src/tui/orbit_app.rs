@@ -149,7 +149,8 @@ impl OrbitApp {
         let energy = self.state.total_energy();
         let momentum = self.state.angular_momentum_magnitude();
         let heijunka_status = self.heijunka.status();
-        self.metrics.update(energy, momentum, heijunka_status.utilization);
+        self.metrics
+            .update(energy, momentum, heijunka_status.utilization);
 
         self.frame_count += 1;
     }

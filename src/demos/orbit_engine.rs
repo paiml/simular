@@ -642,7 +642,11 @@ jidoka:
             engine2.step();
         }
 
-        assert_eq!(engine1.state(), engine2.state(), "State divergence detected");
+        assert_eq!(
+            engine1.state(),
+            engine2.state(),
+            "State divergence detected"
+        );
     }
 
     #[test]

@@ -114,7 +114,13 @@ impl OrbitAppState {
         for i in 1..=2 {
             self.ctx.begin_path();
             self.ctx
-                .arc(cx, cy, scale * f64::from(i), 0.0, std::f64::consts::PI * 2.0)
+                .arc(
+                    cx,
+                    cy,
+                    scale * f64::from(i),
+                    0.0,
+                    std::f64::consts::PI * 2.0,
+                )
                 .unwrap();
             self.ctx.stroke();
         }
@@ -192,7 +198,11 @@ impl OrbitAppState {
         set_text(document, "energy", &format!("{energy:.2e} J"));
 
         let ang_mom = self.sim.angular_momentum();
-        set_text(document, "angular-momentum", &format!("{ang_mom:.2e} kg*m2/s"));
+        set_text(
+            document,
+            "angular-momentum",
+            &format!("{ang_mom:.2e} kg*m2/s"),
+        );
 
         // Earth position
         let earth_x = self.sim.body_x_au(1);
@@ -204,14 +214,21 @@ impl OrbitAppState {
         set_text(document, "earth-r", &format!("{earth_r:.3} AU"));
 
         // Jidoka status
-        if let Ok(status) = serde_json::from_str::<serde_json::Value>(&self.sim.jidoka_status_json())
+        if let Ok(status) =
+            serde_json::from_str::<serde_json::Value>(&self.sim.jidoka_status_json())
         {
-            let energy_ok = status.get("energy_ok").and_then(|v| v.as_bool()).unwrap_or(false);
+            let energy_ok = status
+                .get("energy_ok")
+                .and_then(|v| v.as_bool())
+                .unwrap_or(false);
             let angular_ok = status
                 .get("angular_momentum_ok")
                 .and_then(|v| v.as_bool())
                 .unwrap_or(false);
-            let finite_ok = status.get("finite_ok").and_then(|v| v.as_bool()).unwrap_or(false);
+            let finite_ok = status
+                .get("finite_ok")
+                .and_then(|v| v.as_bool())
+                .unwrap_or(false);
 
             set_indicator_class(document, "energy-indicator", energy_ok);
             set_indicator_class(document, "angular-indicator", angular_ok);
