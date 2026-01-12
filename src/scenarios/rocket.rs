@@ -629,3 +629,89 @@ mod tests {
         assert!(acc_high.z.abs() < acc_surface.z.abs());
     }
 }
+
+#[cfg(test)]
+mod proptests {
+    use super::*;
+    use proptest::prelude::*;
+
+    proptest! {
+        /// Thrust-to-weight ratio determines liftoff capability.
+        #[test]
+        fn prop_twr_liftoff(
+            thrust in 5000.0f64..50000.0,
+            mass in 500.0f64..5000.0,
+        ) {
+            let g = 9.81;
+            let twr = thrust / (mass * g);
+
+            // TWR > 1 means rocket can lift off
+            if twr > 1.0 {
+                let net_accel = thrust / mass - g;
+                prop_assert!(net_accel > 0.0, "TWR={} but no liftoff", twr);
+            }
+        }
+
+        /// Gravity decreases with altitude (inverse square law).
+        #[test]
+        fn prop_gravity_decreases_with_altitude(
+            alt1 in 0.0f64..100_000.0,
+            alt2 in 0.0f64..100_000.0,
+        ) {
+            let field = RocketForceField::default();
+            let pos1 = Vec3::new(0.0, 0.0, alt1);
+            let pos2 = Vec3::new(0.0, 0.0, alt2);
+
+            let acc1 = field.acceleration(&pos1, 1000.0).z.abs();
+            let acc2 = field.acceleration(&pos2, 1000.0).z.abs();
+
+            // Higher altitude -> weaker gravity
+            if alt1 > alt2 {
+                prop_assert!(acc1 <= acc2 + 0.001, "g at {}m = {}, at {}m = {}", alt1, acc1, alt2, acc2);
+            } else if alt1 < alt2 {
+                prop_assert!(acc1 >= acc2 - 0.001, "g at {}m = {}, at {}m = {}", alt1, acc1, alt2, acc2);
+            }
+        }
+
+        /// Specific impulse relates thrust and mass flow rate.
+        #[test]
+        fn prop_specific_impulse(
+            isp in 200.0f64..500.0,
+            mass_flow in 10.0f64..100.0,
+        ) {
+            // Thrust = Isp * g0 * mass_flow
+            let g0 = 9.81;
+            let thrust = isp * g0 * mass_flow;
+
+            prop_assert!(thrust > 0.0);
+            prop_assert!(thrust > isp * mass_flow, "thrust={}", thrust);
+        }
+
+        /// Rocket mass must be positive.
+        #[test]
+        fn prop_mass_positive(
+            dry_mass in 100.0f64..10000.0,
+            fuel_mass in 100.0f64..50000.0,
+        ) {
+            let total_mass = dry_mass + fuel_mass;
+            prop_assert!(total_mass > 0.0);
+            prop_assert!(total_mass > dry_mass);
+        }
+
+        /// Delta-v from Tsiolkovsky rocket equation.
+        #[test]
+        fn prop_delta_v_tsiolkovsky(
+            isp in 200.0f64..450.0,
+            mass_ratio in 1.5f64..10.0,
+        ) {
+            // delta_v = Isp * g0 * ln(mass_ratio)
+            let g0 = 9.81;
+            let delta_v = isp * g0 * mass_ratio.ln();
+
+            prop_assert!(delta_v > 0.0);
+            // Higher mass ratio -> higher delta-v
+            let delta_v_higher = isp * g0 * (mass_ratio * 1.1).ln();
+            prop_assert!(delta_v_higher > delta_v);
+        }
+    }
+}

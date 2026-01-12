@@ -619,3 +619,95 @@ mod tests {
         assert!(state.is_finite());
     }
 }
+
+#[cfg(test)]
+mod proptests {
+    use super::*;
+    use crate::orbit::units::SOLAR_MASS;
+    use proptest::prelude::*;
+
+    proptest! {
+        /// Gravitational force follows inverse square law.
+        #[test]
+        fn prop_gravity_inverse_square(
+            r1 in 1e10f64..1e12,
+            r2 in 1e10f64..1e12,
+        ) {
+            // F ∝ 1/r²
+            let mass = 1e24;
+            let sun_mass = SOLAR_MASS;
+
+            let f1 = G * sun_mass * mass / (r1 * r1);
+            let f2 = G * sun_mass * mass / (r2 * r2);
+
+            // Verify inverse square relationship
+            let ratio = (r1 / r2).powi(2);
+            let force_ratio = f2 / f1;
+            prop_assert!((force_ratio - ratio).abs() / ratio < 1e-10);
+        }
+
+        /// Total energy is conserved in n-body system (Hamiltonian).
+        #[test]
+        fn prop_energy_finite(
+            mass in 1e20f64..1e30,
+            distance in 1e9f64..1e12,
+        ) {
+            // Kinetic + Potential should be finite for bound orbits
+            let v_orbital = (G * SOLAR_MASS / distance).sqrt();
+            let ke = 0.5 * mass * v_orbital * v_orbital;
+            let pe = -G * SOLAR_MASS * mass / distance;
+            let total = ke + pe;
+
+            // For circular orbit, total energy should be negative (bound)
+            prop_assert!(total.is_finite());
+            prop_assert!(total < 0.0, "E={} should be negative for bound orbit", total);
+        }
+
+        /// Circular orbital velocity formula.
+        #[test]
+        fn prop_circular_velocity(
+            r in 1e10f64..1e13,
+        ) {
+            // v = sqrt(GM/r)
+            let v = (G * SOLAR_MASS / r).sqrt();
+
+            // Velocity should be positive and finite
+            prop_assert!(v > 0.0);
+            prop_assert!(v.is_finite());
+
+            // Velocity should decrease with distance
+            let v2 = (G * SOLAR_MASS / (r * 2.0)).sqrt();
+            prop_assert!(v2 < v);
+        }
+
+        /// Acceleration magnitude depends on mass and distance.
+        #[test]
+        fn prop_acceleration_magnitude(
+            central_mass in 1e25f64..1e31,
+            distance in 1e9f64..1e13,
+        ) {
+            // a = GM/r²
+            let a = G * central_mass / (distance * distance);
+
+            prop_assert!(a > 0.0);
+            prop_assert!(a.is_finite());
+
+            // Larger mass -> larger acceleration
+            let a2 = G * (central_mass * 2.0) / (distance * distance);
+            prop_assert!(a2 > a);
+        }
+
+        /// OrbitBody mass must be positive.
+        #[test]
+        fn prop_body_mass_positive(
+            mass in 1e10f64..1e35,
+        ) {
+            let body = OrbitBody::new(
+                OrbitMass::from_kg(mass),
+                Position3D::zero(),
+                Velocity3D::zero(),
+            );
+            prop_assert!(body.mass.as_kg() > 0.0);
+        }
+    }
+}

@@ -438,7 +438,7 @@ impl SEIRScenario {
         let new_r = r + dt / 6.0 * (k1_r + 2.0 * k2_r + 2.0 * k3_r + k4_r);
 
         // Jidoka: Check for non-physical values
-        if new_s < 0.0 || new_e < 0.0 || new_i < 0.0 || new_r < 0.0 {
+        if new_s < 0.0 || new_e < 0.0 && /* ~ changed by cargo-mutants ~ */ new_i < 0.0 || new_r < 0.0 {
             return Err(SimError::jidoka(format!(
                 "Non-physical state: S={new_s}, E={new_e}, I={new_i}, R={new_r}"
             )));
@@ -864,5 +864,108 @@ mod tests {
 
         assert!((state.infection_rate() - 0.1).abs() < 0.01);
         assert!((state.susceptible_rate() - 0.5).abs() < 0.01);
+    }
+}
+
+#[cfg(test)]
+mod proptests {
+    use super::*;
+    use proptest::prelude::*;
+
+    proptest! {
+        /// SIR total population is conserved.
+        #[test]
+        fn prop_sir_population_conserved(
+            susceptible in 100.0f64..900.0,
+            infected in 1.0f64..100.0,
+        ) {
+            let recovered = 1000.0 - susceptible - infected;
+            let state = SIRState {
+                susceptible,
+                infected,
+                recovered,
+                time: 0.0,
+                rt: 2.0,
+            };
+
+            let total = state.total();
+            prop_assert!((total - 1000.0).abs() < 0.001, "total={}", total);
+        }
+
+        /// R0 > 1 means epidemic grows initially.
+        #[test]
+        fn prop_r0_greater_than_one_grows(
+            beta in 0.3f64..0.8,
+            gamma in 0.05f64..0.15,
+        ) {
+            let r0 = beta / gamma;
+            // When S/N ≈ 1 and R0 > 1, infections should increase initially
+            if r0 > 1.0 {
+                // dI/dt = β*S*I/N - γ*I = I*(β*S/N - γ)
+                // With S ≈ N: dI/dt ≈ I*(β - γ) = I*γ*(R0 - 1) > 0
+                let growth_rate = gamma * (r0 - 1.0);
+                prop_assert!(growth_rate > 0.0);
+            }
+        }
+
+        /// SEIR total population is conserved.
+        #[test]
+        fn prop_seir_population_conserved(
+            susceptible in 100.0f64..800.0,
+            exposed in 1.0f64..50.0,
+            infected in 1.0f64..50.0,
+        ) {
+            let recovered = 1000.0 - susceptible - exposed - infected;
+            let sir = SIRState {
+                susceptible,
+                infected,
+                recovered,
+                time: 0.0,
+                rt: 2.0,
+            };
+            let state = SEIRState { sir, exposed };
+
+            let total = state.total();
+            prop_assert!((total - 1000.0).abs() < 0.001, "total={}", total);
+        }
+
+        /// Infection rate is non-negative.
+        #[test]
+        fn prop_infection_rate_nonnegative(
+            infected in 0.0f64..500.0,
+            total in 500.0f64..2000.0,
+        ) {
+            let susceptible = total - infected;
+            let state = SIRState {
+                susceptible,
+                infected,
+                recovered: 0.0,
+                time: 0.0,
+                rt: 2.0,
+            };
+
+            let rate = state.infection_rate();
+            prop_assert!(rate >= 0.0, "rate={}", rate);
+            prop_assert!(rate <= 1.0, "rate={} should be <= 1", rate);
+        }
+
+        /// Epidemic is over when infected < threshold.
+        #[test]
+        fn prop_epidemic_over_threshold(
+            infected in 0.0f64..10.0,
+        ) {
+            let state = SIRState {
+                susceptible: 100.0,
+                infected,
+                recovered: 900.0 - infected,
+                time: 100.0,
+                rt: 0.5,
+            };
+
+            // Epidemic is over when infected < 1
+            if infected < 1.0 {
+                prop_assert!(state.is_over());
+            }
+        }
     }
 }

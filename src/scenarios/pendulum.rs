@@ -421,3 +421,108 @@ mod tests {
         assert!((pe_top - 2.0 * 9.81).abs() < 0.01, "PE at top={}", pe_top);
     }
 }
+
+#[cfg(test)]
+mod proptests {
+    use super::*;
+    use proptest::prelude::*;
+
+    proptest! {
+        /// Period increases with pendulum length (T ∝ √L).
+        #[test]
+        fn prop_period_increases_with_length(
+            length1 in 0.1f64..10.0,
+            length2 in 0.1f64..10.0,
+        ) {
+            let config1 = PendulumConfig { length: length1, ..Default::default() };
+            let config2 = PendulumConfig { length: length2, ..Default::default() };
+
+            let period1 = config1.small_angle_period();
+            let period2 = config2.small_angle_period();
+
+            // If length1 > length2, then period1 > period2
+            if length1 > length2 {
+                prop_assert!(period1 > period2);
+            } else if length1 < length2 {
+                prop_assert!(period1 < period2);
+            }
+        }
+
+        /// Period decreases with gravity (T ∝ 1/√g).
+        #[test]
+        fn prop_period_decreases_with_gravity(
+            g1 in 1.0f64..20.0,
+            g2 in 1.0f64..20.0,
+        ) {
+            let config1 = PendulumConfig { g: g1, ..Default::default() };
+            let config2 = PendulumConfig { g: g2, ..Default::default() };
+
+            let period1 = config1.small_angle_period();
+            let period2 = config2.small_angle_period();
+
+            // If g1 > g2, then period1 < period2
+            if g1 > g2 {
+                prop_assert!(period1 < period2);
+            } else if g1 < g2 {
+                prop_assert!(period1 > period2);
+            }
+        }
+
+        /// Pendulum force field produces restoring force toward equilibrium.
+        #[test]
+        fn prop_restoring_force(
+            angle in -std::f64::consts::PI..std::f64::consts::PI,
+            length in 0.5f64..5.0,
+        ) {
+            let field = PendulumForceField {
+                g: 9.81,
+                length,
+                damping: 0.0,
+            };
+
+            // Position at given angle
+            let x = length * angle.sin();
+            let y = -length * angle.cos();
+            let pos = Vec3::new(x, y, 0.0);
+
+            let accel = field.acceleration(&pos, 1.0);
+
+            // For small displacements, force should point toward equilibrium
+            if angle.abs() > 0.01 {
+                // Tangential acceleration should oppose displacement
+                let tangent_x = angle.cos();
+                let tangent_y = angle.sin();
+                let tangent_accel = accel.x * tangent_x + accel.y * tangent_y;
+
+                // Restoring force: positive angle -> negative tangent accel
+                if angle > 0.0 {
+                    prop_assert!(tangent_accel < 0.1, "tangent_accel={}", tangent_accel);
+                } else {
+                    prop_assert!(tangent_accel > -0.1, "tangent_accel={}", tangent_accel);
+                }
+            }
+        }
+
+        /// Potential energy is non-negative when measured from lowest point.
+        #[test]
+        fn prop_potential_energy_nonnegative(
+            angle in -std::f64::consts::PI..std::f64::consts::PI,
+            length in 0.5f64..5.0,
+            mass in 0.1f64..10.0,
+        ) {
+            let field = PendulumForceField {
+                g: 9.81,
+                length,
+                damping: 0.0,
+            };
+
+            let x = length * angle.sin();
+            let y = -length * angle.cos();
+            let pos = Vec3::new(x, y, 0.0);
+
+            let pe = field.potential(&pos, mass);
+            // PE relative to lowest point should be >= 0
+            prop_assert!(pe >= -0.001, "PE={} should be non-negative", pe);
+        }
+    }
+}

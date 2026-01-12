@@ -849,3 +849,89 @@ mod tests {
         assert!(EARTH_MASS > 5.9e24);
     }
 }
+
+#[cfg(test)]
+mod proptests {
+    use super::*;
+    use proptest::prelude::*;
+
+    proptest! {
+        /// Position conversion round-trip preserves value.
+        #[test]
+        fn prop_position_roundtrip(
+            meters in 1e3f64..1e15,
+        ) {
+            let p = Position3D::from_meters(meters, 0.0, 0.0);
+            let (x, _, _) = p.as_meters();
+            prop_assert!((x - meters).abs() / meters < 1e-10);
+        }
+
+        /// AU to meters conversion is consistent.
+        #[test]
+        fn prop_au_conversion(
+            au in 0.1f64..100.0,
+        ) {
+            let p = Position3D::from_au(au, 0.0, 0.0);
+            let (x, _, _) = p.as_meters();
+            let expected = au * AU;
+            prop_assert!((x - expected).abs() / expected < 1e-10);
+        }
+
+        /// Velocity magnitude is non-negative.
+        #[test]
+        fn prop_velocity_magnitude_nonneg(
+            vx in -1e5f64..1e5,
+            vy in -1e5f64..1e5,
+            vz in -1e5f64..1e5,
+        ) {
+            let v = Velocity3D::from_mps(vx, vy, vz);
+            let mag = v.magnitude().get::<meter_per_second>();
+            prop_assert!(mag >= 0.0);
+        }
+
+        /// Position magnitude is non-negative.
+        #[test]
+        fn prop_position_magnitude_nonneg(
+            x in -1e12f64..1e12,
+            y in -1e12f64..1e12,
+            z in -1e12f64..1e12,
+        ) {
+            let p = Position3D::from_meters(x, y, z);
+            let mag = p.magnitude().get::<meter>();
+            prop_assert!(mag >= 0.0);
+        }
+
+        /// Mass is always positive.
+        #[test]
+        fn prop_mass_positive(
+            kg in 1.0f64..1e35,
+        ) {
+            let m = OrbitMass::from_kg(kg);
+            prop_assert!(m.as_kg() > 0.0);
+        }
+
+        /// Time conversion round-trip.
+        #[test]
+        fn prop_time_roundtrip(
+            seconds in 1.0f64..1e10,
+        ) {
+            let t = OrbitTime::from_seconds(seconds);
+            let recovered = t.as_seconds();
+            prop_assert!((recovered - seconds).abs() / seconds < 1e-10);
+        }
+
+        /// Negation preserves magnitude.
+        #[test]
+        fn prop_velocity_neg_magnitude(
+            vx in -1e5f64..1e5,
+            vy in -1e5f64..1e5,
+            vz in -1e5f64..1e5,
+        ) {
+            let v = Velocity3D::from_mps(vx, vy, vz);
+            let neg_v = -v;
+            let mag1 = v.magnitude().get::<meter_per_second>();
+            let mag2 = neg_v.magnitude().get::<meter_per_second>();
+            prop_assert!((mag1 - mag2).abs() < 1e-10);
+        }
+    }
+}
