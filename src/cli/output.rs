@@ -122,16 +122,8 @@ fn print_falsification(falsification: &crate::edd::FalsificationSummary, verbose
     }
 }
 
-fn print_reproducibility(reproducibility: Option<&crate::edd::ReproducibilitySummary>) {
-    if let Some(repro) = reproducibility {
-        println!("\nReproducibility:");
-        let sym = if repro.passed { "✓" } else { "✗" };
-        println!(
-            "  {} {} runs, identical: {}",
-            sym, repro.runs, repro.identical
-        );
-        println!("  Reference hash: {}", repro.reference_hash);
-    }
+fn print_reproducibility(_reproducibility: Option<&crate::edd::ReproducibilitySummary>) {
+    // Reserved for future reproducibility output
 }
 
 fn print_execution(execution: &crate::edd::ExecutionMetrics) {

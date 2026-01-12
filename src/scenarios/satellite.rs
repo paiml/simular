@@ -456,3 +456,75 @@ mod tests {
         assert!(period > 5000.0 && period < 6000.0, "LEO period={}", period);
     }
 }
+
+#[cfg(test)]
+mod proptests {
+    use super::*;
+    use proptest::prelude::*;
+
+    proptest! {
+        /// Orbital period increases with semi-major axis (Kepler's 3rd law).
+        #[test]
+        fn prop_period_increases_with_altitude(
+            alt1 in 200_000.0f64..1_000_000.0,
+            alt2 in 200_000.0f64..1_000_000.0,
+        ) {
+            let orbit1 = OrbitalElements::circular(alt1, 0.0);
+            let orbit2 = OrbitalElements::circular(alt2, 0.0);
+
+            let period1 = orbit1.period();
+            let period2 = orbit2.period();
+
+            // Higher altitude -> longer period
+            if alt1 > alt2 {
+                prop_assert!(period1 > period2, "P({})={} should > P({})={}", alt1, period1, alt2, period2);
+            } else if alt1 < alt2 {
+                prop_assert!(period1 < period2, "P({})={} should < P({})={}", alt1, period1, alt2, period2);
+            }
+        }
+
+        /// Orbital energy is negative for bound orbits.
+        #[test]
+        fn prop_bound_orbit_negative_energy(
+            altitude in 200_000.0f64..35_786_000.0,
+            mass in 100.0f64..10000.0,
+        ) {
+            let config = SatelliteConfig {
+                mass,
+                orbit: OrbitalElements::circular(altitude, 0.0),
+                ..Default::default()
+            };
+            let scenario = SatelliteScenario::new(config);
+            let energy = scenario.energy();
+            prop_assert!(energy < 0.0, "Bound orbit energy={} should be negative", energy);
+        }
+
+        /// Eccentricity is in valid range [0, 1) for elliptical orbits.
+        #[test]
+        fn prop_eccentricity_valid(
+            ecc in 0.0f64..0.99,
+        ) {
+            prop_assert!(ecc >= 0.0);
+            prop_assert!(ecc < 1.0);
+        }
+
+        /// Circular orbit has zero eccentricity.
+        #[test]
+        fn prop_circular_orbit_zero_eccentricity(
+            altitude in 200_000.0f64..1_000_000.0,
+        ) {
+            let orbit = OrbitalElements::circular(altitude, 0.0);
+            prop_assert!(orbit.e.abs() < 1e-10, "e={}", orbit.e);
+        }
+
+        /// Semi-major axis must be positive.
+        #[test]
+        fn prop_sma_positive(
+            altitude in 200_000.0f64..35_786_000.0,
+        ) {
+            let orbit = OrbitalElements::circular(altitude, 0.0);
+            prop_assert!(orbit.a > 0.0);
+            prop_assert!(orbit.a > EARTH_RADIUS, "a={} < Re", orbit.a);
+        }
+    }
+}

@@ -592,3 +592,105 @@ mod tests {
         assert!(debug.contains("ForcingScenario"));
     }
 }
+
+#[cfg(test)]
+mod proptests {
+    use super::*;
+    use proptest::prelude::*;
+
+    proptest! {
+        /// CO2 forcing increases logarithmically with concentration.
+        #[test]
+        fn prop_co2_forcing_increases_with_concentration(
+            co2_1 in 200.0f64..2000.0,
+            co2_2 in 200.0f64..2000.0,
+        ) {
+            let config1 = ClimateConfig { co2_concentration: co2_1, ..Default::default() };
+            let config2 = ClimateConfig { co2_concentration: co2_2, ..Default::default() };
+
+            let forcing1 = config1.co2_forcing();
+            let forcing2 = config2.co2_forcing();
+
+            // Higher CO2 -> higher forcing
+            if co2_1 > co2_2 {
+                prop_assert!(forcing1 > forcing2);
+            } else if co2_1 < co2_2 {
+                prop_assert!(forcing1 < forcing2);
+            }
+        }
+
+        /// Equilibrium temperature increases with forcing.
+        #[test]
+        fn prop_equilibrium_temp_increases_with_co2(
+            co2_1 in 280.0f64..1500.0,
+            co2_2 in 280.0f64..1500.0,
+        ) {
+            let config1 = ClimateConfig { co2_concentration: co2_1, ..Default::default() };
+            let config2 = ClimateConfig { co2_concentration: co2_2, ..Default::default() };
+
+            let temp1 = config1.equilibrium_temperature();
+            let temp2 = config2.equilibrium_temperature();
+
+            // Higher CO2 -> higher equilibrium temperature
+            if co2_1 > co2_2 {
+                prop_assert!(temp1 > temp2 - 0.001, "temp1={}, temp2={}", temp1, temp2);
+            } else if co2_1 < co2_2 {
+                prop_assert!(temp1 < temp2 + 0.001, "temp1={}, temp2={}", temp1, temp2);
+            }
+        }
+
+        /// Albedo reduces absorbed solar radiation.
+        #[test]
+        fn prop_higher_albedo_less_absorbed(
+            albedo1 in 0.1f64..0.9,
+            albedo2 in 0.1f64..0.9,
+        ) {
+            let config1 = ClimateConfig { albedo: albedo1, ..Default::default() };
+            let config2 = ClimateConfig { albedo: albedo2, ..Default::default() };
+
+            // Absorbed = S/4 * (1 - albedo)
+            let absorbed1 = SOLAR_CONSTANT / 4.0 * (1.0 - config1.albedo);
+            let absorbed2 = SOLAR_CONSTANT / 4.0 * (1.0 - config2.albedo);
+
+            // Higher albedo -> less absorbed
+            if albedo1 > albedo2 {
+                prop_assert!(absorbed1 < absorbed2);
+            } else if albedo1 < albedo2 {
+                prop_assert!(absorbed1 > absorbed2);
+            }
+        }
+
+        /// Climate state temperature must be positive (Kelvin).
+        #[test]
+        fn prop_temperature_positive(
+            initial_temp in 200.0f64..350.0,
+        ) {
+            let config = ClimateConfig {
+                initial_temperature: initial_temp,
+                ..Default::default()
+            };
+            let scenario = ClimateScenario::new(config);
+
+            prop_assert!(scenario.state().temperature > 0.0);
+        }
+
+        /// Total forcing is CO2 forcing plus aerosol forcing.
+        #[test]
+        fn prop_total_forcing_additive(
+            co2 in 280.0f64..1000.0,
+            aerosol in -2.0f64..0.0,
+        ) {
+            let config = ClimateConfig {
+                co2_concentration: co2,
+                aerosol_forcing: aerosol,
+                ..Default::default()
+            };
+
+            let co2_forcing = config.co2_forcing();
+            let total = config.total_forcing();
+
+            let expected = co2_forcing + aerosol;
+            prop_assert!((total - expected).abs() < 1e-10, "total={}, expected={}", total, expected);
+        }
+    }
+}
