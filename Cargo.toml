@@ -26,7 +26,7 @@ rand = "0.8"
 rand_pcg = { version = "0.3", features = ["serde1"] }
 
 # Collections (deterministic)
-indexmap = { version = "2.0", features = ["serde"] }
+indexmap = { version = "2.13", features = ["serde"] }
 
 # Compression
 zstd = "0.13"
