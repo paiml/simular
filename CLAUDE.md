@@ -118,3 +118,26 @@ See `roadmap.yaml` for milestones:
 3. **M3 Replay System**: Time-travel debugging
 4. **M4 Visualization**: TUI, WebGL, export
 5. **M5 Integration**: Full Sovereign AI Stack integration
+
+
+## Stack Documentation Search
+
+Query this component's documentation and the entire Sovereign AI Stack using batuta's RAG Oracle:
+
+```bash
+# Index all stack documentation (run once, persists to ~/.cache/batuta/rag/)
+batuta oracle --rag-index
+
+# Search across the entire stack
+batuta oracle --rag "your question here"
+
+# Examples
+batuta oracle --rag "SIMD matrix multiplication"
+batuta oracle --rag "how to train a model"
+batuta oracle --rag "tokenization for BERT"
+
+# Check index status
+batuta oracle --rag-stats
+```
+
+The RAG index includes CLAUDE.md, README.md, and source files from all stack components plus Python ground truth corpora for cross-language pattern matching.
