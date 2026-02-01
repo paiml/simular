@@ -122,7 +122,11 @@ See `roadmap.yaml` for milestones:
 
 ## Stack Documentation Search
 
-Query this component's documentation and the entire Sovereign AI Stack using batuta's RAG Oracle:
+**IMPORTANT: Proactively use the batuta RAG oracle when:**
+- Looking up patterns from other stack components (trueno SIMD, aprender ML, realizar inference)
+- Finding simulation and physics patterns from ground truth corpora
+- Understanding Jidoka guards and Heijunka scheduling across the stack
+- Researching Monte Carlo, optimization, and orbit mechanics approaches
 
 ```bash
 # Index all stack documentation (run once, persists to ~/.cache/batuta/rag/)
@@ -131,13 +135,12 @@ batuta oracle --rag-index
 # Search across the entire stack
 batuta oracle --rag "your question here"
 
-# Examples
-batuta oracle --rag "SIMD matrix multiplication"
-batuta oracle --rag "how to train a model"
-batuta oracle --rag "tokenization for BERT"
-
-# Check index status
-batuta oracle --rag-stats
+# Simular-specific examples
+batuta oracle --rag "Monte Carlo simulation convergence"
+batuta oracle --rag "Jidoka guards stop-on-error patterns"
+batuta oracle --rag "Heijunka load leveling scheduling"
+batuta oracle --rag "orbit mechanics Keplerian propagation"
+batuta oracle --rag "TSP optimization GRASP metaheuristic"
 ```
 
-The RAG index includes CLAUDE.md, README.md, and source files from all stack components plus Python ground truth corpora for cross-language pattern matching.
+The RAG index (341+ docs) includes CLAUDE.md, README.md, and source files from all stack components plus Python ground truth corpora for cross-language pattern matching.
