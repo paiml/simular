@@ -43,6 +43,37 @@ PMAT enforces these thresholds via pre-commit hooks:
 | Max nesting | 4 |
 | Max function lines | 60 |
 
+## Code Search (pmat query)
+
+**NEVER use grep or rg for code discovery.** Use `pmat query` instead -- it returns quality-annotated, ranked results with TDG scores and fault annotations.
+
+```bash
+# Find functions by intent
+pmat query "monte carlo simulation" --limit 10
+
+# Find high-quality code
+pmat query "physics solver" --min-grade A --exclude-tests
+
+# Find with fault annotations (unwrap, panic, unsafe, etc.)
+pmat query "random sampling" --faults
+
+# Filter by complexity
+pmat query "optimization step" --max-complexity 10
+
+# Cross-project search
+pmat query "simulation engine" --include-project ../trueno
+
+# Git history search (find code by commit intent via RRF fusion)
+pmat query "fix particle collision" -G
+pmat query "physics step" --git-history
+
+# Enrichment flags (combine freely)
+pmat query "physics step" --churn              # git volatility (commit count, churn score)
+pmat query "solver" --duplicates           # code clone detection (MinHash+LSH)
+pmat query "integration" --entropy           # pattern diversity (repetitive vs unique)
+pmat query "monte carlo" --churn --duplicates --entropy --faults -G  # full audit
+```
+
 ## Commands
 
 ```bash

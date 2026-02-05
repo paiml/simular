@@ -33,3 +33,10 @@ book/book/
 node_modules/
 package.json
 package-lock.json
+
+# PMAT
+.pmat/backup/
+.pmat-qa/
+.pmat/context.idx/
+.pmat/workspace.idx/
+.pmat/deps-cache.json
