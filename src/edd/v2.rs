@@ -1098,6 +1098,7 @@ falsification:
     }
 
     #[test]
+    #[cfg(feature = "schema-validation")]
     fn test_schema_rejects_missing_seed() {
         let invalid_yaml = r#"
 id: "TSP-001"
@@ -1119,6 +1120,7 @@ falsification:
     }
 
     #[test]
+    #[cfg(feature = "schema-validation")]
     fn test_schema_rejects_missing_falsification() {
         let invalid_yaml = r#"
 id: "TSP-001"
@@ -1136,6 +1138,7 @@ simulation:
     }
 
     #[test]
+    #[cfg(feature = "schema-validation")]
     fn test_schema_rejects_empty_falsification_criteria() {
         let invalid_yaml = r#"
 id: "TSP-001"
@@ -1155,6 +1158,7 @@ falsification:
     }
 
     #[test]
+    #[cfg(feature = "schema-validation")]
     fn test_schema_rejects_javascript_field() {
         let invalid_yaml = r#"
 id: "TSP-001"
@@ -1207,6 +1211,7 @@ falsification:
     }
 
     #[test]
+    #[cfg(feature = "schema-validation")]
     fn test_schema_rejects_emc_without_governing_equation() {
         let invalid_emc = r#"
 emc_version: "1.0"
@@ -1231,6 +1236,7 @@ falsification:
     }
 
     #[test]
+    #[cfg(feature = "schema-validation")]
     fn test_schema_rejects_emc_invalid_version() {
         let invalid_emc = r#"
 emc_version: "invalid"

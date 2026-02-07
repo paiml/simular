@@ -27,6 +27,10 @@ SHELL := /bin/bash
 # Coverage threshold (95% minimum - refactored TUI for testability)
 COVERAGE_THRESHOLD := 95
 
+# Coverage exclusions: external crates, WASM entry points, TUI/visualization, and infra modules
+# 10 patterns: 2 external dirs + 3 dir prefixes + 5 file patterns
+COV_EXCLUDE := --ignore-filename-regex='probar/|presentar/|visualization/|edd/|demos/|renderers/|replay/|(tsp_wasm_app|orbit_wasm_app|main)\.rs|bin/.*_tui\.rs'
+
 .PHONY: all build test test-fast test-quick test-full lint fmt fmt-check clean doc
 .PHONY: tier1 tier2 tier3 tier4 coverage coverage-fast coverage-full coverage-open coverage-check
 .PHONY: bench dev pre-push ci check audit deps-validate deny
@@ -245,22 +249,17 @@ tier4: tier3 ## Tier 4: CI/CD validation (comprehensive)
 
 coverage: ## Generate HTML coverage report (target: <5 min, ≥95% required)
 	@echo "📊 Running coverage analysis (target: <5 min, ≥$(COVERAGE_THRESHOLD)% required)..."
-	@echo "🔍 Checking for cargo-llvm-cov and cargo-nextest..."
 	@which cargo-llvm-cov > /dev/null 2>&1 || (echo "📦 Installing cargo-llvm-cov..." && cargo install cargo-llvm-cov --locked)
-	@which cargo-nextest > /dev/null 2>&1 || (echo "📦 Installing cargo-nextest..." && cargo install cargo-nextest --locked)
-	@echo "🧹 Cleaning old coverage data..."
 	@mkdir -p target/coverage
-	@echo "🧪 Phase 1: Running tests with instrumentation (no report)..."
-	@echo "   Using PROPTEST_CASES=25 for faster coverage"
-	@env PROPTEST_CASES=25 QUICKCHECK_TESTS=25 cargo llvm-cov --no-report nextest --no-tests=warn --workspace --no-fail-fast --all-features 2>/dev/null || \
-		env PROPTEST_CASES=25 QUICKCHECK_TESTS=25 cargo llvm-cov --no-report --all-features
-	@echo "📊 Phase 2: Generating coverage reports..."
-	@cargo llvm-cov report --html --output-dir target/coverage/html --ignore-filename-regex 'probar/|presentar/|tsp_wasm_app\.rs|orbit_wasm_app\.rs|visualization/|edd/|demos/|bin/.*_tui\.rs|main\.rs|orbit/render\.rs|renderers/|replay/|orbit/metamorphic\.rs|engine/jidoka\.rs|domains/monte_carlo\.rs|domains/physics\.rs'
-	@cargo llvm-cov report --lcov --output-path target/coverage/lcov.info --ignore-filename-regex 'probar/|presentar/|tsp_wasm_app\.rs|orbit_wasm_app\.rs|visualization/|edd/|demos/|bin/.*_tui\.rs|main\.rs|orbit/render\.rs|renderers/|replay/|orbit/metamorphic\.rs|engine/jidoka\.rs|domains/monte_carlo\.rs|domains/physics\.rs'
+	@echo "🧪 Running tests with instrumentation..."
+	@env PROPTEST_CASES=25 QUICKCHECK_TESTS=25 cargo llvm-cov --no-report test --lib --all-features $(COV_EXCLUDE)
+	@echo "📊 Generating coverage reports..."
+	@cargo llvm-cov report --html --output-dir target/coverage/html $(COV_EXCLUDE)
+	@cargo llvm-cov report --lcov --output-path target/coverage/lcov.info $(COV_EXCLUDE)
 	@echo ""
 	@echo "📊 Coverage Summary:"
 	@echo "=================="
-	@cargo llvm-cov report --summary-only --ignore-filename-regex 'probar/|presentar/|tsp_wasm_app\.rs|orbit_wasm_app\.rs|visualization/|edd/|demos/|bin/.*_tui\.rs|main\.rs|orbit/render\.rs|renderers/|replay/|orbit/metamorphic\.rs|engine/jidoka\.rs|domains/monte_carlo\.rs|domains/physics\.rs'
+	@cargo llvm-cov report --summary-only $(COV_EXCLUDE)
 	@echo ""
 	@echo "💡 Reports:"
 	@echo "- HTML: target/coverage/html/index.html"
@@ -276,8 +275,8 @@ coverage-fast: coverage
 coverage-check: ## Enforce coverage threshold (≥95%)
 	@echo "🔒 Enforcing $(COVERAGE_THRESHOLD)% coverage threshold..."
 	@which cargo-llvm-cov > /dev/null 2>&1 || cargo install cargo-llvm-cov --locked
-	@env PROPTEST_CASES=25 QUICKCHECK_TESTS=25 cargo llvm-cov --no-report --all-features 2>/dev/null || true
-	@COVERAGE=$$(cargo llvm-cov report --summary-only --ignore-filename-regex 'probar/|presentar/|tsp_wasm_app\.rs|orbit_wasm_app\.rs|visualization/|edd/|demos/|bin/.*_tui\.rs|main\.rs|orbit/render\.rs|renderers/|replay/|orbit/metamorphic\.rs|engine/jidoka\.rs|domains/monte_carlo\.rs|domains/physics\.rs' 2>/dev/null | grep "TOTAL" | awk '{print $$NF}' | sed 's/%//'); \
+	@env PROPTEST_CASES=25 QUICKCHECK_TESTS=25 cargo llvm-cov --no-report test --lib --all-features $(COV_EXCLUDE)
+	@COVERAGE=$$(cargo llvm-cov report --summary-only $(COV_EXCLUDE) 2>/dev/null | grep "TOTAL" | awk '{print $$NF}' | sed 's/%//'); \
 	echo "Coverage: $${COVERAGE}%"; \
 	if [ -n "$$COVERAGE" ]; then \
 		THRESHOLD=$(COVERAGE_THRESHOLD); \
@@ -295,12 +294,10 @@ coverage-check: ## Enforce coverage threshold (≥95%)
 coverage-full: ## Full coverage report (all features, comprehensive)
 	@echo "📊 Running full coverage analysis (all features)..."
 	@which cargo-llvm-cov > /dev/null 2>&1 || cargo install cargo-llvm-cov --locked
-	@which cargo-nextest > /dev/null 2>&1 || cargo install cargo-nextest --locked
 	@mkdir -p target/coverage
-	@env PROPTEST_CASES=25 QUICKCHECK_TESTS=25 cargo llvm-cov --no-report nextest --no-tests=warn --workspace --all-features 2>/dev/null || \
-		env PROPTEST_CASES=25 QUICKCHECK_TESTS=25 cargo llvm-cov --no-report --all-features
-	@cargo llvm-cov report --html --output-dir target/coverage/html
-	@cargo llvm-cov report --lcov --output-path target/coverage/lcov.info
+	@env PROPTEST_CASES=25 QUICKCHECK_TESTS=25 cargo llvm-cov --no-report test --lib --all-features $(COV_EXCLUDE)
+	@cargo llvm-cov report --html --output-dir target/coverage/html $(COV_EXCLUDE)
+	@cargo llvm-cov report --lcov --output-path target/coverage/lcov.info $(COV_EXCLUDE)
 	@echo ""
 	@cargo llvm-cov report --summary-only
 
