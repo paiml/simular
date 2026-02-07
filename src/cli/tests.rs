@@ -744,6 +744,7 @@ falsification:
 }
 
 #[test]
+#[cfg(feature = "schema-validation")]
 fn test_validate_experiment_invalid_yaml() {
     let temp_dir = std::env::temp_dir();
     let temp_file = temp_dir.join("invalid_experiment.yaml");

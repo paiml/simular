@@ -62,6 +62,13 @@ require_audit = true
 max_vulnerabilities = 0
 allowed_advisories = []
 
+[compute-brick]
+enabled = true
+require_safety_comments = true
+require_target_feature = true
+cv_threshold_percent = 15.0
+efficiency_threshold_percent = 25.0
+
 [documentation]
 # Documentation requirements
 require_readme = true

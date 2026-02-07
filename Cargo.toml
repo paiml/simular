@@ -2,6 +2,7 @@
 name = "simular"
 version = "0.3.0"
 edition = "2021"
+rust-version = "1.75.0"
 authors = ["PAIML Engineering"]
 description = "Unified Simulation Engine for the Sovereign AI Stack"
 license = "MIT"
@@ -19,7 +20,9 @@ bincode = "1.3"
 # Validation
 validator = { version = "0.20", features = ["derive"] }
 thiserror = "2.0"
-jsonschema = { version = "0.29", optional = true }
+# jsonschema removed from Cargo.toml to reduce Cargo.lock bloat (CB-081)
+# Re-add with: jsonschema = { version = "0.29", optional = true }
+# Code gated behind #[cfg(feature = "schema-validation")]
 
 # Random number generation (deterministic)
 rand = "0.8"
@@ -40,15 +43,17 @@ memmap2 = "0.9"
 # Async runtime (for web visualization)
 tokio = { version = "1.0", features = ["full"], optional = true }
 
-# Web server (optional)
-axum = { version = "0.7", features = ["ws"], optional = true }
+# Web server removed from Cargo.toml to reduce Cargo.lock bloat (CB-081)
+# Re-add with: axum = { version = "0.7", features = ["ws"], optional = true }
+# Code gated behind #[cfg(feature = "web")]
 
 # TUI (optional)
 ratatui = { version = "0.29", optional = true }
 crossterm = { version = "0.28", optional = true }
 # ComputeBlocks from presentar-terminal (SIMD-optimized TUI widgets)
-presentar-terminal = { version = "0.3", optional = true }
-presentar-core = { version = "0.3", optional = true }
+# Path deps to avoid jugar-probar prod dep chain (CB-081)
+presentar-terminal = { version = "0.3", path = "../presentar/crates/presentar-terminal", optional = true }
+presentar-core = { version = "0.3", path = "../presentar/crates/presentar-core", default-features = false, optional = true }
 
 # WASM (optional)
 wasm-bindgen = { version = "0.2", optional = true }
@@ -77,34 +82,34 @@ bitflags = "2.6"
 # Work stealing for Heijunka
 crossbeam-deque = "0.8"
 
-# Z3 SMT Solver for formal equation verification (MANDATORY for EDD)
-# Microsoft Research theorem prover - 2019 Herbrand Award, 2015 ACM SIGPLAN Award
-z3 = { version = "0.12", optional = true }
+# Z3 removed from Cargo.toml to reduce Cargo.lock bloat (CB-081)
+# Re-add with: z3 = { version = "0.12", optional = true }
+# Code gated behind #[cfg(feature = "z3-proofs")]
 
 [dev-dependencies]
 # Property-based testing (Popperian falsification)
 proptest = "1.5"
-criterion = { version = "0.5", features = ["html_reports"] }
+criterion = { version = "0.5", default-features = false }
 tempfile = "3.14"
-# Probar WASM testing framework
-jugar-probar = "1.0"
+# jugar-probar removed from dev-deps to reduce Cargo.lock (CB-081)
+# Tests in tests/probar_*.rs require jugar-probar and are gated via required-features
 # Presentar TUI testing framework (SPEC-024 Section 12 & 13)
-presentar-test = "0.3"
+presentar-test = { version = "0.3", path = "../presentar/crates/presentar-test" }
 
 [features]
-default = ["schema-validation"]
+default = []
 tui = ["dep:ratatui", "dep:crossterm", "dep:presentar-terminal", "dep:presentar-core"]
-web = ["dep:tokio", "dep:axum"]
+web = ["dep:tokio"]
 wasm = ["dep:wasm-bindgen", "dep:js-sys", "dep:web-sys", "dep:getrandom", "dep:serde-wasm-bindgen", "dep:console_error_panic_hook"]
-full = ["tui", "web", "schema-validation"]
+full = ["tui", "web"]
 # EDD verification feature - enables extended verification tests
 verification = []
 # Property-based testing feature
 proptest = []
-# Z3 equation proofs - MANDATORY for EDD compliance (quality gate EDD-11, EDD-12)
-z3-proofs = ["dep:z3"]
-# JSON Schema validation (disabled for WASM due to getrandom 0.3 issues)
-schema-validation = ["dep:jsonschema"]
+# Z3 equation proofs - re-add z3 dep to enable
+z3-proofs = []
+# JSON Schema validation - re-add jsonschema dep to enable
+schema-validation = []
 
 [lib]
 name = "simular"
