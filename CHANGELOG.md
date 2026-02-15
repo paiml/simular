@@ -8,6 +8,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- SVG renderer (`SvgRenderer`) consuming `RenderCommand` to Grid Protocol SVG
+- Keyframe animation export (`KeyframeRecorder`) for rmedia integration
+- `simular render` CLI subcommand with `--domain`, `--format`, `--fps`, `--duration`, `--seed`
+- SVG frames output (one SVG per frame) and SVG keyframes output (template + JSON)
+- mdBook chapter: SVG Rendering & Keyframes
 - HYPOTHESIS.md with 8 falsifiable claims and thresholds
 - Nix flake for reproducible development environment
 - Criterion benchmarks with 95% confidence intervals
@@ -19,6 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Improved PMAT compliance scores across all metrics
 
 ### Fixed
+- TSP GRASP test YAML indentation (3 tests with missing `name` field parse errors)
 - WASM timing compatibility using web_sys::Performance
 - RefCell borrow panic in WASM demo
 

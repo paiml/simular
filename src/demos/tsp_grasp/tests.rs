@@ -1395,9 +1395,9 @@ meta:
   description: "Bad"
 cities:
   - id: 0
-name: "A"
-alias: "A"
-coords: { lat: 0.0, lon: 0.0 }
+    name: "A"
+    alias: "A"
+    coords: { lat: 0.0, lon: 0.0 }
 matrix:
   - [0, 10, 20]
   - [10, 0, 30]
@@ -1414,23 +1414,23 @@ meta:
   description: "Test"
 cities:
   - id: 0
-name: "A"
-alias: "A"
-coords: { lat: 0.0, lon: 0.0 }
+    name: "A"
+    alias: "A"
+    coords: { lat: 0.0, lon: 0.0 }
   - id: 1
-name: "B"
-alias: "B"
-coords: { lat: 1.0, lon: 1.0 }
+    name: "B"
+    alias: "B"
+    coords: { lat: 1.0, lon: 1.0 }
 matrix:
   - [0, 10]
   - [10, 0]
 algorithm:
   method: "grasp"
   params:
-rcl_size: 2
-restarts: 5
-two_opt: true
-seed: 123
+    rcl_size: 2
+    restarts: 5
+    two_opt: true
+    seed: 123
 "#;
     let instance = TspInstanceYaml::from_yaml(yaml).expect("parse");
     let demo = TspGraspDemo::from_instance(&instance);
@@ -1451,20 +1451,20 @@ meta:
   description: "Test"
 cities:
   - id: 0
-name: "A"
-alias: "A"
-coords: { lat: 0.0, lon: 0.0 }
+    name: "A"
+    alias: "A"
+    coords: { lat: 0.0, lon: 0.0 }
   - id: 1
-name: "B"
-alias: "B"
-coords: { lat: 1.0, lon: 1.0 }
+    name: "B"
+    alias: "B"
+    coords: { lat: 1.0, lon: 1.0 }
 matrix:
   - [0, 10]
   - [10, 0]
 algorithm:
   method: "nearest_neighbor"
   params:
-seed: 42
+    seed: 42
 "#;
     let instance = TspInstanceYaml::from_yaml(yaml).expect("parse");
     let demo = TspGraspDemo::from_instance(&instance);
@@ -1483,20 +1483,20 @@ meta:
   description: "Test"
 cities:
   - id: 0
-name: "A"
-alias: "A"
-coords: { lat: 0.0, lon: 0.0 }
+    name: "A"
+    alias: "A"
+    coords: { lat: 0.0, lon: 0.0 }
   - id: 1
-name: "B"
-alias: "B"
-coords: { lat: 1.0, lon: 1.0 }
+    name: "B"
+    alias: "B"
+    coords: { lat: 1.0, lon: 1.0 }
 matrix:
   - [0, 10]
   - [10, 0]
 algorithm:
   method: "random"
   params:
-seed: 42
+    seed: 42
 "#;
     let instance = TspInstanceYaml::from_yaml(yaml).expect("parse");
     let demo = TspGraspDemo::from_instance(&instance);

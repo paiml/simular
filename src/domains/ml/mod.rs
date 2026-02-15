@@ -17,16 +17,16 @@
 //! // Training simulation would run here
 //! ```
 
-pub mod prediction;
-pub mod multi_turn;
 pub mod jidoka;
+pub mod multi_turn;
+pub mod prediction;
 
 #[cfg(test)]
 mod tests;
 
-pub use prediction::*;
-pub use multi_turn::*;
 pub use jidoka::*;
+pub use multi_turn::*;
+pub use prediction::*;
 
 use serde::{Deserialize, Serialize};
 
@@ -647,4 +647,3 @@ impl TrainingSimulation {
         self.epochs_without_improvement = 0;
     }
 }
-

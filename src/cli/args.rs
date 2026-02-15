@@ -6,14 +6,14 @@
 use std::path::PathBuf;
 
 /// CLI arguments container.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Args {
     /// The command to execute.
     pub command: Command,
 }
 
 /// Available CLI commands.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum Command {
     /// Run an experiment
     Run {
@@ -23,6 +23,21 @@ pub enum Command {
         seed_override: Option<u64>,
         /// Enable verbose output.
         verbose: bool,
+    },
+    /// Render simulation to SVG + keyframes
+    Render {
+        /// Simulation domain (orbit, `monte_carlo`, optimization).
+        domain: String,
+        /// Output format: svg-frames or svg-keyframes.
+        format: RenderFormat,
+        /// Output directory.
+        output: PathBuf,
+        /// Frames per second.
+        fps: u32,
+        /// Simulation duration in seconds.
+        duration: f64,
+        /// Random seed for deterministic output.
+        seed: u64,
     },
     /// Validate experiment YAML against EDD v2 schema
     Validate {
@@ -52,6 +67,15 @@ pub enum Command {
     Help,
     /// Show version
     Version,
+}
+
+/// SVG render output format.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum RenderFormat {
+    /// One SVG file per frame.
+    SvgFrames,
+    /// One template SVG + keyframes JSON.
+    SvgKeyframes,
 }
 
 impl Args {
@@ -85,6 +109,7 @@ impl Args {
 
         let command = match args[1].as_str() {
             "run" => Self::parse_run_command(args),
+            "render" => Self::parse_render_command(args),
             "validate" => Self::parse_validate_command(args),
             "verify" => Self::parse_verify_command(args),
             "emc-check" => Self::parse_emc_check_command(args),
@@ -192,6 +217,59 @@ impl Args {
 
         Command::EmcValidate {
             emc_path: PathBuf::from(&args[2]),
+        }
+    }
+
+    /// Collect all `--key value` pairs from args starting at position `start`.
+    fn collect_flags(args: &[String], start: usize) -> std::collections::HashMap<String, String> {
+        let mut flags = std::collections::HashMap::new();
+        let mut i = start;
+        while i < args.len() {
+            if args[i].starts_with("--") && i + 1 < args.len() {
+                flags.insert(args[i].clone(), args[i + 1].clone());
+                i += 2;
+            } else {
+                i += 1;
+            }
+        }
+        flags
+    }
+
+    /// Parse the 'render' command arguments.
+    fn parse_render_command(args: &[String]) -> Command {
+        let flags = Self::collect_flags(args, 2);
+
+        let domain = flags
+            .get("--domain")
+            .cloned()
+            .unwrap_or_else(|| "orbit".to_string());
+        let format = match flags.get("--format").map(String::as_str) {
+            Some("svg-frames") => RenderFormat::SvgFrames,
+            _ => RenderFormat::SvgKeyframes,
+        };
+        let output = flags
+            .get("--output")
+            .map_or_else(|| PathBuf::from("."), PathBuf::from);
+        let fps = flags
+            .get("--fps")
+            .and_then(|v| v.parse().ok())
+            .unwrap_or(60);
+        let duration = flags
+            .get("--duration")
+            .and_then(|v| v.parse().ok())
+            .unwrap_or(10.0);
+        let seed = flags
+            .get("--seed")
+            .and_then(|v| v.parse().ok())
+            .unwrap_or(42);
+
+        Command::Render {
+            domain,
+            format,
+            output,
+            fps,
+            duration,
+            seed,
         }
     }
 }

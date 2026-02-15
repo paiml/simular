@@ -1549,6 +1549,6 @@ mod wasm {
 }
 
 #[cfg(test)]
-mod tests;
-#[cfg(test)]
 mod quality_tests;
+#[cfg(test)]
+mod tests;
