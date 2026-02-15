@@ -12,12 +12,16 @@
 //! │   GenericRenderer   │
 //! │  (trait-based API)  │
 //! └─────────────────────┘
-//!       ↓           ↓
-//!    TUI Impl    WASM Impl
+//!       ↓           ↓           ↓
+//!    TUI Impl    WASM Impl   SVG Impl
 //! ```
 
+pub mod keyframes;
+pub mod svg;
 pub mod tui;
 pub mod wasm;
 
+pub use keyframes::{KeyframeRecorder, KeyframesExport};
+pub use svg::{SvgConfig, SvgRenderer};
 pub use tui::{DemoRenderer, RenderFrame, RenderableDemo};
 pub use wasm::{WasmRunner, WasmState};

@@ -30,6 +30,7 @@
 - [Deterministic RNG](./engine_rng.md)
 - [Jidoka Guards](./engine_jidoka.md)
 - [Replay System](./engine_replay.md)
+- [SVG Rendering & Keyframes](./rendering_svg.md)
 
 # Appendix
 
