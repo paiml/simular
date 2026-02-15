@@ -387,26 +387,31 @@ pub fn emc_validate(path: &Path) -> ExitCode {
     }
 }
 
+/// Shared mutable state for frame rendering.
+struct RenderCtx<'a> {
+    format: &'a RenderFormat,
+    output: &'a Path,
+    svg: &'a mut crate::renderers::svg::SvgRenderer,
+    keyframes: &'a mut crate::renderers::keyframes::KeyframeRecorder,
+}
+
 /// Write a single SVG frame or record keyframe data.
 fn write_frame(
     frame: usize,
     commands: &[crate::orbit::render::RenderCommand],
-    format: &RenderFormat,
-    output: &Path,
-    svg_renderer: &mut crate::renderers::svg::SvgRenderer,
-    keyframe_recorder: &mut crate::renderers::keyframes::KeyframeRecorder,
+    ctx: &mut RenderCtx<'_>,
 ) -> Result<(), String> {
-    match format {
+    match ctx.format {
         RenderFormat::SvgFrames => {
-            let svg = svg_renderer.render(commands);
-            let path = output.join(format!("frame_{frame:04}.svg"));
+            let svg = ctx.svg.render(commands);
+            let path = ctx.output.join(format!("frame_{frame:04}.svg"));
             std::fs::write(&path, &svg).map_err(|e| format!("Error writing frame {frame}: {e}"))
         }
         RenderFormat::SvgKeyframes => {
-            keyframe_recorder.record_frame(commands);
+            ctx.keyframes.record_frame(commands);
             if frame == 0 {
-                let svg = svg_renderer.render(commands);
-                let path = output.join("scene.svg");
+                let svg = ctx.svg.render(commands);
+                let path = ctx.output.join("scene.svg");
                 std::fs::write(&path, &svg).map_err(|e| format!("Error writing template SVG: {e}"))
             } else {
                 Ok(())
@@ -424,21 +429,12 @@ pub fn render_svg(
     duration: f64,
     seed: u64,
 ) -> ExitCode {
-    use crate::orbit::physics::YoshidaIntegrator;
-    use crate::orbit::render::{render_state, OrbitTrail, RenderConfig};
-    use crate::orbit::scenarios::KeplerConfig;
-    use crate::orbit::units::OrbitTime;
     use crate::renderers::keyframes::KeyframeRecorder;
     use crate::renderers::svg::SvgRenderer;
 
     println!("╔═══════════════════════════════════════════════════════════════╗");
     println!("║           simular - SVG Render Pipeline                      ║");
     println!("╚═══════════════════════════════════════════════════════════════╝\n");
-
-    if domain != "orbit" {
-        eprintln!("Error: unsupported domain '{domain}'. Currently supported: orbit");
-        return ExitCode::from(1);
-    }
 
     if let Err(e) = std::fs::create_dir_all(output) {
         eprintln!("Error creating output directory: {e}");
@@ -456,63 +452,41 @@ pub fn render_svg(
     println!("Duration: {duration}s");
     println!("Seed:     {seed}\n");
 
-    let config = KeplerConfig::default();
-    let mut state = config.build(1e6);
-    let integrator = YoshidaIntegrator::new();
-    let dt_seconds = 3600.0;
     let total_frames = (duration * f64::from(fps)) as usize;
-    let sim_dt_per_frame = 86400.0 / f64::from(fps);
-    let steps_per_frame = (sim_dt_per_frame / dt_seconds).max(1.0) as usize;
-
-    let render_config = RenderConfig::default();
-    let mut trails = vec![OrbitTrail::new(0), OrbitTrail::new(500)];
     let mut svg_renderer = SvgRenderer::new();
     let mut keyframe_recorder = KeyframeRecorder::new(fps, seed, domain);
+    let mut ctx = RenderCtx {
+        format,
+        output,
+        svg: &mut svg_renderer,
+        keyframes: &mut keyframe_recorder,
+    };
 
     println!("Rendering {total_frames} frames...");
 
-    for frame in 0..total_frames {
-        for _ in 0..steps_per_frame {
-            let dt = OrbitTime::from_seconds(dt_seconds);
-            if integrator.step(&mut state, dt).is_err() {
-                eprintln!("Physics error at frame {frame}");
-                return ExitCode::from(1);
-            }
-            for (i, body) in state.bodies.iter().enumerate() {
-                if i < trails.len() {
-                    let (x, y, _) = body.position.as_meters();
-                    trails[i].push(x, y);
-                }
-            }
-        }
-
-        let commands = render_state(&state, &render_config, &trails, None, None);
-        if let Err(e) = write_frame(
-            frame,
-            &commands,
-            format,
-            output,
-            &mut svg_renderer,
-            &mut keyframe_recorder,
-        ) {
-            eprintln!("{e}");
+    let result = match domain {
+        "orbit" => render_orbit(fps, total_frames, &mut ctx),
+        "bouncing_balls" => render_bouncing_balls(fps, seed, total_frames, &mut ctx),
+        _ => {
+            eprintln!("Error: unsupported domain '{domain}'. Supported: orbit, bouncing_balls");
             return ExitCode::from(1);
         }
+    };
 
-        if frame % 60 == 0 {
-            print!("\r  Frame {frame}/{total_frames}");
-        }
+    if let Err(e) = result {
+        eprintln!("{e}");
+        return ExitCode::from(1);
     }
 
     if *format == RenderFormat::SvgKeyframes {
-        let json = keyframe_recorder.to_json();
+        let json = ctx.keyframes.to_json();
         let path = output.join("keyframes.json");
         if let Err(e) = std::fs::write(&path, &json) {
             eprintln!("Error writing keyframes: {e}");
             return ExitCode::from(1);
         }
         println!("\r  Frames:     {total_frames}");
-        println!("  Elements:   {}", keyframe_recorder.element_count());
+        println!("  Elements:   {}", ctx.keyframes.element_count());
         println!("  Template:   {}", output.join("scene.svg").display());
         println!("  Keyframes:  {}", path.display());
     } else {
@@ -522,4 +496,66 @@ pub fn render_svg(
 
     println!("\n✓ Render complete");
     ExitCode::SUCCESS
+}
+
+/// Render orbit domain.
+fn render_orbit(fps: u32, total_frames: usize, ctx: &mut RenderCtx<'_>) -> Result<(), String> {
+    use crate::orbit::physics::YoshidaIntegrator;
+    use crate::orbit::render::{render_state, OrbitTrail, RenderConfig};
+    use crate::orbit::scenarios::KeplerConfig;
+    use crate::orbit::units::OrbitTime;
+
+    let config = KeplerConfig::default();
+    let mut state = config.build(1e6);
+    let integrator = YoshidaIntegrator::new();
+    let dt_seconds = 3600.0;
+    let sim_dt_per_frame = 86400.0 / f64::from(fps);
+    let steps_per_frame = (sim_dt_per_frame / dt_seconds).max(1.0) as usize;
+    let render_config = RenderConfig::default();
+    let mut trails = vec![OrbitTrail::new(0), OrbitTrail::new(500)];
+
+    for frame in 0..total_frames {
+        for _ in 0..steps_per_frame {
+            let dt = OrbitTime::from_seconds(dt_seconds);
+            integrator
+                .step(&mut state, dt)
+                .map_err(|_| format!("Physics error at frame {frame}"))?;
+            for (i, body) in state.bodies.iter().enumerate() {
+                if i < trails.len() {
+                    let (x, y, _) = body.position.as_meters();
+                    trails[i].push(x, y);
+                }
+            }
+        }
+        let commands = render_state(&state, &render_config, &trails, None, None);
+        write_frame(frame, &commands, ctx)?;
+        if frame % 60 == 0 {
+            print!("\r  Frame {frame}/{total_frames}");
+        }
+    }
+    Ok(())
+}
+
+/// Render bouncing balls domain.
+fn render_bouncing_balls(
+    fps: u32,
+    seed: u64,
+    total_frames: usize,
+    ctx: &mut RenderCtx<'_>,
+) -> Result<(), String> {
+    use crate::scenarios::bouncing_balls::{BouncingBallsConfig, BouncingBallsState};
+
+    let config = BouncingBallsConfig::default();
+    let mut state = BouncingBallsState::new(config, seed);
+    let dt = 1.0 / f64::from(fps);
+
+    for frame in 0..total_frames {
+        state.step(dt);
+        let commands = state.render();
+        write_frame(frame, &commands, ctx)?;
+        if frame % 60 == 0 {
+            print!("\r  Frame {frame}/{total_frames}");
+        }
+    }
+    Ok(())
 }
