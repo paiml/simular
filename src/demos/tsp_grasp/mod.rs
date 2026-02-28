@@ -441,7 +441,7 @@ impl TspGraspDemo {
     /// ```
     /// use simular::demos::TspGraspDemo;
     ///
-    /// let yaml = include_str!("../../examples/experiments/bay_area_tsp.yaml");
+    /// let yaml = include_str!("../../../examples/experiments/bay_area_tsp.yaml");
     /// let demo = TspGraspDemo::from_yaml(yaml).expect("YAML should parse");
     /// assert_eq!(demo.n, 20); // 20-city California instance
     /// ```
