@@ -604,7 +604,7 @@ pub fn validate_emc_yaml(yaml_content: &str) -> Result<(), SchemaValidationError
 }
 
 // ============================================================================
-// Tests (EXTREME TDD - Write failing tests first!)
+// Unit tests — red-green-refactor cycle
 // ============================================================================
 
 #[cfg(test)]

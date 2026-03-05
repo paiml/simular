@@ -159,7 +159,7 @@ async fn handle_socket(mut socket: WebSocket, state: WebState) {
                         }
                     }
                     Err(broadcast::error::RecvError::Lagged(_)) => {
-                        // Client is too slow, skip messages (continue is implicit)
+                        // Lagged receiver — dropped messages are expected for live viz
                     }
                     Err(broadcast::error::RecvError::Closed) => {
                         break;
