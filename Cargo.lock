@@ -1021,7 +1021,7 @@ dependencies = [
 
 [[package]]
 name = "presentar-core"
-version = "0.3.3"
+version = "0.3.5"
 dependencies = [
  "serde",
  "serde_json",
@@ -1030,7 +1030,7 @@ dependencies = [
 
 [[package]]
 name = "presentar-terminal"
-version = "0.3.3"
+version = "0.3.5"
 dependencies = [
  "bitvec",
  "compact_str",
@@ -1043,7 +1043,7 @@ dependencies = [
 
 [[package]]
 name = "presentar-test"
-version = "0.3.3"
+version = "0.3.5"
 dependencies = [
  "presentar-core",
  "presentar-test-macros",
@@ -1053,7 +1053,7 @@ dependencies = [
 
 [[package]]
 name = "presentar-test-macros"
-version = "0.3.3"
+version = "0.3.5"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -1698,9 +1698,9 @@ checksum = "5d99f8c9a7727884afe522e9bd5edbfc91a3312b36a77b5fb8926e4c31a41801"
 
 [[package]]
 name = "trueno"
-version = "0.14.4"
+version = "0.15.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "35d2c230ebde5da651c4dc89c32bfe0d277f4e36750a5849d2e69af50b646211"
+checksum = "85e19fa22753d395f043b205999122520efd45a33e0867d137f20b777ad794ef"
 dependencies = [
  "anyhow",
  "chrono",
@@ -1710,6 +1710,16 @@ dependencies = [
  "serde_json",
  "thiserror",
  "toml",
+ "trueno-quant",
+]
+
+[[package]]
+name = "trueno-quant"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5da5ac788b596e45d1d3fa0991c04b0e1bac63ffe4ae2faf6ae7c0d9fdfc00eb"
+dependencies = [
+ "half",
 ]
 
 [[package]]
