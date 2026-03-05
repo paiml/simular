@@ -351,8 +351,20 @@ pub fn init_orbit_app() -> Result<(), JsValue> {
     })?;
 
     // Speed slider
+    setup_speed_slider(&document, &state)?;
+
+    // Animation loop
+    start_animation_loop(document, &state);
+
+    Ok(())
+}
+
+fn setup_speed_slider(
+    document: &web_sys::Document,
+    state: &Rc<RefCell<OrbitAppState>>,
+) -> Result<(), JsValue> {
     if let Some(slider) = document.get_element_by_id("speed-slider") {
-        let state = Rc::clone(&state);
+        let state = Rc::clone(state);
         let doc = document.clone();
         let closure = Closure::wrap(Box::new(move |e: web_sys::Event| {
             if let Some(target) = e.target() {
@@ -368,29 +380,25 @@ pub fn init_orbit_app() -> Result<(), JsValue> {
         slider.add_event_listener_with_callback("input", closure.as_ref().unchecked_ref())?;
         closure.forget();
     }
-
-    // Animation loop using requestAnimationFrame
-    {
-        let state = Rc::clone(&state);
-
-        #[allow(clippy::type_complexity)]
-        let f: Rc<RefCell<Option<Closure<dyn FnMut()>>>> = Rc::new(RefCell::new(None));
-        let g = Rc::clone(&f);
-
-        *g.borrow_mut() = Some(Closure::new(move || {
-            {
-                let mut s = state.borrow_mut();
-                s.tick();
-                s.render();
-                s.update_stats(&document);
-            }
-            // Request next frame
-            request_animation_frame(f.borrow().as_ref().unwrap());
-        }));
-
-        // Start the loop
-        request_animation_frame(g.borrow().as_ref().unwrap());
-    }
-
     Ok(())
+}
+
+fn start_animation_loop(document: web_sys::Document, state: &Rc<RefCell<OrbitAppState>>) {
+    let state = Rc::clone(state);
+
+    #[allow(clippy::type_complexity)]
+    let f: Rc<RefCell<Option<Closure<dyn FnMut()>>>> = Rc::new(RefCell::new(None));
+    let g = Rc::clone(&f);
+
+    *g.borrow_mut() = Some(Closure::new(move || {
+        {
+            let mut s = state.borrow_mut();
+            s.tick();
+            s.render();
+            s.update_stats(&document);
+        }
+        request_animation_frame(f.borrow().as_ref().unwrap());
+    }));
+
+    request_animation_frame(g.borrow().as_ref().unwrap());
 }
