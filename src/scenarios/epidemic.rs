@@ -63,15 +63,26 @@ impl SIRConfig {
     }
 
     /// Calculate basic reproduction number R0.
+    ///
+    /// Returns 0.0 if gamma is zero (no recovery → undefined R0).
     #[must_use]
     pub fn r0(&self) -> f64 {
+        if self.gamma == 0.0 {
+            return 0.0;
+        }
         self.beta / self.gamma
     }
 
     /// Calculate herd immunity threshold.
+    ///
+    /// Returns 0.0 if R0 is zero.
     #[must_use]
     pub fn herd_immunity_threshold(&self) -> f64 {
-        1.0 - 1.0 / self.r0()
+        let r0 = self.r0();
+        if r0 == 0.0 {
+            return 0.0;
+        }
+        1.0 - 1.0 / r0
     }
 
     /// Calculate initial susceptible population.
@@ -138,13 +149,15 @@ impl SIRState {
     /// Calculate fraction infected.
     #[must_use]
     pub fn infection_rate(&self) -> f64 {
-        self.infected / self.total()
+        let total = self.total();
+        if total == 0.0 { 0.0 } else { self.infected / total }
     }
 
     /// Calculate fraction susceptible.
     #[must_use]
     pub fn susceptible_rate(&self) -> f64 {
-        self.susceptible / self.total()
+        let total = self.total();
+        if total == 0.0 { 0.0 } else { self.susceptible / total }
     }
 
     /// Check if epidemic is over (no more infected).
@@ -183,6 +196,9 @@ impl SIRScenario {
     #[must_use]
     #[allow(clippy::many_single_char_names)]
     pub fn new(config: SIRConfig) -> Self {
+        assert!(config.population > 0.0, "Population must be > 0");
+        assert!(config.gamma > 0.0, "Recovery rate (gamma) must be > 0");
+
         let s = config.initial_susceptible();
         let i = config.initial_infected;
         let r = config.initial_recovered;
@@ -319,9 +335,16 @@ impl SIRScenario {
     #[must_use]
     pub fn peak_infected(&self) -> f64 {
         let r0 = self.config.r0();
+        if r0 == 0.0 {
+            return 0.0;
+        }
         let n = self.config.population;
         let s0 = self.config.initial_susceptible();
         let i0 = self.config.initial_infected;
+
+        if s0 <= 0.0 {
+            return i0;
+        }
 
         // Peak occurs when dI/dt = 0, i.e., S = N/R0
         let s_peak = n / r0;
@@ -334,6 +357,9 @@ impl SIRScenario {
     #[must_use]
     pub fn final_size(&self) -> f64 {
         let r0 = self.config.r0();
+        if r0 == 0.0 {
+            return 0.0;
+        }
         let n = self.config.population;
 
         // Solve: R_∞ = N * (1 - exp(-R0 * R_∞ / N))
@@ -342,6 +368,9 @@ impl SIRScenario {
         for _ in 0..50 {
             let f = r_inf - n * (1.0 - (-r0 * r_inf / n).exp());
             let df = 1.0 - r0 * (-r0 * r_inf / n).exp();
+            if df.abs() < f64::EPSILON {
+                break;
+            }
             r_inf -= f / df;
         }
 
@@ -361,6 +390,9 @@ impl SEIRScenario {
     #[must_use]
     #[allow(clippy::many_single_char_names)]
     pub fn new(config: SEIRConfig) -> Self {
+        assert!(config.sir.population > 0.0, "Population must be > 0");
+        assert!(config.sir.gamma > 0.0, "Recovery rate (gamma) must be > 0");
+
         let s = config.initial_susceptible();
         let e = config.initial_exposed;
         let i = config.sir.initial_infected;
@@ -439,7 +471,8 @@ impl SEIRScenario {
 
         // Jidoka: Check for non-physical values
         if new_s < 0.0
-            || new_e < 0.0 && /* ~ changed by cargo-mutants ~ */ new_i < 0.0
+            || new_e < 0.0
+            || new_i < 0.0
             || new_r < 0.0
         {
             return Err(SimError::jidoka(format!(
@@ -528,6 +561,9 @@ impl StochasticSIR {
     #[must_use]
     #[allow(clippy::many_single_char_names)]
     pub fn new(config: SIRConfig) -> Self {
+        assert!(config.population > 0.0, "Population must be > 0");
+        assert!(config.gamma > 0.0, "Recovery rate (gamma) must be > 0");
+
         let s = config.initial_susceptible();
         let i = config.initial_infected;
         let r = config.initial_recovered;
