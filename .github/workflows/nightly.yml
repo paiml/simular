@@ -60,6 +60,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Checkout sibling dep — presentar (presentar-terminal, presentar-core, presentar-test)
+        uses: actions/checkout@v4
+        with:
+          repository: paiml/presentar
+          path: ../presentar
+
       - uses: dtolnay/rust-toolchain@stable
         with:
           targets: ${{ matrix.target }}
