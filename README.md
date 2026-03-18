@@ -4,6 +4,7 @@
 
 **Unified Simulation Engine for Deterministic, Reproducible Simulations**
 
+[![CI](https://github.com/paiml/simular/actions/workflows/ci.yml/badge.svg)](https://github.com/paiml/simular/actions/workflows/ci.yml)
 [![Crates.io](https://img.shields.io/crates/v/simular.svg)](https://crates.io/crates/simular)
 [![Documentation](https://docs.rs/simular/badge.svg)](https://docs.rs/simular)
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
