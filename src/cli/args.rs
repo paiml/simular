@@ -67,6 +67,8 @@ pub enum Command {
     Help,
     /// Show version
     Version,
+    /// Parse error (missing args, unknown command)
+    Error(String),
 }
 
 /// SVG render output format.
@@ -117,10 +119,7 @@ impl Args {
             "list-emc" => Command::ListEmc,
             "-h" | "--help" | "help" => Command::Help,
             "-V" | "--version" | "version" => Command::Version,
-            unknown => {
-                eprintln!("Unknown command: {unknown}");
-                Command::Help
-            }
+            unknown => Command::Error(format!("Unknown command: {unknown}")),
         };
 
         Self { command }
@@ -129,8 +128,7 @@ impl Args {
     /// Parse the 'run' command arguments.
     fn parse_run_command(args: &[String]) -> Command {
         if args.len() < 3 {
-            eprintln!("Error: 'run' command requires experiment path");
-            return Command::Help;
+            return Command::Error("'run' command requires experiment path".to_string());
         }
 
         let mut seed_override = None;
@@ -167,8 +165,7 @@ impl Args {
     /// Parse the 'validate' command arguments.
     fn parse_validate_command(args: &[String]) -> Command {
         if args.len() < 3 {
-            eprintln!("Error: 'validate' command requires experiment path");
-            return Command::Help;
+            return Command::Error("'validate' command requires experiment path".to_string());
         }
 
         Command::Validate {
@@ -179,8 +176,7 @@ impl Args {
     /// Parse the 'verify' command arguments.
     fn parse_verify_command(args: &[String]) -> Command {
         if args.len() < 3 {
-            eprintln!("Error: 'verify' command requires experiment path");
-            return Command::Help;
+            return Command::Error("'verify' command requires experiment path".to_string());
         }
 
         let mut runs = 3;
@@ -199,8 +195,7 @@ impl Args {
     /// Parse the 'emc-check' command arguments.
     fn parse_emc_check_command(args: &[String]) -> Command {
         if args.len() < 3 {
-            eprintln!("Error: 'emc-check' command requires experiment path");
-            return Command::Help;
+            return Command::Error("'emc-check' command requires experiment path".to_string());
         }
 
         Command::EmcCheck {
@@ -211,8 +206,7 @@ impl Args {
     /// Parse the 'emc-validate' command arguments.
     fn parse_emc_validate_command(args: &[String]) -> Command {
         if args.len() < 3 {
-            eprintln!("Error: 'emc-validate' command requires EMC file path");
-            return Command::Help;
+            return Command::Error("'emc-validate' command requires EMC file path".to_string());
         }
 
         Command::EmcValidate {

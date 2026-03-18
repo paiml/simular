@@ -64,7 +64,7 @@ fn test_parse_version_command() {
 #[test]
 fn test_parse_unknown_command() {
     let args = Args::parse_from(["simular", "unknown-cmd"]);
-    assert_eq!(args.command, Command::Help);
+    assert!(matches!(args.command, Command::Error(ref msg) if msg.contains("Unknown command")));
 }
 
 #[test]
@@ -150,7 +150,7 @@ fn test_parse_run_command_with_all_options() {
 #[test]
 fn test_parse_run_command_missing_path() {
     let args = Args::parse_from(["simular", "run"]);
-    assert_eq!(args.command, Command::Help);
+    assert!(matches!(args.command, Command::Error(ref msg) if msg.contains("run")));
 }
 
 #[test]
@@ -224,7 +224,7 @@ fn test_parse_verify_command_with_runs() {
 #[test]
 fn test_parse_verify_command_missing_path() {
     let args = Args::parse_from(["simular", "verify"]);
-    assert_eq!(args.command, Command::Help);
+    assert!(matches!(args.command, Command::Error(ref msg) if msg.contains("verify")));
 }
 
 #[test]
@@ -252,7 +252,7 @@ fn test_parse_emc_check_command() {
 #[test]
 fn test_parse_emc_check_missing_path() {
     let args = Args::parse_from(["simular", "emc-check"]);
-    assert_eq!(args.command, Command::Help);
+    assert!(matches!(args.command, Command::Error(ref msg) if msg.contains("emc-check")));
 }
 
 #[test]
@@ -269,7 +269,7 @@ fn test_parse_emc_validate_command() {
 #[test]
 fn test_parse_emc_validate_missing_path() {
     let args = Args::parse_from(["simular", "emc-validate"]);
-    assert_eq!(args.command, Command::Help);
+    assert!(matches!(args.command, Command::Error(ref msg) if msg.contains("emc-validate")));
 }
 
 #[test]
