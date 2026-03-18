@@ -51,6 +51,11 @@ pub fn run_cli(args: Args) -> ExitCode {
             print_version();
             ExitCode::SUCCESS
         }
+        Command::Error(msg) => {
+            eprintln!("Error: {msg}");
+            print_help();
+            ExitCode::FAILURE
+        }
     }
 }
 
