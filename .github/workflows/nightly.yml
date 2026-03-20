@@ -102,7 +102,7 @@ jobs:
           7z a ../../../simular-${{ matrix.target }}.zip simular.exe
           cd ../../..
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: simular-${{ matrix.target }}
           path: simular-${{ matrix.target }}.*
