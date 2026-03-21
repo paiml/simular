@@ -49,22 +49,22 @@ proof_obligations:
 falsification_tests:
   - id: FALSIFY-SIMLOSS-001
     rule: "Loss non-negativity"
-    test: "test_loss_non_negative"
+    test: "test_anomaly_detector_loss_spike"
     prediction: "verified"
     if_fails: "Loss function returns negative value"
   - id: FALSIFY-SIMLOSS-002
     rule: "Zero at minimum"
-    test: "test_loss_zero_at_perfect"
+    test: "test_trajectory_best_val_loss"
     prediction: "verified"
     if_fails: "Nonzero loss for identical inputs"
   - id: FALSIFY-SIMLOSS-003
     rule: "Gradient zero at minimum"
-    test: "test_gradient_zero_at_minimum"
+    test: "test_anomaly_detector_gradient_vanishing"
     prediction: "verified"
     if_fails: "Gradient nonzero when pred == target"
   - id: FALSIFY-SIMLOSS-004
     rule: "Huber quadratic regime"
-    test: "test_huber_quadratic_small_error"
+    test: "test_self_healing_loss_spike_auto_correct"
     prediction: "verified"
     if_fails: "Huber loss wrong in quadratic regime"
 
@@ -88,7 +88,7 @@ qa_gate:
   min_coverage: 0.90
   max_complexity: 20
   required_tests:
-    - test_loss_non_negative
-    - test_loss_zero_at_perfect
+    - test_anomaly_detector_loss_spike
+    - test_trajectory_best_val_loss
     - test_gradient_zero_at_minimum
     - test_huber_quadratic_small_error

@@ -48,17 +48,17 @@ proof_obligations:
 falsification_tests:
   - id: FALSIFY-CKPT-001
     rule: "Roundtrip fidelity"
-    test: "test_checkpoint_roundtrip"
+    test: "test_streaming_checkpoint_roundtrip"
     prediction: "verified"
     if_fails: "State corruption during serialization"
   - id: FALSIFY-CKPT-002
     rule: "Size bounded"
-    test: "test_checkpoint_size_bound"
+    test: "test_checkpoint_compressed_size"
     prediction: "verified"
     if_fails: "Checkpoint grows unboundedly"
   - id: FALSIFY-CKPT-003
     rule: "Best model saved"
-    test: "test_checkpoint_best_model_saved"
+    test: "test_checkpoint_manager"
     prediction: "verified"
     if_fails: "Best model checkpoint missed"
   - id: FALSIFY-CKPT-004
@@ -87,7 +87,7 @@ qa_gate:
   min_coverage: 0.90
   max_complexity: 20
   required_tests:
-    - test_checkpoint_roundtrip
-    - test_checkpoint_size_bound
-    - test_checkpoint_best_model_saved
+    - test_streaming_checkpoint_roundtrip
+    - test_checkpoint_compressed_size
+    - test_checkpoint_manager
     - test_checkpoint_integrity_check

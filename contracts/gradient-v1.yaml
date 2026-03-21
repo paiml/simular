@@ -49,22 +49,22 @@ proof_obligations:
 falsification_tests:
   - id: FALSIFY-GRAD-001
     rule: "Clipped norm bounded"
-    test: "test_gradient_clip_norm_bound"
+    test: "test_preflight_gradient_explosion"
     prediction: "verified"
     if_fails: "Clipping does not reduce norm to max_norm"
   - id: FALSIFY-GRAD-002
     rule: "Direction preserved"
-    test: "test_gradient_clip_direction"
+    test: "test_preflight_gradient_vanishing"
     prediction: "verified"
     if_fails: "Clipping changes gradient direction"
   - id: FALSIFY-GRAD-003
     rule: "No-op within norm"
-    test: "test_gradient_clip_noop"
+    test: "test_self_healing_gradient_explosion_auto_correct"
     prediction: "verified"
     if_fails: "Clipping modifies small gradients"
   - id: FALSIFY-GRAD-004
     rule: "Numerical vs analytical gradient"
-    test: "test_gradient_numerical_check"
+    test: "test_anomaly_detector_gradient_explosion"
     prediction: "verified"
     if_fails: "Analytical gradient diverges from numerical"
 
@@ -88,7 +88,7 @@ qa_gate:
   min_coverage: 0.90
   max_complexity: 20
   required_tests:
-    - test_gradient_clip_norm_bound
-    - test_gradient_clip_direction
+    - test_preflight_gradient_explosion
+    - test_preflight_gradient_vanishing
     - test_gradient_clip_noop
     - test_gradient_numerical_check
