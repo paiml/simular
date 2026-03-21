@@ -41,3 +41,4 @@ package-lock.json
 .pmat/workspace.idx/
 .pmat/deps-cache.json
 .cargo/config.toml
+*.bak
