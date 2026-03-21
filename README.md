@@ -196,7 +196,7 @@ Contributions are welcome! Please see our [Contributing Guide](CONTRIBUTING.md) 
 - Pull request process
 
 ## Links
-- [Cookbook](https://github.com/paiml/sovereign-ai-cookbook)
+- [Cookbook](examples/) — 13 runnable examples
 
 - **Live Demo**: https://interactive.paiml.com/simular-orbit/
 - **Crates.io**: https://crates.io/crates/simular
