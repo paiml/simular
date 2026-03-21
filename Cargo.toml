@@ -82,6 +82,7 @@ bitflags = "2.6"
 
 # Work stealing for Heijunka
 crossbeam-deque = "0.8"
+provable-contracts-macros = "0.1"
 
 # Z3 removed from Cargo.toml to reduce Cargo.lock bloat (CB-081)
 # Re-add with: z3 = { version = "0.12", optional = true }

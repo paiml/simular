@@ -42,6 +42,7 @@ pub struct EnergySparkline {
 impl EnergySparkline {
     /// Create a new energy sparkline
     #[must_use]
+    #[provable_contracts_macros::contract("simular-sparkline-v1", equation = "new")]
     pub fn new() -> Self {
         Self {
             block: SparklineBlock::new(SPARKLINE_HISTORY),

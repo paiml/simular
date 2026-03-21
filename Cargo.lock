@@ -1111,6 +1111,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "provable-contracts-macros"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c383d865124fe9fda96af4a04d0c2641bcb93e16eb5e13f7c665f98c15333447"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
+]
+
+[[package]]
 name = "quick-error"
 version = "1.2.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1472,6 +1483,7 @@ dependencies = [
  "presentar-terminal",
  "presentar-test",
  "proptest",
+ "provable-contracts-macros",
  "rand 0.8.5",
  "rand_pcg",
  "ratatui",
