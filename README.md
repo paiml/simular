@@ -15,6 +15,14 @@
 
 ---
 
+## Table of Contents
+
+- [Overview](#overview)
+- [Features](#features)
+- [Installation](#installation)
+- [Quick Start](#quick-start)
+- [Contributing](#contributing)
+
 <p align="center">
   <img src="demo/wasm-orbit-demo.gif" alt="Simular Orbit Demo" width="640">
 </p>
