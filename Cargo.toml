@@ -82,11 +82,15 @@ bitflags = "2.6"
 
 # Work stealing for Heijunka
 crossbeam-deque = "0.8"
-provable-contracts-macros = "0.1"
+provable-contracts-macros = { version = "0.1", path = "../provable-contracts/crates/provable-contracts-macros" }
 
 # Z3 removed from Cargo.toml to reduce Cargo.lock bloat (CB-081)
 # Re-add with: z3 = { version = "0.12", optional = true }
 # Code gated behind #[cfg(feature = "z3-proofs")]
+
+[build-dependencies]
+serde = { version = "1.0", features = ["derive"] }
+serde_yaml = "0.9"
 
 [dev-dependencies]
 # Property-based testing (Popperian falsification)
@@ -149,6 +153,10 @@ path = "examples/orbit_demo.rs"
 [[example]]
 name = "tsp_grasp_demo"
 path = "examples/tsp_grasp_demo.rs"
+
+[[example]]
+name = "contract_pipeline_demo"
+path = "examples/contract_pipeline_demo.rs"
 
 [[bin]]
 name = "orbit-tui"
