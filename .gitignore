@@ -42,3 +42,4 @@ package-lock.json
 .pmat/deps-cache.json
 .cargo/config.toml
 *.bak
+src/generated_contracts.rs
