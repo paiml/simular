@@ -17,6 +17,11 @@ equations:
   gradient_clipping:
     formula: "clip(g, max_norm) = g * min(1, max_norm / ||g||_2)"
     domain: "g in R^n, max_norm > 0"
+    preconditions:
+      - "max_norm > 0.0"
+      - "g.iter().all(|v| v.is_finite())"
+    postconditions:
+      - "result.iter().map(|v| v * v).sum::<f32>().sqrt() <= max_norm + 1e-6"
     invariants:
       - "||clip(g, max_norm)||_2 <= max_norm"
       - "Direction preserved: clip(g) parallel to g"
