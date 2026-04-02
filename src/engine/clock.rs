@@ -65,7 +65,10 @@ impl SimClock {
     /// Get timestep duration as seconds.
     #[must_use]
     pub fn timestep_secs(&self) -> f64 {
-        self.timestep_nanos as f64 / 1_000_000_000.0
+        contract_pre_iterator!();
+        let result = self.timestep_nanos as f64 / 1_000_000_000.0;
+        contract_post_configuration!(&"ok");
+        result
     }
 
     /// Alias for `timestep_secs`.
@@ -144,14 +147,18 @@ impl SimClock {
     /// Calculate number of steps to reach target time.
     #[must_use]
     pub fn steps_until(&self, target: SimTime) -> u64 {
+        contract_pre_iterator!();
         let time_diff = self.time_until(target);
         let nanos = time_diff.as_nanos();
 
         if self.timestep_nanos == 0 {
+            contract_post_configuration!(&"ok");
             return 0;
         }
 
-        nanos.div_ceil(self.timestep_nanos)
+        let result = nanos.div_ceil(self.timestep_nanos);
+        contract_post_configuration!(&"ok");
+        result
     }
 }
 

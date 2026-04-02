@@ -210,6 +210,8 @@ impl<S: Clone + Serialize> StepEntry<S> {
         input_state: S,
         output_state: S,
     ) -> Self {
+        contract_pre_iterator!();
+        contract_post_configuration!(&"ok");
         Self {
             step_id,
             timestamp,
@@ -534,6 +536,7 @@ impl<S: Clone> ReplayState<S> {
 
     /// Seek to specific step.
     pub fn seek(&mut self, step_index: usize) {
+        contract_pre_iterator!();
         self.current_index = step_index.min(self.total_steps);
     }
 
@@ -586,6 +589,7 @@ impl<S: Clone + Serialize + for<'de> Deserialize<'de>> AuditLogReplayer<S> {
             return None;
         }
 
+        contract_pre_iterator!();
         let entry = self.entries.get(self.state.current_index);
         if entry.is_some() {
             self.state.current_state = entry.map(|e| e.output_state.clone());
@@ -611,6 +615,7 @@ impl<S: Clone + Serialize + for<'de> Deserialize<'de>> AuditLogReplayer<S> {
     /// Find entry by step ID.
     #[must_use]
     pub fn find_by_step_id(&self, step_id: u64) -> Option<&StepEntry<S>> {
+        contract_pre_iterator!();
         self.entries.iter().find(|e| e.step_id == step_id)
     }
 

@@ -244,6 +244,7 @@ impl ReplayRecorder {
 
     /// Record a step
     pub fn record_step(&mut self, step: u64, state: HashMap<String, serde_yaml::Value>) {
+        contract_pre_iterator!();
         self.timeline.push(ReplayStep {
             step,
             state,
@@ -258,6 +259,7 @@ impl ReplayRecorder {
         state: HashMap<String, serde_yaml::Value>,
         equations: Vec<EquationEvaluation>,
     ) {
+        contract_pre_iterator!();
         self.timeline.push(ReplayStep {
             step,
             state,
@@ -280,6 +282,7 @@ impl ReplayRecorder {
     /// Get number of recorded steps
     #[must_use]
     pub fn step_count(&self) -> usize {
+        contract_pre_iterator!();
         self.timeline.len()
     }
 }

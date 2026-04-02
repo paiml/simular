@@ -129,18 +129,21 @@ impl OrbitSimulation {
     /// Step the simulation forward by days.
     #[wasm_bindgen]
     pub fn step_days(&mut self, days: f64) -> bool {
+        contract_pre_iterator!(days);
         self.step(days * 86400.0)
     }
 
     /// Step the simulation forward by hours.
     #[wasm_bindgen]
     pub fn step_hours(&mut self, hours: f64) -> bool {
+        contract_pre_iterator!(hours);
         self.step(hours * 3600.0)
     }
 
     /// Run multiple steps with a given dt (for performance).
     #[wasm_bindgen]
     pub fn run_steps(&mut self, num_steps: u32, dt_seconds: f64) -> u32 {
+        contract_pre_iterator!(num_steps);
         let mut completed = 0;
         for _ in 0..num_steps {
             if !self.step(dt_seconds) {

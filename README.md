@@ -6,6 +6,8 @@
 
 [![CI](https://github.com/paiml/simular/actions/workflows/ci.yml/badge.svg)](https://github.com/paiml/simular/actions/workflows/ci.yml)
 [![Crates.io](https://img.shields.io/crates/v/simular.svg)](https://crates.io/crates/simular)
+[![Tests](https://img.shields.io/badge/tests-1846%20passing-brightgreen)]()
+[![Version](https://img.shields.io/badge/version-0.3.1-blue)]()
 [![Documentation](https://docs.rs/simular/badge.svg)](https://docs.rs/simular)
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 
@@ -185,6 +187,14 @@ Effect size interpretation:
 - d > 0.8: Large
 
 See [benches/README.md](benches/README.md) for methodology.
+
+### Recent Fixes (v0.3.1)
+- provable-contracts dependency bumped to 0.2
+- Epidemic simulation div-by-zero fixed
+
+## Test Results (v0.3.1)
+
+**1846 tests passing** with zero warnings.
 
 ## Contributing
 

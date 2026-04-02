@@ -608,6 +608,7 @@ impl TrainingSimulation {
     where
         F: FnMut(u64, &mut SimRng) -> (f64, f64),
     {
+        contract_pre_iterator!();
         for epoch in 0..epochs {
             let (loss, grad_norm) = loss_fn(epoch, &mut self.rng);
             if self.step(loss, grad_norm)?.is_none() {

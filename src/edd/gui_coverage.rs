@@ -263,6 +263,7 @@ impl GuiCoverage {
 
     /// Register a user journey.
     pub fn register_journey(&mut self, name: &str, steps: Vec<&str>) {
+        contract_pre_iterator!(name);
         self.journeys.insert(
             name.to_string(),
             steps.into_iter().map(String::from).collect(),

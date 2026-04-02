@@ -256,6 +256,7 @@ impl PortfolioScenario {
 
     /// Simulate a single path using Geometric Brownian Motion.
     pub fn simulate_path(&self, rng: &mut SimRng) -> PathResult {
+        contract_pre_iterator!();
         let dt = self.config.time_horizon;
         let sqrt_dt = dt.sqrt();
         let initial_value = self.config.total_value();

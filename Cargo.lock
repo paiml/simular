@@ -1023,8 +1023,10 @@ dependencies = [
 name = "presentar-core"
 version = "0.3.5"
 dependencies = [
+ "provable-contracts-macros",
  "serde",
  "serde_json",
+ "serde_yaml_ng",
  "trueno",
 ]
 
@@ -1111,10 +1113,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "provable-contracts"
+version = "0.2.1"
+dependencies = [
+ "provable-contracts-macros",
+ "regex",
+ "serde",
+ "serde_json",
+ "serde_yaml",
+ "thiserror",
+]
+
+[[package]]
 name = "provable-contracts-macros"
-version = "0.1.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c383d865124fe9fda96af4a04d0c2641bcb93e16eb5e13f7c665f98c15333447"
+version = "0.2.1"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -1427,6 +1439,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "serde_yaml_ng"
+version = "0.10.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7b4db627b98b36d4203a7b458cf3573730f2bb591b28871d916dfa9efabfd41f"
+dependencies = [
+ "indexmap",
+ "itoa",
+ "ryu",
+ "serde",
+ "unsafe-libyaml",
+]
+
+[[package]]
 name = "shlex"
 version = "1.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1465,7 +1490,7 @@ dependencies = [
 
 [[package]]
 name = "simular"
-version = "0.3.1"
+version = "0.3.2"
 dependencies = [
  "bincode",
  "bitflags",
@@ -1483,6 +1508,7 @@ dependencies = [
  "presentar-terminal",
  "presentar-test",
  "proptest",
+ "provable-contracts",
  "provable-contracts-macros",
  "rand 0.8.5",
  "rand_pcg",

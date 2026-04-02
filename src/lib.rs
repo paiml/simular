@@ -38,6 +38,10 @@
     clippy::manual_is_multiple_of, // is_multiple_of is unstable in Rust 1.85
 )]
 
+#[macro_use]
+#[allow(unused_macros)]
+mod generated_contracts;
+
 pub mod cli;
 pub mod config;
 pub mod demos;

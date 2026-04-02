@@ -200,6 +200,7 @@ impl HarmonicOscillatorDemo {
 
     /// Run simulation for a given number of periods.
     pub fn run_periods(&mut self, num_periods: usize, steps_per_period: usize) {
+        contract_pre_iterator!();
         let period = 2.0 * std::f64::consts::PI / self.omega;
         let dt = period / steps_per_period as f64;
 

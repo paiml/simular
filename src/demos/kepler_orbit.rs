@@ -373,6 +373,7 @@ impl KeplerOrbitDemo {
 
     /// Run simulation for given number of orbits.
     pub fn run_orbits(&mut self, num_orbits: f64, steps_per_orbit: usize) {
+        contract_pre_iterator!();
         let period = self.orbital_period();
         if !period.is_finite() {
             return;

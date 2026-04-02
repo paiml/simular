@@ -63,6 +63,7 @@ impl QualityLevel {
     /// Get substep multiplier for this quality level.
     #[must_use]
     pub fn substep_multiplier(self) -> usize {
+        contract_pre_iterator!();
         match self {
             Self::Minimum => 1,
             Self::Low => 2,
@@ -283,6 +284,7 @@ impl HeijunkaScheduler {
     /// Estimate substeps possible within budget for given state.
     #[must_use]
     pub fn estimate_substeps(&self, _state: &NBodyState) -> usize {
+        contract_pre_iterator!();
         // Use historical average to estimate
         if self.physics_times.is_empty() {
             return self.quality.substep_multiplier();

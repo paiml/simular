@@ -180,6 +180,8 @@ impl TspApp {
 
     /// Execute one step of the simulation.
     pub fn step(&mut self) {
+        contract_pre_iterator!();
+        contract_post_configuration!(&"ok");
         if !self.paused || self.auto_run {
             self.demo.grasp_iteration();
 
