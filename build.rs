@@ -1,6 +1,5 @@
 //! Build script for simular
 //! Captures build environment for reproducibility
-
 use serde::Deserialize;
 use std::collections::BTreeMap;
 use std::path::Path;
@@ -69,9 +68,8 @@ fn emit_contract_assertions() {
     if !contracts_dir.exists() {
         return;
     }
-    let entries = match std::fs::read_dir(&contracts_dir) {
-        Ok(e) => e,
-        Err(_) => return,
+    let Ok(entries) = std::fs::read_dir(&contracts_dir) else {
+        return;
     };
     let mut total_pre = 0usize;
     let mut total_post = 0usize;
@@ -85,13 +83,11 @@ fn emit_contract_assertions() {
             .file_stem()
             .and_then(|s| s.to_str())
             .unwrap_or("unknown");
-        let content = match std::fs::read_to_string(&path) {
-            Ok(c) => c,
-            Err(_) => continue,
+        let Ok(content) = std::fs::read_to_string(&path) else {
+            continue;
         };
-        let contract: ContractYaml = match serde_yaml::from_str(&content) {
-            Ok(c) => c,
-            Err(_) => continue,
+        let Ok(contract) = serde_yaml::from_str::<ContractYaml>(&content) else {
+            continue;
         };
         let stem_upper = stem.to_uppercase().replace('-', "_");
         for (eq_name, equation) in &contract.equations {
@@ -120,35 +116,59 @@ fn emit_contract_assertions() {
     // ── provable-contracts binding enforcement (AllImplemented) ──
     {
         let binding_path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
-            .parent().unwrap_or(std::path::Path::new("."))
-            .parent().unwrap_or(std::path::Path::new("."))
+            .parent()
+            .unwrap_or_else(|| std::path::Path::new("."))
+            .parent()
+            .unwrap_or_else(|| std::path::Path::new("."))
             .join("provable-contracts/contracts/simular/binding.yaml");
-        
+
         println!("cargo:rerun-if-changed={}", binding_path.display());
-        
+
         if binding_path.exists() {
             #[derive(serde::Deserialize)]
-            struct BF { #[allow(dead_code)] version: String, bindings: Vec<B> }
+            struct BF {
+                #[allow(dead_code)]
+                version: String,
+                bindings: Vec<B>,
+            }
             #[derive(serde::Deserialize)]
-            struct B { contract: String, equation: String, status: String }
-            
+            struct B {
+                contract: String,
+                equation: String,
+                status: String,
+            }
+
             if let Ok(yaml) = std::fs::read_to_string(&binding_path) {
                 if let Ok(bf) = serde_yaml::from_str::<BF>(&yaml) {
                     let (mut imp, mut gaps) = (0u32, Vec::new());
                     for b in &bf.bindings {
-                        let var = format!("CONTRACT_{}_{}", 
-                            b.contract.trim_end_matches(".yaml").to_uppercase().replace('-', "_"),
-                            b.equation.to_uppercase().replace('-', "_"));
+                        let var = format!(
+                            "CONTRACT_{}_{}",
+                            b.contract
+                                .trim_end_matches(".yaml")
+                                .to_uppercase()
+                                .replace('-', "_"),
+                            b.equation.to_uppercase().replace('-', "_")
+                        );
                         println!("cargo:rustc-env={var}={}", b.status);
-                        if b.status == "implemented" { imp += 1; }
-                        else { gaps.push(var.clone()); }
+                        if b.status == "implemented" {
+                            imp += 1;
+                        } else {
+                            gaps.push(var.clone());
+                        }
                     }
-                    let total = bf.bindings.len() as u32;
+                    let total = u32::try_from(bf.bindings.len()).unwrap_or(u32::MAX);
                     println!("cargo:warning=[contract] AllImplemented: {imp}/{total} implemented, {} gaps", gaps.len());
                     if !gaps.is_empty() {
-                        for g in &gaps { println!("cargo:warning=[contract] UNALLOWED GAP: {g}"); }
-                        panic!("[contract] AllImplemented: {} gap(s). Fix bindings or update status.", gaps.len());
+                        for g in &gaps {
+                            println!("cargo:warning=[contract] UNALLOWED GAP: {g}");
+                        }
                     }
+                    assert!(
+                        gaps.is_empty(),
+                        "[contract] AllImplemented: {} gap(s). Fix bindings or update status.",
+                        gaps.len()
+                    );
                 }
             }
         }

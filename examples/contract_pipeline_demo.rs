@@ -16,12 +16,8 @@ fn main() {
     println!(
         "  gradient-v1 / gradient_clipping  -> engine::jidoka::PreFlightCheck::check_gradient_norm"
     );
-    println!(
-        "  checkpoint-v1 / checkpoint_roundtrip -> replay::CheckpointManager::checkpoint"
-    );
-    println!(
-        "  loss-functions-v1 / mse_loss     -> domains::ml::TrainingSimulator::step"
-    );
+    println!("  checkpoint-v1 / checkpoint_roundtrip -> replay::CheckpointManager::checkpoint");
+    println!("  loss-functions-v1 / mse_loss     -> domains::ml::TrainingSimulator::step");
     println!();
 
     // Show the env vars that build.rs emits (available at compile time)

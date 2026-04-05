@@ -244,11 +244,8 @@ fn ac9_jidoka_graceful_degradation() {
 
     // Test passes if we got here without panic
     // Paused state is expected for pathological input
-    assert!(
-        true,
-        "AC-9 PASSED: Jidoka handled pathological state gracefully (paused={})",
-        paused
-    );
+    // AC-9 PASSED: Jidoka handled pathological state gracefully
+    let _ = paused;
 }
 
 /// AC-10: Deterministic replay verified

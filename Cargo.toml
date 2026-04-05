@@ -3,7 +3,7 @@ exclude = ["tests/", "benches/", "docs/", ".github/", "book/", ".pmat/", "target
 name = "simular"
 version = "0.3.2"
 edition = "2021"
-rust-version = "1.75.0"
+rust-version = "1.82.0"
 authors = ["PAIML Engineering"]
 description = "Unified Simulation Engine for the Sovereign AI Stack"
 license = "MIT"
@@ -193,6 +193,42 @@ unsafe_code = "deny"
 all = { level = "warn", priority = -1 }
 pedantic = { level = "warn", priority = -1 }
 nursery = { level = "warn", priority = -1 }
-unwrap_used = "deny"
-expect_used = "deny"
-panic = "deny"
+# unwrap/expect/panic denied at crate level in lib.rs (not here — tests/examples need them)
+missing_panics_doc = { level = "allow", priority = 1 }
+unnecessary_wraps = { level = "allow", priority = 1 }
+# Simulation/numerical code allows
+uninlined_format_args = { level = "allow", priority = 1 }
+suboptimal_flops = { level = "allow", priority = 1 }
+doc_markdown = { level = "allow", priority = 1 }
+cast_lossless = { level = "allow", priority = 1 }
+float_cmp = { level = "allow", priority = 1 }
+field_reassign_with_default = { level = "allow", priority = 1 }
+approx_constant = { level = "allow", priority = 1 }
+items_after_statements = { level = "allow", priority = 1 }
+too_many_lines = { level = "allow", priority = 1 }
+many_single_char_names = { level = "allow", priority = 1 }
+redundant_clone = { level = "allow", priority = 1 }
+clone_on_copy = { level = "allow", priority = 1 }
+used_underscore_items = { level = "allow", priority = 1 }
+iter_without_into_iter = { level = "allow", priority = 1 }
+option_if_let_else = { level = "allow", priority = 1 }
+cast_precision_loss = { level = "allow", priority = 1 }
+cast_possible_truncation = { level = "allow", priority = 1 }
+cast_sign_loss = { level = "allow", priority = 1 }
+cast_possible_wrap = { level = "allow", priority = 1 }
+imprecise_flops = { level = "allow", priority = 1 }
+cloned_instead_of_copied = { level = "allow", priority = 1 }
+explicit_iter_loop = { level = "allow", priority = 1 }
+default_trait_access = { level = "allow", priority = 1 }
+unreadable_literal = { level = "allow", priority = 1 }
+stable_sort_primitive = { level = "allow", priority = 1 }
+redundant_closure_for_method_calls = { level = "allow", priority = 1 }
+manual_range_contains = { level = "allow", priority = 1 }
+needless_range_loop = { level = "allow", priority = 1 }
+module_name_repetitions = { level = "allow", priority = 1 }
+similar_names = { level = "allow", priority = 1 }
+suspicious_operation_groupings = { level = "allow", priority = 1 }
+no_effect_underscore_binding = { level = "allow", priority = 1 }
+missing_const_for_fn = { level = "allow", priority = 1 }
+manual_midpoint = { level = "allow", priority = 1 }
+manual_is_multiple_of = { level = "allow", priority = 1 }

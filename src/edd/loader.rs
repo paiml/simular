@@ -812,12 +812,8 @@ governing_equation:
         let emc = EmcYaml::from_yaml(invalid_yaml);
         // Should parse but fail schema validation
         if let Ok(emc) = emc {
-            let result = emc.validate_schema();
-            // Missing analytical_derivation with primary_citation
-            assert!(
-                result.is_err() || true,
-                "Missing required fields should be caught"
-            );
+            // validate_schema may or may not catch missing analytical_derivation
+            let _result = emc.validate_schema();
         }
     }
 

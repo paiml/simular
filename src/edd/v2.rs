@@ -557,7 +557,7 @@ impl SchemaValidator {
     }
 
     #[cfg(not(feature = "schema-validation"))]
-    #[allow(clippy::unused_self)]
+    #[allow(clippy::unused_self, clippy::unnecessary_wraps)]
     fn validate_against_schema(
         &self,
         _instance: &serde_json::Value,

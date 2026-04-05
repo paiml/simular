@@ -19,8 +19,9 @@
 //! ```
 
 #![forbid(unsafe_code)]
+// Production code: deny unwrap/expect/panic (tests/examples inherit allows from Cargo.toml)
 #![deny(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
-#![warn(clippy::pedantic, clippy::nursery)]
+// pedantic + nursery set in Cargo.toml [lints.clippy] — individual allows there too
 #![allow(
     clippy::module_name_repetitions,
     clippy::similar_names,
@@ -28,14 +29,27 @@
     clippy::cast_possible_truncation,
     clippy::cast_sign_loss,
     clippy::suspicious_operation_groupings,  // False positive for variance = E[X²] - E[X]²
-    clippy::suboptimal_flops,  // Manual Horner's method is intentional
     clippy::imprecise_flops,   // Numerical code choices are intentional
     clippy::no_effect_underscore_binding,
-    clippy::too_many_lines,
     clippy::missing_const_for_fn,  // Many functions can't be const in stable Rust
     clippy::needless_range_loop,   // Sometimes range loops are clearer
     clippy::manual_midpoint,       // Manual midpoint is intentional in numerical code
     clippy::manual_is_multiple_of, // is_multiple_of is unstable in Rust 1.85
+)]
+// Test code is allowed to use unwrap/expect/panic for concise assertions
+#![cfg_attr(
+    test,
+    allow(
+        clippy::unwrap_used,
+        clippy::expect_used,
+        clippy::panic,
+        clippy::unreadable_literal,
+        clippy::default_constructed_unit_structs,
+        clippy::map_unwrap_or,
+        clippy::single_char_pattern,
+        clippy::needless_collect,
+        clippy::missing_docs_in_private_items,
+    )
 )]
 
 #[macro_use]

@@ -274,7 +274,7 @@ mod tests {
     fn test_citation_with_pages() {
         let cite = Citation::new(&["Test"], "Venue", 2022).with_pages("100-200");
         assert!(cite.pages.is_some());
-        assert_eq!(cite.pages.as_ref().map(String::as_str), Some("100-200"));
+        assert_eq!(cite.pages.as_deref(), Some("100-200"));
     }
 
     #[test]

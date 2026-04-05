@@ -150,14 +150,22 @@ impl SIRState {
     #[must_use]
     pub fn infection_rate(&self) -> f64 {
         let total = self.total();
-        if total == 0.0 { 0.0 } else { self.infected / total }
+        if total == 0.0 {
+            0.0
+        } else {
+            self.infected / total
+        }
     }
 
     /// Calculate fraction susceptible.
     #[must_use]
     pub fn susceptible_rate(&self) -> f64 {
         let total = self.total();
-        if total == 0.0 { 0.0 } else { self.susceptible / total }
+        if total == 0.0 {
+            0.0
+        } else {
+            self.susceptible / total
+        }
     }
 
     /// Check if epidemic is over (no more infected).
@@ -193,6 +201,10 @@ pub struct SIRScenario {
 
 impl SIRScenario {
     /// Create a new SIR scenario.
+    ///
+    /// # Panics
+    ///
+    /// Panics if `population` or `gamma` is not positive.
     #[must_use]
     #[allow(clippy::many_single_char_names)]
     pub fn new(config: SIRConfig) -> Self {
@@ -387,6 +399,10 @@ pub struct SEIRScenario {
 
 impl SEIRScenario {
     /// Create a new SEIR scenario.
+    ///
+    /// # Panics
+    ///
+    /// Panics if `population` or `gamma` is not positive.
     #[must_use]
     #[allow(clippy::many_single_char_names)]
     pub fn new(config: SEIRConfig) -> Self {
@@ -470,11 +486,7 @@ impl SEIRScenario {
         let new_r = r + dt / 6.0 * (k1_r + 2.0 * k2_r + 2.0 * k3_r + k4_r);
 
         // Jidoka: Check for non-physical values
-        if new_s < 0.0
-            || new_e < 0.0
-            || new_i < 0.0
-            || new_r < 0.0
-        {
+        if new_s < 0.0 || new_e < 0.0 || new_i < 0.0 || new_r < 0.0 {
             return Err(SimError::jidoka(format!(
                 "Non-physical state: S={new_s}, E={new_e}, I={new_i}, R={new_r}"
             )));
@@ -558,6 +570,10 @@ pub struct StochasticSIR {
 
 impl StochasticSIR {
     /// Create a new stochastic SIR scenario.
+    ///
+    /// # Panics
+    ///
+    /// Panics if `population` or `gamma` is not positive.
     #[must_use]
     #[allow(clippy::many_single_char_names)]
     pub fn new(config: SIRConfig) -> Self {

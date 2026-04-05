@@ -23,6 +23,7 @@ use simular::demos::{DemoEngine, DemoError, OrbitalEngine, TspEngine};
 // =============================================================================
 
 /// Object-safe wrapper trait for heterogeneous engine testing.
+#[allow(dead_code)]
 trait DemoEngineObject {
     fn step_engine(&mut self);
     fn state_hash(&self) -> u64;
@@ -305,13 +306,12 @@ fn test_all_demos_tui_wasm_state_parity() {
         let engine1_result = create_engine_from_yaml(yaml);
         let engine2_result = create_engine_from_yaml(yaml);
 
-        if engine1_result.is_err() || engine2_result.is_err() {
-            panic!(
-                "Failed to create engines for YAML {i}: {:?} / {:?}",
-                engine1_result.err(),
-                engine2_result.err()
-            );
-        }
+        assert!(
+            engine1_result.is_ok() && engine2_result.is_ok(),
+            "Failed to create engines for YAML {i}: {:?} / {:?}",
+            engine1_result.as_ref().err(),
+            engine2_result.as_ref().err()
+        );
 
         let mut engine1 = engine1_result.unwrap();
         let mut engine2 = engine2_result.unwrap();
@@ -381,7 +381,7 @@ fn test_no_hardcoded_configs_documented() {
     // See: .github/workflows/ci.yml
 
     // For now, this is a marker that the check exists
-    assert!(true, "Hardcoded config check is performed in CI via grep");
+    // Hardcoded config check is performed in CI via grep
 }
 
 // =============================================================================
@@ -424,7 +424,7 @@ fn test_demo_engine_trait_exists() {
     fn _assert_trait_exists<T: DemoEngine>() {}
 
     // The trait exists - this test passes
-    assert!(true, "DemoEngine trait is defined and public");
+    // DemoEngine trait is defined and public — verified by compilation
 }
 
 /// Verify OrbitalEngine implements DemoEngine.
@@ -459,10 +459,7 @@ fn test_demos_that_need_implementation() {
     ];
 
     // This documents remaining work - remove items as implemented
-    assert!(
-        !unimplemented_demos.is_empty(),
-        "All demos should implement DemoEngine - this test passes when work remains"
-    );
+    let _ = unimplemented_demos;
 }
 
 /// Verify TspEngine implements DemoEngine.

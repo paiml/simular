@@ -1023,7 +1023,7 @@ dependencies = [
 name = "presentar-core"
 version = "0.3.5"
 dependencies = [
- "provable-contracts-macros",
+ "provable-contracts-macros 0.2.1",
  "serde",
  "serde_json",
  "serde_yaml_ng",
@@ -1116,7 +1116,7 @@ dependencies = [
 name = "provable-contracts"
 version = "0.2.1"
 dependencies = [
- "provable-contracts-macros",
+ "provable-contracts-macros 0.2.1",
  "regex",
  "serde",
  "serde_json",
@@ -1127,6 +1127,17 @@ dependencies = [
 [[package]]
 name = "provable-contracts-macros"
 version = "0.2.1"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
+]
+
+[[package]]
+name = "provable-contracts-macros"
+version = "0.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8a79b3496cd98fb9767f6ee845a4fda80f3b4a18de4a1477d8a59d527f2e98ac"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -1509,7 +1520,7 @@ dependencies = [
  "presentar-test",
  "proptest",
  "provable-contracts",
- "provable-contracts-macros",
+ "provable-contracts-macros 0.2.1",
  "rand 0.8.5",
  "rand_pcg",
  "ratatui",
@@ -1736,16 +1747,18 @@ checksum = "5d99f8c9a7727884afe522e9bd5edbfc91a3312b36a77b5fb8926e4c31a41801"
 
 [[package]]
 name = "trueno"
-version = "0.15.0"
+version = "0.16.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "85e19fa22753d395f043b205999122520efd45a33e0867d137f20b777ad794ef"
+checksum = "aef9a7f78a2c56f69a831812f4b82fae90ed5c1451301501a7f1b7af90a789f7"
 dependencies = [
  "anyhow",
  "chrono",
  "hostname",
  "num_cpus",
+ "provable-contracts-macros 0.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde",
  "serde_json",
+ "serde_yaml_ng",
  "thiserror",
  "toml",
  "trueno-quant",

@@ -1228,7 +1228,9 @@ mod tests {
                 assert!(*drift > 0.8, "Drift should be > 80%");
                 assert!(*drift <= 1.0, "Drift should be <= 100%");
             }
-            _ => panic!("Expected EnergyDriftApproaching warning"),
+            JidokaWarning::ConstraintApproaching { .. } => {
+                panic!("Expected EnergyDriftApproaching warning")
+            }
         }
     }
 
@@ -1257,7 +1259,9 @@ mod tests {
                 assert_eq!(name, "test");
                 assert!((*violation - 0.9).abs() < f64::EPSILON);
             }
-            _ => panic!("Expected ConstraintApproaching warning"),
+            JidokaWarning::EnergyDriftApproaching { .. } => {
+                panic!("Expected ConstraintApproaching warning")
+            }
         }
     }
 

@@ -845,8 +845,9 @@ mod tests {
 
     #[test]
     fn test_constants() {
-        assert!(SOLAR_MASS > 1.9e30);
-        assert!(EARTH_MASS > 5.9e24);
+        // Sanity-check physical constants at compile time
+        const _: () = assert!(SOLAR_MASS > 1.9e30);
+        const _: () = assert!(EARTH_MASS > 5.9e24);
     }
 }
 

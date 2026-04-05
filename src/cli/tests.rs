@@ -883,7 +883,7 @@ fn test_run_experiment_valid_file() {
     if let Ok(entries) = std::fs::read_dir(&experiments_dir) {
         for entry in entries.flatten() {
             let path = entry.path();
-            if path.extension().map_or(false, |e| e == "yaml") {
+            if path.extension().is_some_and(|e| e == "yaml") {
                 // Just test that it runs (may pass or fail based on EMC availability)
                 let _ = run_experiment(&path, None, false);
                 return;
