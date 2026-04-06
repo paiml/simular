@@ -103,23 +103,12 @@ fn test_parse_run_command_with_seed() {
 
 #[test]
 fn test_parse_run_command_with_verbose() {
-    let args = Args::parse_from(["simular", "run", "experiment.yaml", "-v"]);
-    match args.command {
-        Command::Run { verbose, .. } => {
-            assert!(verbose);
+    for flag in &["-v", "--verbose"] {
+        let args = Args::parse_from(["simular", "run", "experiment.yaml", flag]);
+        match args.command {
+            Command::Run { verbose, .. } => assert!(verbose, "flag {flag}"),
+            _ => panic!("Expected Run command for {flag}"),
         }
-        _ => panic!("Expected Run command"),
-    }
-}
-
-#[test]
-fn test_parse_run_command_with_verbose_long() {
-    let args = Args::parse_from(["simular", "run", "experiment.yaml", "--verbose"]);
-    match args.command {
-        Command::Run { verbose, .. } => {
-            assert!(verbose);
-        }
-        _ => panic!("Expected Run command"),
     }
 }
 
@@ -150,34 +139,44 @@ fn test_parse_run_command_with_all_options() {
 #[test]
 fn test_parse_run_command_missing_path() {
     let args = Args::parse_from(["simular", "run"]);
-    assert!(matches!(args.command, Command::Error(ref msg) if msg.contains("run")));
+    assert_eq!(args.command, Command::Help);
 }
 
 #[test]
-fn test_parse_run_command_seed_without_value() {
-    let args = Args::parse_from(["simular", "run", "experiment.yaml", "--seed"]);
-    match args.command {
-        Command::Run { seed_override, .. } => {
-            assert_eq!(seed_override, None);
+fn test_parse_subcommand_help_flags() {
+    let subs = [
+        "run",
+        "verify",
+        "validate",
+        "emc-check",
+        "emc-validate",
+        "render",
+    ];
+    for sub in subs {
+        for flag in ["--help", "-h"] {
+            let a = Args::parse_from(["simular", sub, flag]);
+            assert_eq!(a.command, Command::Help, "{sub} {flag}");
         }
-        _ => panic!("Expected Run command"),
     }
 }
 
 #[test]
-fn test_parse_run_command_seed_invalid_value() {
-    let args = Args::parse_from([
-        "simular",
-        "run",
-        "experiment.yaml",
-        "--seed",
-        "not-a-number",
-    ]);
-    match args.command {
-        Command::Run { seed_override, .. } => {
-            assert_eq!(seed_override, None);
+fn test_parse_run_command_seed_edge_cases() {
+    // Missing value and invalid value both result in None seed
+    for argv in [
+        vec!["simular", "run", "experiment.yaml", "--seed"],
+        vec![
+            "simular",
+            "run",
+            "experiment.yaml",
+            "--seed",
+            "not-a-number",
+        ],
+    ] {
+        match Args::parse_from(argv).command {
+            Command::Run { seed_override, .. } => assert_eq!(seed_override, None),
+            _ => panic!("Expected Run command"),
         }
-        _ => panic!("Expected Run command"),
     }
 }
 
@@ -224,7 +223,7 @@ fn test_parse_verify_command_with_runs() {
 #[test]
 fn test_parse_verify_command_missing_path() {
     let args = Args::parse_from(["simular", "verify"]);
-    assert!(matches!(args.command, Command::Error(ref msg) if msg.contains("verify")));
+    assert_eq!(args.command, Command::Help);
 }
 
 #[test]
@@ -252,7 +251,7 @@ fn test_parse_emc_check_command() {
 #[test]
 fn test_parse_emc_check_missing_path() {
     let args = Args::parse_from(["simular", "emc-check"]);
-    assert!(matches!(args.command, Command::Error(ref msg) if msg.contains("emc-check")));
+    assert_eq!(args.command, Command::Help);
 }
 
 #[test]
@@ -269,7 +268,7 @@ fn test_parse_emc_validate_command() {
 #[test]
 fn test_parse_emc_validate_missing_path() {
     let args = Args::parse_from(["simular", "emc-validate"]);
-    assert!(matches!(args.command, Command::Error(ref msg) if msg.contains("emc-validate")));
+    assert_eq!(args.command, Command::Help);
 }
 
 #[test]

@@ -125,10 +125,15 @@ impl Args {
         Self { command }
     }
 
+    /// Check if a positional arg is a help flag.
+    fn is_help_flag(arg: &str) -> bool {
+        arg == "--help" || arg == "-h"
+    }
+
     /// Parse the 'run' command arguments.
     fn parse_run_command(args: &[String]) -> Command {
-        if args.len() < 3 {
-            return Command::Error("'run' command requires experiment path".to_string());
+        if args.len() < 3 || Self::is_help_flag(&args[2]) {
+            return Command::Help;
         }
 
         let mut seed_override = None;
@@ -164,8 +169,8 @@ impl Args {
 
     /// Parse the 'validate' command arguments.
     fn parse_validate_command(args: &[String]) -> Command {
-        if args.len() < 3 {
-            return Command::Error("'validate' command requires experiment path".to_string());
+        if args.len() < 3 || Self::is_help_flag(&args[2]) {
+            return Command::Help;
         }
 
         Command::Validate {
@@ -175,8 +180,8 @@ impl Args {
 
     /// Parse the 'verify' command arguments.
     fn parse_verify_command(args: &[String]) -> Command {
-        if args.len() < 3 {
-            return Command::Error("'verify' command requires experiment path".to_string());
+        if args.len() < 3 || Self::is_help_flag(&args[2]) {
+            return Command::Help;
         }
 
         let mut runs = 3;
@@ -194,8 +199,8 @@ impl Args {
 
     /// Parse the 'emc-check' command arguments.
     fn parse_emc_check_command(args: &[String]) -> Command {
-        if args.len() < 3 {
-            return Command::Error("'emc-check' command requires experiment path".to_string());
+        if args.len() < 3 || Self::is_help_flag(&args[2]) {
+            return Command::Help;
         }
 
         Command::EmcCheck {
@@ -205,8 +210,8 @@ impl Args {
 
     /// Parse the 'emc-validate' command arguments.
     fn parse_emc_validate_command(args: &[String]) -> Command {
-        if args.len() < 3 {
-            return Command::Error("'emc-validate' command requires EMC file path".to_string());
+        if args.len() < 3 || Self::is_help_flag(&args[2]) {
+            return Command::Help;
         }
 
         Command::EmcValidate {
@@ -231,6 +236,9 @@ impl Args {
 
     /// Parse the 'render' command arguments.
     fn parse_render_command(args: &[String]) -> Command {
+        if args.len() >= 3 && Self::is_help_flag(&args[2]) {
+            return Command::Help;
+        }
         let flags = Self::collect_flags(args, 2);
 
         let domain = flags
